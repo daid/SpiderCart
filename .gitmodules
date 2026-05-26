@@ -1,0 +1,3 @@
+[submodule "emu/binjgb"]
+	path = emu/binjgb
+	url = git@github.com:daid/binjgb.git
