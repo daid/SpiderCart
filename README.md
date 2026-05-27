@@ -15,9 +15,16 @@ This repository documents the technical side of the SpiderCart. Because of this 
 * MCU: Microcontroller. In this case the RP2354B from Raspberry Pi. The RP2354B is a RP2350 with internal flash, so references to RP2350 are also refering to this chip.
 * SRAM: "Save" ram. This is also called "external ram" from the gameboy perspective, and contained within the cartridge. Optionally this is preserved between power cycles. Not to be confused with "Static RAM" which is a name of a specific type of RAM chips (to which we just refer as RAM chip)
 * RTC: A clock. The gameboy documentation usually refers to this as the Timer. It keep "clock"/"wall" time. Even when the gameboy is off. This requires a battery to preserve state.
+* Firmware: Code installed on the MCU that facilitates the operation of the flash cart
+* Loader: The code running on the gameboy that allows selecting of rom files and potentially do other things.
+
+## Features
+
+
 
 ## Implementation
 
 The SpiderCart is implemented by connecting the MCU and RAM chip directly to the gameboy cartridge bus. The RAM chip is loaded with whatever ROM needs to run. The rom is loaded by the MCU into the RAM chip, this can be done while the gameboy is kept in reset.
 
 While the gameboy is running, the MCU needs to act like the MBC, controlling when the RAM chip is enabled, as well as simulating the SRAM. It will only need of the two CPU cores this MCU has, so 1 will be available for other functionality.
+
