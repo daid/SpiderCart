@@ -1,3 +1,23 @@
 # SpiderCart
 
-WIP
+SpiderCart is a new gameboy and gameboy color flash cartridge. Which will have many legs over the alternatives.
+
+Currently, it is still in development. But it uses a different setup compared to other flash carts. Other carts use FPGAs or CPLDs. Instead the SpiderCart uses a single RP2354B microcontroller to function as the MBC and handle all other functionalities required. This offers greater flexiblity at lower costs.
+
+The SpiderCart is fully open source MIT license. And can be produced and copied by anyone. It also has all the flexibility to be modified by anyone.
+
+## Terminology
+
+This repository documents the technical side of the SpiderCart. Because of this it uses a lot of terminology. This list ensures that we all speak the same language.
+
+* DMG: The origonal grey brick gameboy. With 4 "green" colors.
+* GBC: The Gameboy Color. Upgraded version of the grey brick with color support, double CPU speed and a few more things.
+* MCU: Microcontroller. In this case the RP2354B from Raspberry Pi. The RP2354B is a RP2350 with internal flash, so references to RP2350 are also refering to this chip.
+* SRAM: "Save" ram. This is also called "external ram" from the gameboy perspective, and contained within the cartridge. Optionally this is preserved between power cycles. Not to be confused with "Static RAM" which is a name of a specific type of RAM chips (to which we just refer as RAM chip)
+* RTC: A clock. The gameboy documentation usually refers to this as the Timer. It keep "clock"/"wall" time. Even when the gameboy is off. This requires a battery to preserve state.
+
+## Implementation
+
+The SpiderCart is implemented by connecting the MCU and RAM chip directly to the gameboy cartridge bus. The RAM chip is loaded with whatever ROM needs to run. The rom is loaded by the MCU into the RAM chip, this can be done while the gameboy is kept in reset.
+
+While the gameboy is running, the MCU needs to act like the MBC, controlling when the RAM chip is enabled, as well as simulating the SRAM. It will only need of the two CPU cores this MCU has, so 1 will be available for other functionality.
