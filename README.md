@@ -20,6 +20,18 @@ This repository documents the technical side of the SpiderCart. Because of this 
 
 ## Features
 
+The following features are planned/wishes/possabilities.
+
+* Support running DMG and GBC roms up to 2MB in size (V1 limitation, design supports up to 8MB)
+* Full support for RTC (Harvest Moon / Pokemon / Homebrew)
+* 3 axis accelerometer (Kirby's Tilt 'n' Tumble / Homebrew)
+* Rumble support
+* Saves backed up to SD card automatically
+* Customizable loader to make rom selection look how you want it
+* Optional quickboot to start a rom without resetting and running the bootrom (not compatible with all roms)
+* SD file access for homebrew
+* USB port direct access to SD card for easy file updating without taking out the SD card
+* 150Mhz ARM Co-processor for whatever we want (Will it run doom?)
 
 
 ## Implementation
