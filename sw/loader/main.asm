@@ -4,25 +4,21 @@
 #INCLUDE "gbz80/extra/ld16.asm"
 
 #INCLUDE "video.asm"
+#INCLUDE "copy.asm"
 
 GBC_HEADER "SpiderCart", GB_MBC_ROM_RAM, entry
 
 #SECTION "Entry", ROM0 {
 entry:
     call lcd_off
-    ld   de, fontData
-    ld   hl, $9000
-    ld   bc, fontData.end - fontData
+    ld   hl, $8000
+    ld   bc, $2000
+    call clearMem
 
-.copyFontData:
-    ld   a, [de]
-    inc  de
-    ld   [hl+], a
-    ld   [hl+], a
-    dec  bc
-    ld   a, b
-    or   c
-    jr   nz, .copyFontData
+    ld   hl, fontData
+    ld   de, $9000
+    ld   bc, fontData.end - fontData
+    call copy1BPP
 
     ld   a, LCDC_ON | LCDC_BG_ON
     ldh  [rLCDC], a
