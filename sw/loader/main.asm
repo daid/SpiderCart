@@ -23,15 +23,52 @@ entry:
     ld   a, b
     or   c
     jr   nz, .copyFontData
-    
+
+    ld   a, LCDC_ON | LCDC_BG_ON
+    ldh  [rLCDC], a
+    call waitVBlank
+
+    ld   hl, defaultPalette
+    call setBGPalette
+
+    ld   hl, HelloWorld
+    ld   de, $9800
+    call printStr
+
 loop:
     halt
     jr loop
+
+HelloWorld:
+    db "Hello World!", 0
+
+defaultPalette:
+    dw $0000, $FFFF, $0000, $FFFF
+    dw $0000, $FFFF, $0000, $FFFF
+    dw $0000, $FFFF, $0000, $FFFF
+    dw $0000, $FFFF, $0000, $FFFF
+    dw $0000, $FFFF, $0000, $FFFF
+    dw $0000, $FFFF, $0000, $FFFF
+    dw $0000, $FFFF, $0000, $FFFF
+    dw $0000, $FFFF, $0000, $FFFF
+}
+
+#SECTION "PrintStr", ROM0 {
+printStr: ; print the string at HL on the background at DE
+    ld  a, [hl+]
+    sub a, $20
+    ret c
+    ld  c, a
+    STAT_WAIT
+    ld  a, c
+    ld  [de], a
+    inc de
+    jr  printStr
 }
 
 #SECTION "Font", ROMX, BANK[1] {
 fontData:
-    #INCGFX "font.1bpp.png", BPP[1], COLORMAP[$000000, $FFFFFF], DEBUG
+    #INCGFX "font.1bpp.png", BPP[1], COLORMAP[$000000, $FFFFFF]
 .end:
 }
 
