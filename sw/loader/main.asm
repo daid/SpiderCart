@@ -6,7 +6,14 @@
 #INCLUDE "video.asm"
 #INCLUDE "copy.asm"
 
-GBC_HEADER "SpiderCart", GB_MBC_ROM_RAM, entry
+GBC_HEADER "SpiderCart", GB_MBC5_RAM, entry
+
+#SECTION "SpiderCartIndicator", ROM0[$150] {
+    ; Most ROMs have the entry directly after the header. For a SpiderCart compatible ROM
+    ; We put a special indicator here to indicate to the cart should run with special features enabled
+    db $DD ; Indicator 1, this is an invalid instruction.
+    db "SPIDER"
+}
 
 #SECTION "Entry", ROM0 {
 entry:
