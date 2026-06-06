@@ -36,7 +36,7 @@
 #define PIN_GB_RST 40
 #define PIN_RUMBLE 41
 #define PIN_SDA    42
-#define PIN_SDL    43
+#define PIN_SCL    43
 #define PIN_SD_MISO 44
 #define PIN_SD_CS   45
 #define PIN_SD_CLK  46
