@@ -6,6 +6,7 @@
 #include "hardware/gpio.h"
 #include "hardware/i2c.h"
 #include "hardware/spi.h"
+#include "hardware/pio.h"
 #include "pins.h"
 
 // I2C reserves some addresses for special purposes. We exclude these from the scan.
@@ -62,22 +63,26 @@ void read_memchip(uint32_t addr, uint8_t* data, size_t size)
     gpio_put(PIN_BUS_EN, true); // enable GB cartridge bus
 }
 
-void core1_handler()
+void __not_in_flash_func(core1_handler)()
 {
+    uint32_t high_bank_pins = PIN_MASK_MEM_CE | PIN_MASK_MEM_WE | PIN_MASK_MBC_A0;
     while(true) {
         auto input_values = gpio_get_all();
         if (!(input_values & PIN_MASK_GB_RD)) {
             if (!(input_values & PIN_MASK_GB_A15)) {
                 if (!(input_values & PIN_MASK_GB_A14)) {
-                    gpio_put_all(PIN_MASK_MEM_CE | PIN_MASK_MEM_OE);
+                    gpio_put_all(high_bank_pins);
                 } else {
-                    gpio_put_all(PIN_MASK_MEM_CE | PIN_MASK_MEM_OE | PIN_MASK_MBC_A0);
+                    gpio_put_all(PIN_MASK_MEM_CE | PIN_MASK_MEM_WE);
                 }
             } else {
-                gpio_put_all(PIN_MASK_MEM_CE);
+                gpio_put_all(PIN_MASK_MEM_CE | PIN_MASK_MEM_OE | PIN_MASK_MEM_WE);
             }
         } else {
-            gpio_put_all(PIN_MASK_MEM_CE);
+            gpio_put_all(PIN_MASK_MEM_CE | PIN_MASK_MEM_OE | PIN_MASK_MEM_WE);
+            if (!(input_values & PIN_MASK_GB_WR)) {
+                //TODO handle writes
+            }
         }
     }
 }
@@ -114,12 +119,12 @@ void processSerialMessage()
         }
         break;
     case 0x01:
-        if (core1_running) {
+        if (!core1_running) {
             multicore_launch_core1(core1_handler);
             sleep_ms(5);
             gpio_put(PIN_GB_RST, true);
             printf(".");
-            core1_running = false;
+            core1_running = true;
         } else {
             printf("!");
         }
