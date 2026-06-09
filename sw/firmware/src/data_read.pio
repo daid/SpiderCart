@@ -1,0 +1,23 @@
+.pio_version 1
+
+.program data_read
+.fifo txput
+
+.wrap_target
+    in pins, 8
+    mov rxfifo[0], isr
+.wrap
+
+% c-sdk {
+static inline void data_read_program_init(PIO pio, uint sm, uint offset, uint pin) {
+    pio_sm_config c = data_read_program_get_default_config(offset);
+
+    sm_config_set_in_pins(&c, pin);
+    for(int n=0; n<8; n++)
+        pio_gpio_init(pio, pin + n);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 8, false);
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+
+%}

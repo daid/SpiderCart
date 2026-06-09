@@ -9,6 +9,9 @@
 #include "hardware/pio.h"
 #include "pins.h"
 
+#include "data_write.pio.h"
+#include "data_read.pio.h"
+
 // I2C reserves some addresses for special purposes. We exclude these from the scan.
 // These are any addresses of the form 000 0xxx or 111 1xxx
 bool reserved_addr(uint8_t addr) {
@@ -199,6 +202,11 @@ int main() {
     gpio_put(PIN_SD_CS, true);
     gpio_set_function(PIN_SD_CLK, GPIO_FUNC_SPI);
     gpio_set_function(PIN_SD_MOSI, GPIO_FUNC_SPI);
+
+    // Configure pio0 for pins 16-47, and setup our pio programs to allow one cycle read/write of the data bus.
+    pio_set_gpio_base(pio0, 16);
+    data_write_program_init(pio0, 0, pio_add_program(pio0, &data_write_program), PIN_GB_D0);
+    data_read_program_init(pio0, 1, pio_add_program(pio0, &data_read_program), PIN_GB_D0);
 
     stdio_init_all();
     while(1) {

@@ -9,6 +9,8 @@ add_executable(SpiderCart
     src/main.cpp
     inc/pins.h
 )
+pico_generate_pio_header(SpiderCart ${CMAKE_CURRENT_LIST_DIR}/src/data_write.pio)
+pico_generate_pio_header(SpiderCart ${CMAKE_CURRENT_LIST_DIR}/src/data_read.pio)
 
 pico_enable_stdio_usb(SpiderCart 1)
 pico_enable_stdio_uart(SpiderCart 0)

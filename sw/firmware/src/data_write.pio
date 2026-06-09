@@ -1,0 +1,30 @@
+.pio_version 1
+
+.program data_write
+.out 8 left auto 8
+
+.wrap_target
+    out pins, 8
+.wrap
+
+% c-sdk {
+static inline void data_write_program_init(PIO pio, uint sm, uint offset, uint pin) {
+    pio_sm_config c = data_write_program_get_default_config(offset);
+
+    sm_config_set_out_pins(&c, pin, 8);
+    for(int n=0; n<8; n++)
+        pio_gpio_init(pio, pin + n);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 8, false);
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+
+static inline void data_write_set_out(PIO pio, uint sm) {
+    pio_sm_exec(pio, sm, pio_encode_mov_not(pio_pindirs, pio_null));
+}
+
+static inline void data_write_set_in(PIO pio, uint sm) {
+    pio_sm_exec(pio, sm, pio_encode_mov(pio_pindirs, pio_null));
+}
+
+%}
