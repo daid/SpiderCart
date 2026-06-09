@@ -14,17 +14,18 @@ ff = 0.001; // fudge factor
 width = 57;
 depth = 64.8;
 
-classic = true; // Whether to include a logo area on the top half
+classic = false; // Whether to include a logo area on the top half
 
 // fit test with top and bottom interlocking
 // translate([0, 0, total_top_height + bottom_base_height + 1.8 ])rotate([0, 180, 0]) top();
 // bottom();
 
 // normal rendering
-//translate([-width/2 - 1, 0, 0]) top();
+translate([-width/2 - 1, 0, 0]) top();
 translate([width/2 + 1, 0, 0]) bottom();
 
-translate([width/2 + 1, depth/2-0.7, 0.8]) color("#ff0000") import("../pcb/SpiderCart.stl");
+translate([width/2 + 1, depth/2-0.7, 1.6]) % color("#ff000080") import("../pcb/SpiderCart.stl");
+translate([-width/2 - 1, depth/2-0.7, 5.8]) rotate([0,180,0]) % color("#ff000080") import("../pcb/SpiderCart.stl");
 
 // BOTTOM HALF /////////////////////////////////////////////////////////////////
 
@@ -84,7 +85,9 @@ module bottom() {
             bottom_grip(classic_grip_y, classic_grip_count);
         } else {
             bottom_grip(grip_y, grip_count);
-        }    
+        }
+        translate([-18, 67, 4]) cube([14, 10, 10], center=true);
+        translate([-4, 67, 4]) cube([16, 10, 5.2], center=true);
     }
 }
 
@@ -308,6 +311,9 @@ module top() {
                 cuboid([logo_width, logo_depth, logo_height],
                        fillet=6, edges=EDGES_Z_ALL, center=false);
         }
+
+        translate([18, 66, 4]) cube([14, 10, 10], center=true);
+        translate([4, 66, 4]) cube([16, 10, 5.2], center=true);
     }
 }
 
@@ -354,9 +360,9 @@ module top_base() {
         // Insert arrow cutout
         translate([0, 2, - ff]) linear_extrude(label_height) polygon([[-4.5, 5], [0, 0],[ 4.5, 5]]);
             
-        // Screw hole
-        translate([0, screw_y, - ff*2])
-            cylinder(h=top_inner_height + ff*4, r=screw_hole_thread_r);   
+        // Screw hole (removed)
+        //translate([0, screw_y, - ff*2])
+        //    cylinder(h=top_inner_height + ff*4, r=screw_hole_thread_r);   
 
     }
 
@@ -382,7 +388,7 @@ module top_base() {
                       top_inner_height + top_wall_height - far_tab_height])
                 cube([far_tab_width, far_tab_depth, far_tab_height]);
             
-            mirror([-1, 0, 0]) top_side_wall();
+            mirror([-1, 0, 0]) top_side_wall(add_tab=false); // Remove tab due to memory chip on V1 board
         }
         
         // Mode notch cutout
@@ -445,7 +451,7 @@ module top_grip(y, count) {
 }
 
 
-module top_side_wall() {
+module top_side_wall(add_tab=true) {
 
     translate([width/2 - bottom_wall_thickness - wall_gap - top_wall_thickness,
                top_near_wall_y - ff,
@@ -455,6 +461,7 @@ module top_side_wall() {
               top_wall_height]);
     
     // Side tab
+    if (add_tab)
     translate([width/2 - bottom_wall_thickness - wall_gap - top_wall_thickness - side_tab_width + ff,
               side_tab_y,
               top_inner_height - ff])
