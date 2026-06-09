@@ -65,21 +65,21 @@ void read_memchip(uint32_t addr, uint8_t* data, size_t size)
 
 void __not_in_flash_func(core1_handler)()
 {
-    uint32_t high_bank_pins = PIN_MASK_MEM_CE | PIN_MASK_MEM_WE | PIN_MASK_MBC_A0;
+    uint32_t high_bank_pins = PIN_MASK_MEM_WE | PIN_MASK_MBC_A0;
     while(true) {
         auto input_values = gpio_get_all();
         if (!(input_values & PIN_MASK_GB_RD)) {
             if (!(input_values & PIN_MASK_GB_A15)) {
                 if (!(input_values & PIN_MASK_GB_A14)) {
-                    gpio_put_all(high_bank_pins);
+                    gpio_put_all(PIN_MASK_MEM_WE);
                 } else {
-                    gpio_put_all(PIN_MASK_MEM_CE | PIN_MASK_MEM_WE);
+                    gpio_put_all(high_bank_pins);
                 }
             } else {
-                gpio_put_all(PIN_MASK_MEM_CE | PIN_MASK_MEM_OE | PIN_MASK_MEM_WE);
+                gpio_put_all(PIN_MASK_MEM_OE | PIN_MASK_MEM_WE);
             }
         } else {
-            gpio_put_all(PIN_MASK_MEM_CE | PIN_MASK_MEM_OE | PIN_MASK_MEM_WE);
+            gpio_put_all(PIN_MASK_MEM_OE | PIN_MASK_MEM_WE);
             if (!(input_values & PIN_MASK_GB_WR)) {
                 //TODO handle writes
             }
