@@ -4,7 +4,7 @@
 .fifo txput
 
 .wrap_target
-    in pins, 8
+    mov isr, pins
     mov rxfifo[0], isr
 .wrap
 
@@ -12,6 +12,8 @@
 static inline void data_read_program_init(PIO pio, uint sm, uint offset, uint pin) {
     pio_sm_config c = data_read_program_get_default_config(offset);
 
+    sm_config_set_out_pins(&c, pin, 8);
+    sm_config_set_set_pins(&c, pin, 8);
     sm_config_set_in_pins(&c, pin);
     for(int n=0; n<8; n++)
         pio_gpio_init(pio, pin + n);

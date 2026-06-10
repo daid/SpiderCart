@@ -21,14 +21,14 @@ bool reserved_addr(uint8_t addr) {
 void write_memchip(uint32_t addr, const uint8_t* data, size_t size)
 {
     gpio_put(PIN_BUS_EN, false); // disable GB cartridge bus
-    gpio_set_dir_out_masked64(
-        (0xFFFFULL << PIN_GB_A0) |
-        (0x00FFULL << PIN_GB_D0)
+    gpio_set_dir_out_masked(
+        (0xFFFFULL << PIN_GB_A0)
     );
+    data_write_set_out(pio0, 0);
     while(size) {
         gpio_put_masked(0x3FFF << PIN_GB_A0, (addr & 0x3FFF) << PIN_GB_A0);
         gpio_put_masked(0x01FF << PIN_MBC_A0, (addr & 0x7FC000) << (PIN_MBC_A0 - 14));
-        gpio_put_masked64(0x00FFULL << PIN_GB_D0, uint64_t(*data) << PIN_GB_D0);
+        pio_sm_put(pio0, 0, *data);
         gpio_put(PIN_MEM_WE, false);
         sleep_us(1);
         gpio_put(PIN_MEM_WE, true);
@@ -36,10 +36,10 @@ void write_memchip(uint32_t addr, const uint8_t* data, size_t size)
         addr++;
         size--;
     }
-    gpio_set_dir_in_masked64(
-        (0xFFFFULL << PIN_GB_A0) |
-        (0x00FFULL << PIN_GB_D0)
+    gpio_set_dir_in_masked(
+        (0xFFFFULL << PIN_GB_A0)
     );
+    data_write_set_in(pio0, 0);
     gpio_put(PIN_BUS_EN, true); // enable GB cartridge bus
 }
 
@@ -54,7 +54,7 @@ void read_memchip(uint32_t addr, uint8_t* data, size_t size)
         gpio_put_masked(0x01FF << PIN_MBC_A0, (addr & 0x7FC000) << (PIN_MBC_A0 - 14));
         gpio_put(PIN_MEM_OE, false);
         sleep_us(1);
-        *data = gpio_get_all64() >> PIN_GB_D0;
+        *data = pio0->rxf_putget[1][0];
         gpio_put(PIN_MEM_OE, true);
         data++;
         addr++;
@@ -205,8 +205,8 @@ int main() {
 
     // Configure pio0 for pins 16-47, and setup our pio programs to allow one cycle read/write of the data bus.
     pio_set_gpio_base(pio0, 16);
-    data_write_program_init(pio0, 0, pio_add_program(pio0, &data_write_program), PIN_GB_D0);
     data_read_program_init(pio0, 1, pio_add_program(pio0, &data_read_program), PIN_GB_D0);
+    data_write_program_init(pio0, 0, pio_add_program(pio0, &data_write_program), PIN_GB_D0);
 
     stdio_init_all();
     while(1) {
