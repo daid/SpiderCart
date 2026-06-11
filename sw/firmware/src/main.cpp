@@ -54,7 +54,7 @@ void read_memchip(uint32_t addr, uint8_t* data, size_t size)
         gpio_put_masked(0x01FF << PIN_MBC_A0, (addr & 0x7FC000) << (PIN_MBC_A0 - 14));
         gpio_put(PIN_MEM_OE, false);
         sleep_us(1);
-        *data = pio0->rxf_putget[1][0];
+        *data = data_read(pio0, 1);
         gpio_put(PIN_MEM_OE, true);
         data++;
         addr++;
@@ -66,9 +66,13 @@ void read_memchip(uint32_t addr, uint8_t* data, size_t size)
     gpio_put(PIN_BUS_EN, true); // enable GB cartridge bus
 }
 
-void __not_in_flash_func(core1_handler)()
+uint8_t ram_data[16 * 0x2000];
+
+void __scratch_x("core1_handler") core1_handler()
 {
+    uint8_t data;
     uint32_t high_bank_pins = PIN_MASK_MEM_WE | PIN_MASK_MBC_A0;
+    uint8_t* ram_ptr = ram_data;
     while(true) {
         auto input_values = gpio_get_all();
         if (!(input_values & PIN_MASK_GB_RD)) {
@@ -80,11 +84,37 @@ void __not_in_flash_func(core1_handler)()
                 }
             } else {
                 gpio_put_all(PIN_MASK_MEM_OE | PIN_MASK_MEM_WE);
+                if (!(input_values & PIN_MASK_GB_CS)) {
+                    data_write_set_out(pio0, 0);
+                    while(!(input_values & PIN_MASK_GB_RD)) {
+                        input_values = gpio_get_all();
+                        pio_sm_put(pio0, 0, ram_ptr[input_values & 0x1FFF]);
+                    }
+                    data_write_set_in(pio0, 0);
+                }
             }
         } else {
             gpio_put_all(PIN_MASK_MEM_OE | PIN_MASK_MEM_WE);
             if (!(input_values & PIN_MASK_GB_WR)) {
-                //TODO handle writes
+                if (!(input_values & PIN_MASK_GB_CS)) {
+                    //RAM write
+                    ram_ptr[input_values & 0x1FFF] = data_read(pio0, 1);
+                } else {
+                    switch(input_values & 0xE000) {
+                    case 0x0000: //RAM Enable
+                        break;
+                    case 0x2000: //ROM Bank nr
+                        data = data_read(pio0, 1);
+                        if (!data) data = 1;
+                        high_bank_pins = PIN_MASK_MEM_WE | PIN_MASK_MBC_A0 | (data << PIN_MBC_A0);
+                        break;
+                    case 0x4000: //RAM Bank nr
+                        ram_ptr = ram_data + 0x2000 * (data_read(pio0, 1) & 0x0F);
+                        break;
+                    case 0x6000: //
+                        break;
+                    }
+                }
             }
         }
     }

@@ -22,4 +22,8 @@ static inline void data_read_program_init(PIO pio, uint sm, uint offset, uint pi
     pio_sm_set_enabled(pio, sm, true);
 }
 
+static inline uint8_t data_read(PIO pio, uint sm) {
+    return pio->rxf_putget[sm][0];
+}
+
 %}
