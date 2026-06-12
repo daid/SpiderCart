@@ -86,7 +86,7 @@ void __scratch_x("core1_handler") core1_handler()
                 gpio_put_all(PIN_MASK_MEM_OE | PIN_MASK_MEM_WE);
                 if (!(input_values & PIN_MASK_GB_CS)) {
                     data_write_set_out(pio0, 0);
-                    while(!(input_values & PIN_MASK_GB_RD)) {
+                    while(!(input_values & PIN_MASK_GB_CS)) {
                         input_values = gpio_get_all();
                         pio_sm_put(pio0, 0, ram_ptr[input_values & 0x1FFF]);
                     }
@@ -105,7 +105,7 @@ void __scratch_x("core1_handler") core1_handler()
                         break;
                     case 0x2000: //ROM Bank nr
                         data = data_read(pio0, 1);
-                        if (!data) data = 1;
+                        //if (!data) data = 1;
                         high_bank_pins = PIN_MASK_MEM_WE | (data << PIN_MBC_A0);
                         break;
                     case 0x4000: //RAM Bank nr
