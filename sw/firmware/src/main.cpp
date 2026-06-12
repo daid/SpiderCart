@@ -100,13 +100,13 @@ void __scratch_x("core1_handler") core1_handler()
                     //RAM write
                     ram_ptr[input_values & 0x1FFF] = data_read(pio0, 1);
                 } else {
-                    switch(input_values & 0xE000) {
+                    switch(input_values & 0xF000) {
                     case 0x0000: //RAM Enable
                         break;
                     case 0x2000: //ROM Bank nr
                         data = data_read(pio0, 1);
                         if (!data) data = 1;
-                        high_bank_pins = PIN_MASK_MEM_WE | PIN_MASK_MBC_A0 | (data << PIN_MBC_A0);
+                        high_bank_pins = PIN_MASK_MEM_WE | (data << PIN_MBC_A0);
                         break;
                     case 0x4000: //RAM Bank nr
                         ram_ptr = ram_data + 0x2000 * (data_read(pio0, 1) & 0x0F);

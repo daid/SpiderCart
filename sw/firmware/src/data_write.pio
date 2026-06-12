@@ -21,11 +21,11 @@ static inline void data_write_program_init(PIO pio, uint sm, uint offset, uint p
 }
 
 static inline void data_write_set_out(PIO pio, uint sm) {
-    pio_sm_exec(pio, sm, pio_encode_mov_not(pio_pindirs, pio_null));
+    pio_sm_exec(pio, sm, pio_encode_mov_not((pio_src_dest)3, pio_null));
 }
 
 static inline void data_write_set_in(PIO pio, uint sm) {
-    pio_sm_exec(pio, sm, pio_encode_mov(pio_pindirs, pio_null));
+    pio_sm_exec(pio, sm, pio_encode_mov((pio_src_dest)3, pio_null));
 }
 
 %}
