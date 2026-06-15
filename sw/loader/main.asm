@@ -2,6 +2,7 @@
 #INCLUDE "gbz80/extra/if.asm"
 #INCLUDE "gbz80/extra/loop.asm"
 #INCLUDE "gbz80/extra/ld16.asm"
+#INCLUDE "gbz80/extra/pushpop.asm"
 
 #INCLUDE "video.asm"
 #INCLUDE "copy.asm"
@@ -34,9 +35,38 @@ entry:
     ld   hl, defaultPalette
     call setBGPalette
 
-    ld   hl, HelloWorld
-    ld   de, $9800
-    call printStr
+    ld   a, $0A
+    ld   [$0000], a
+    ld   a, $0F
+    ld   [$4000], a
+    ld   a, $FF
+    ld   [$BFFF], a
+    ld   a, $01
+    ld   [$6000], a
+
+:   ld   a, [$BFFF]
+    cp   $FF
+    jr   z, :-
+
+    ld   a, $00
+    ld   [$4000], a
+
+    ld   hl, $A000
+    loop {
+        ld   a, [hl]
+        and  a, a
+        jr   z, loop
+        pushpop hl {
+            inc  hl
+            ld   e, l
+            ld   a, h
+            add  a, $98 - $A0
+            ld   d, a
+            call printStr
+        }
+        ld  de, $20
+        add hl, de
+    }
 
 loop:
     halt
