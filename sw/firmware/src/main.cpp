@@ -1,70 +1,20 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "pins.h"
+#include "memchip.h"
+
+
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
 #include "hardware/gpio.h"
 #include "hardware/i2c.h"
 #include "hardware/spi.h"
 #include "hardware/pio.h"
-#include "pins.h"
 
 #include "data_write.pio.h"
 #include "data_read.pio.h"
 
-// I2C reserves some addresses for special purposes. We exclude these from the scan.
-// These are any addresses of the form 000 0xxx or 111 1xxx
-bool reserved_addr(uint8_t addr) {
-    return (addr & 0x78) == 0 || (addr & 0x78) == 0x78;
-}
-
-void write_memchip(uint32_t addr, const uint8_t* data, size_t size)
-{
-    gpio_put(PIN_BUS_EN, false); // disable GB cartridge bus
-    gpio_set_dir_out_masked(
-        (0xFFFFULL << PIN_GB_A0)
-    );
-    data_write_set_out(pio0, 0);
-    while(size) {
-        gpio_put_masked(0x3FFF << PIN_GB_A0, (addr & 0x3FFF) << PIN_GB_A0);
-        gpio_put_masked(0x01FF << PIN_MBC_A0, (addr & 0x7FC000) << (PIN_MBC_A0 - 14));
-        pio_sm_put(pio0, 0, *data);
-        gpio_put(PIN_MEM_WE, false);
-        sleep_us(1);
-        gpio_put(PIN_MEM_WE, true);
-        data++;
-        addr++;
-        size--;
-    }
-    gpio_set_dir_in_masked(
-        (0xFFFFULL << PIN_GB_A0)
-    );
-    data_write_set_in(pio0, 0);
-    gpio_put(PIN_BUS_EN, true); // enable GB cartridge bus
-}
-
-void read_memchip(uint32_t addr, uint8_t* data, size_t size)
-{
-    gpio_put(PIN_BUS_EN, false); // disable GB cartridge bus
-    gpio_set_dir_out_masked64(
-        (0xFFFFULL << PIN_GB_A0)
-    );
-    while(size) {
-        gpio_put_masked(0x7FFF << PIN_GB_A0, (addr & 0x7FFF) << PIN_GB_A0);
-        gpio_put_masked(0x01FF << PIN_MBC_A0, (addr & 0x7FC000) << (PIN_MBC_A0 - 14));
-        gpio_put(PIN_MEM_OE, false);
-        sleep_us(1);
-        *data = data_read(pio0, 1);
-        gpio_put(PIN_MEM_OE, true);
-        data++;
-        addr++;
-        size--;
-    }
-    gpio_set_dir_in_masked64(
-        (0xFFFFULL << PIN_GB_A0)
-    );
-    gpio_put(PIN_BUS_EN, true); // enable GB cartridge bus
-}
 
 uint8_t ram_data[16 * 0x2000];
 

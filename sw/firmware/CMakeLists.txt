@@ -7,6 +7,9 @@ pico_sdk_init()
 
 add_executable(SpiderCart
     src/main.cpp
+    src/memchip.cpp
+    src/mbc.cpp
+    inc/memchip.h
     inc/pins.h
 )
 pico_generate_pio_header(SpiderCart ${CMAKE_CURRENT_LIST_DIR}/src/data_write.pio)

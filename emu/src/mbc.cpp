@@ -1,21 +1,40 @@
 #include "../binjgb/src/emulator.h"
 
+bool ram_enabled = false;
+uint8_t ram_data[16 * 0x2000];
+uint8_t* ram_ptr = ram_data;
 
 extern "C" EmulatorCustomMBC* get_override_mbc(FileData filedata);
 
-static void mbc_write_rom(Emulator*, MaskedAddress addr, u8 value)
+static void mbc_write_rom(Emulator* e, MaskedAddress addr, u8 value)
 {
+    switch(addr & 0xE000) {
+    case 0x0000:
+        ram_enabled = (value & 0x0F) == 0x0A;
+        break;
+    case 0x2000:
+        set_rom_bank(e, 1, value);
+        break;
+    case 0x4000:
+        ram_ptr = ram_data + (value & 0x0F) * 0x2000;
+        break;
+    case 0x6000:
+        break;
+    }
     printf("MBC Write: %04x: %02x\n", addr, value);
 }
 
-static u8 mbc_read_ext_ram(Emulator*, MaskedAddress addr)
+static u8 mbc_read_ext_ram(Emulator* e, MaskedAddress addr)
 {
+    if (!ram_enabled) return 0xFF;
     printf("MBC RAM Read: %04x\n", addr);
-    return 0;
+    return ram_ptr[addr];
 }
 
-static void mbc_write_ext_ram(Emulator*, MaskedAddress addr, u8 value)
+static void mbc_write_ext_ram(Emulator* e, MaskedAddress addr, u8 value)
 {
+    if (!ram_enabled) return;
+    ram_data[addr] = value;
     printf("MBC RAM Write: %04x: %02x\n", addr, value);
 }
 
