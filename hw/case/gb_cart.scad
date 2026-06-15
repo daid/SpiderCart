@@ -21,11 +21,14 @@ classic = false; // Whether to include a logo area on the top half
 // bottom();
 
 // normal rendering
-translate([-width/2 - 1, 0, 0]) top();
-translate([width/2 + 1, 0, 0]) bottom();
+//translate([-width/2 - 1, 0, 0]) top();
+//translate([width/2 + 1, 0, 0]) bottom();
 
 translate([width/2 + 1, depth/2-0.7, 1.6]) % color("#ff000080") import("../pcb/SpiderCart.stl");
 translate([-width/2 - 1, depth/2-0.7, 5.8]) rotate([0,180,0]) % color("#ff000080") import("../pcb/SpiderCart.stl");
+
+translate([-width/2 - 1, 0, 0]) color("#ff00ff") label_cutout();
+
 
 // BOTTOM HALF /////////////////////////////////////////////////////////////////
 
@@ -52,7 +55,7 @@ lock_y_near = 11;
 lock_y_far = 50;
 
 pcb_screw_post_height = 1.6;
-pcb_screw_post_r = 3.5;
+pcb_screw_post_r = 3.7;
 
 ridge_depth = 0.8;
 ridge_height = 0.2;
@@ -258,7 +261,7 @@ key_depth = lock_depth - 1;
 key_width = lock_width - 0.2;
 
 label_depth = 39;
-label_height = 0.6;
+label_height = 0.2;
 label_y = 8;
 label_width = 44;
 
@@ -354,8 +357,7 @@ module top_base() {
                  top_height - top_inner_height]);
 
         // Label cutout
-        translate([-label_width/2, label_y, - ff])
-            cuboid([label_width, label_depth, label_height], fillet=1, edges=EDGES_Z_ALL, center=false);
+        label_cutout();
         
         // Insert arrow cutout
         translate([0, 2, - ff]) linear_extrude(label_height) polygon([[-4.5, 5], [0, 0],[ 4.5, 5]]);
@@ -482,4 +484,12 @@ module key(lock_y) {
                top_inner_height + top_wall_height - key_height
               ])
     cube([key_width + top_wall_thickness, key_depth, key_height]);
+}
+
+module label_cutout() {
+    difference() {
+        translate([-label_width/2, label_y, - ff])
+            cuboid([label_width, label_depth, label_height], fillet=1, edges=EDGES_Z_ALL, center=false);
+        linear_extrude(1, center=true) scale(0.2) translate([-90, 45]) import("spider.svg");
+    }
 }
