@@ -5,7 +5,10 @@
 #INCLUDE "gbz80/extra/pushpop.asm"
 
 #INCLUDE "video.asm"
+#INCLUDE "input.asm"
 #INCLUDE "copy.asm"
+
+#INCSDCC "main.rel"
 
 GBC_HEADER "SpiderCart", GB_MBC5_RAM, entry
 
@@ -35,68 +38,49 @@ entry:
     ld   hl, defaultPalette
     call setBGPalette
 
-    ld   a, $0A
-    ld   [$0000], a
-    ld   a, $0F
-    ld   [$4000], a
-    ld   a, $FF
-    ld   [$BFFF], a
-    ld   a, $01
-    ld   [$6000], a
-
-:   ld   a, [$BFFF]
-    cp   $FF
-    jr   z, :-
-
-    ld   a, $00
-    ld   [$4000], a
-
-    ld   hl, $A000
-    loop {
-        ld   a, [hl]
-        and  a, a
-        jr   z, loop
-        pushpop hl {
-            inc  hl
-            ld   e, l
-            ld   a, h
-            add  a, $98 - $A0
-            ld   d, a
-            call printStr
-        }
-        ld  de, $20
-        add hl, de
-    }
-
-loop:
-    halt
-    jr loop
+    jp   _main
 
 HelloWorld:
     db "Hello World!", 0
 
 defaultPalette:
-    dw $0000, $FFFF, $0000, $FFFF
-    dw $0000, $FFFF, $0000, $FFFF
-    dw $0000, $FFFF, $0000, $FFFF
-    dw $0000, $FFFF, $0000, $FFFF
-    dw $0000, $FFFF, $0000, $FFFF
-    dw $0000, $FFFF, $0000, $FFFF
-    dw $0000, $FFFF, $0000, $FFFF
-    dw $0000, $FFFF, $0000, $FFFF
+    dw $FFFF, $0000, $FFFF, $0000
+    dw $FFFF, $0000, $FFFF, $0000
+    dw $FFFF, $0000, $FFFF, $0000
+    dw $FFFF, $0000, $FFFF, $0000
+    dw $FFFF, $0000, $FFFF, $0000
+    dw $FFFF, $0000, $FFFF, $0000
+    dw $FFFF, $0000, $FFFF, $0000
+    dw $FFFF, $0000, $FFFF, $0000
 }
 
 #SECTION "PrintStr", ROM0 {
-printStr: ; print the string at HL on the background at DE
-    ld  a, [hl+]
+_printStr: ; print the string at BC on the background at DE=YX
+    ld  h, d
+    xor a ; clear carry
+    rr  h
+    rra
+    rr  h
+    rra
+    rr  h
+    rra
+    or  e
+    ld  l, a
+    ld  a, $98
+    add a, h
+    ld  h, a
+
+.loop:
+    ld  a, [bc]
     sub a, $20
     ret c
-    ld  c, a
+    inc bc
+
+    ld  e, a
     STAT_WAIT
-    ld  a, c
-    ld  [de], a
-    inc de
-    jr  printStr
+    ld  a, e
+    ld  [hl+], a
+    jr  .loop
 }
 
 #SECTION "Font", ROMX, BANK[1] {

@@ -15,6 +15,7 @@ lcd_off:
     ldh  [rLCDC], a
     ret
 
+_waitVBlank:
 waitVBlank:
     xor  a
     ldh  [rIF], a

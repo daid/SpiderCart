@@ -13,6 +13,14 @@ uint8_t current_command_delay = 0;
 
 extern "C" EmulatorCustomMBC* get_override_mbc(FileData filedata);
 
+bool validExt(char* sep)
+{
+    if (!sep) return false;
+    if (strcmpi(sep, ".gb") == 0) return true;
+    if (strcmpi(sep, ".gbc") == 0) return true;
+    return false;
+}
+
 static void executeCurrentCommand()
 {
     switch (current_command)
@@ -22,17 +30,26 @@ static void executeCurrentCommand()
             uint8_t* ptr = ram_data;
             auto dir = opendir(".");
             while(auto entry = readdir(dir)) {
-                *ptr++ = (entry->d_type & DT_DIR) ? 2 : 1;
-                strncpy((char*)ptr, entry->d_name, 31);
-                printf("%s\n", entry->d_name);
-                ptr += 31;
+                //*ptr++ = (entry->d_type & DT_DIR) ? 2 : 1;
+                auto sep = strrchr(entry->d_name, '.');
+                if (validExt(sep)) {
+                    *ptr++ = 1;
+                    strncpy((char*)ptr, entry->d_name, 31);
+                    printf("%s\n", entry->d_name);
+                    ptr += 31;
+                }
             }
             *ptr = 0;
             closedir(dir);
         }
         //Mark command done.
         ram_data[15 * 0x2000 + 0x1FFF] = 0;
-        break;    
+        break;
+    case COMMAND_LOAD_AND_RESET:
+        printf("Want to load&reset: %s\n", &ram_data[15 * 0x2000]);
+        //Mark command done.
+        ram_data[15 * 0x2000 + 0x1FFF] = 0;
+        break;
     default:
         break;
     }
@@ -69,7 +86,7 @@ static u8 mbc_read_ext_ram(Emulator* e, MaskedAddress addr)
             current_command = 0;
         }
     }
-    printf("MBC RAM Read: %04x\n", addr);
+    printf("MBC RAM Read: %04x: %02x\n", addr, ram_ptr[addr]);
     return ram_ptr[addr];
 }
 

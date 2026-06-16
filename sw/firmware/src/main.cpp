@@ -3,6 +3,7 @@
 
 #include "pins.h"
 #include "memchip.h"
+#include "mbc.h"
 
 
 #include "pico/stdlib.h"
@@ -51,7 +52,7 @@ void processSerialMessage()
         break;
     case 0x01:
         if (!core1_running) {
-            multicore_launch_core1(core1_handler);
+            multicore_launch_core1(core1_mbc_handler);
             sleep_ms(5);
             gpio_put(PIN_GB_RST, true);
             printf(".");
