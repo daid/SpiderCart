@@ -49,7 +49,8 @@ static const char *const luaX_tokens [] = {
     "return", "then", "true", "until", "while",
     "//", "..", "...", "==", ">=", "<=", "~=",
     "<<", ">>", "::", "<eof>",
-    "<number>", "<integer>", "<name>", "<string>"
+    "<number>", "<integer>", "<name>", "<string>",
+    "+=", "-=", "*=", "/="
 };
 
 
@@ -478,6 +479,7 @@ static int llex (LexState *ls, SemInfo *seminfo) {
       }
       case '-': {  /* '-' or '--' (comment) */
         next(ls);
+        if (ls->current == '=') { next(ls); return TK_SUBE; }
         if (ls->current != '-') return '-';
         /* else is a comment */
         next(ls);
@@ -532,6 +534,11 @@ static int llex (LexState *ls, SemInfo *seminfo) {
         if (check_next1(ls, '=')) return TK_NE;  /* '~=' */
         else return '~';
       }
+      case '!': {
+        next(ls);
+        if (check_next1(ls, '=')) return TK_NE;  /* '!=' */
+        else return '!';
+      }
       case ':': {
         next(ls);
         if (check_next1(ls, ':')) return TK_DBCOLON;  /* '::' */
@@ -577,6 +584,14 @@ static int llex (LexState *ls, SemInfo *seminfo) {
         else {  /* single-char tokens ('+', '*', '%', '{', '}', ...) */
           int c = ls->current;
           next(ls);
+          if (ls->current == '=') {
+            switch(c) {
+            case '+': next(ls); return TK_ADDE;
+            case '-': next(ls); return TK_SUBE; // already handled with comments
+            case '*': next(ls); return TK_MULE;
+            case '/': next(ls); return TK_DIVE;
+            }
+          }
           return c;
         }
       }
