@@ -11,6 +11,28 @@ add_executable(SpiderCart
     src/mbc.cpp
     inc/memchip.h
     inc/pins.h
+    
+    src/lua/lapi.c
+    src/lua/lauxlib.c
+    src/lua/ldebug.c
+    src/lua/lfunc.c
+    src/lua/lvm.c
+    src/lua/lgc.c
+    src/lua/ldo.c
+    src/lua/lobject.c
+    src/lua/ltable.c
+    src/lua/lstate.c
+    src/lua/lstring.c
+    src/lua/ltm.c
+    src/lua/lopcodes.c
+    src/lua/lmem.c
+    src/lua/lparser.c
+    src/lua/lzio.c
+    src/lua/ldump.c
+    src/lua/lundump.c
+    src/lua/llex.c
+    src/lua/lcode.c
+    src/lua/lctype.c
 )
 pico_generate_pio_header(SpiderCart ${CMAKE_CURRENT_LIST_DIR}/src/data_write.pio)
 pico_generate_pio_header(SpiderCart ${CMAKE_CURRENT_LIST_DIR}/src/data_read.pio)
