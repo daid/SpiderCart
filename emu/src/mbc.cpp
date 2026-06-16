@@ -1,5 +1,6 @@
 #include "../binjgb/src/emulator.h"
 #include "../../sw/firmware/inc/command.h"
+#include "../../sw/firmware/inc/p8lua.h"
 
 #include <dirent.h>
 
