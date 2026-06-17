@@ -9,6 +9,7 @@ add_executable(SpiderCart
     src/main.cpp
     src/memchip.cpp
     src/mbc.cpp
+    src/pins.cpp
     inc/memchip.h
     inc/pins.h
     
@@ -50,3 +51,20 @@ target_compile_definitions(SpiderCart PRIVATE
   PICO_STDIO_ENABLE_CRLF_SUPPORT=0
   PICO_UART_ENABLE_CRLF_SUPPORT=0
 )
+
+add_executable(SpiderCartHWTest
+    src/hwtest.cpp
+    src/memchip.cpp
+    src/pins.cpp
+    inc/memchip.h
+    inc/pins.h
+)
+pico_generate_pio_header(SpiderCartHWTest ${CMAKE_CURRENT_LIST_DIR}/src/data_write.pio)
+pico_generate_pio_header(SpiderCartHWTest ${CMAKE_CURRENT_LIST_DIR}/src/data_read.pio)
+
+pico_enable_stdio_usb(SpiderCartHWTest 1)
+pico_enable_stdio_uart(SpiderCartHWTest 0)
+
+target_link_libraries(SpiderCartHWTest pico_stdlib hardware_i2c hardware_spi hardware_pio hardware_dma pico_multicore)
+target_include_directories(SpiderCartHWTest PRIVATE src inc)
+pico_add_extra_outputs(SpiderCartHWTest)

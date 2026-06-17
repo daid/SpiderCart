@@ -85,3 +85,7 @@
 #define PIN_MASK_SD_CS (1 << PIN_SD_CS)
 #define PIN_MASK_SD_CLK (1 << PIN_SD_CLK)
 #define PIN_MASK_SD_MOSI (1 << PIN_SD_MOSI)
+
+#define MEMCHIP_SIZE (2 * 1024 * 1024)
+
+void hwInit();

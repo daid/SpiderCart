@@ -6,6 +6,7 @@
 #include "data_write.pio.h"
 #include "data_read.pio.h"
 
+#define NOP_COUNT 25
 
 void write_memchip(uint32_t addr, const uint8_t* data, size_t size)
 {
@@ -19,7 +20,8 @@ void write_memchip(uint32_t addr, const uint8_t* data, size_t size)
         gpio_put_masked(0x01FF << PIN_MBC_A0, (addr & 0x7FC000) << (PIN_MBC_A0 - 14));
         pio_sm_put(pio0, 0, *data);
         gpio_put(PIN_MEM_WE, false);
-        asm volatile("nop\nnop\nnop");
+        for(int n=0; n<NOP_COUNT; n++)
+            asm volatile("nop");
         gpio_put(PIN_MEM_WE, true);
         data++;
         addr++;
@@ -42,7 +44,8 @@ void read_memchip(uint32_t addr, uint8_t* data, size_t size)
         gpio_put_masked(0x7FFF << PIN_GB_A0, (addr & 0x7FFF) << PIN_GB_A0);
         gpio_put_masked(0x01FF << PIN_MBC_A0, (addr & 0x7FC000) << (PIN_MBC_A0 - 14));
         gpio_put(PIN_MEM_OE, false);
-        asm volatile("nop\nnop\nnop");
+        for(int n=0; n<NOP_COUNT; n++)
+            asm volatile("nop");
         *data = data_read(pio0, 1);
         gpio_put(PIN_MEM_OE, true);
         data++;
