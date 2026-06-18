@@ -5,6 +5,10 @@ include(pico_sdk_import.cmake)
 project(SpiderCartFirmware)
 pico_sdk_init()
 
+find_package(Python3)
+add_subdirectory(../loader loader)
+add_custom_command(OUTPUT Loader.gb.inc COMMAND Python3::Interpreter ${CMAKE_CURRENT_SOURCE_DIR}/rom2inc.py ${CMAKE_CURRENT_BINARY_DIR}/loader/Loader.gb Loader.gb.inc DEPENDS Loader)
+
 add_executable(SpiderCart
     src/main.cpp
     src/memchip.cpp
@@ -42,6 +46,8 @@ add_executable(SpiderCart
     src/lua/llex.c
     src/lua/lcode.c
     src/lua/lctype.c
+
+    Loader.gb.inc
 )
 pico_generate_pio_header(SpiderCart ${CMAKE_CURRENT_LIST_DIR}/src/data_write.pio)
 pico_generate_pio_header(SpiderCart ${CMAKE_CURRENT_LIST_DIR}/src/data_read.pio)
