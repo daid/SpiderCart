@@ -50,6 +50,7 @@ static const char *const luaX_tokens [] = {
     "//", "..", "...", "==", ">=", "<=", "~=",
     "<<", ">>", "::", "<eof>",
     "<number>", "<integer>", "<name>", "<string>",
+    "<eol>",
     "+=", "-=", "*=", "/="
 };
 
@@ -101,6 +102,9 @@ const char *luaX_token2str (LexState *ls, int token) {
   }
 }
 
+void luaX_trackbraces (LexState *ls) {
+  ls->braces = ls->t.token == '(' ? 1 : -1;
+}
 
 static const char *txtToken (LexState *ls, int token) {
   switch (token) {
@@ -183,7 +187,9 @@ void luaX_setinput (lua_State *L, LexState *ls, ZIO *z, TString *source,
   ls->z = z;
   ls->fs = NULL;
   ls->linenumber = 1;
+  ls->emiteol = 0;
   ls->lastline = 1;
+  ls->braces = -1;
   ls->source = source;
   /* all three strings here ("_ENV", "break", "global") were fixed,
      so they cannot be collected */
@@ -471,6 +477,7 @@ static int llex (LexState *ls, SemInfo *seminfo) {
     switch (ls->current) {
       case '\n': case '\r': {  /* line breaks */
         inclinenumber(ls);
+        if (ls->emiteol) { ls->emiteol = 0; return TK_EOL; }
         break;
       }
       case ' ': case '\f': case '\t': case '\v': {  /* spaces */
@@ -583,6 +590,8 @@ static int llex (LexState *ls, SemInfo *seminfo) {
         }
         else {  /* single-char tokens ('+', '*', '%', '{', '}', ...) */
           int c = ls->current;
+          ls->braces += c == ')' ? -1 :  /* handle brace count for short if */
+                        c == '(' ? ls->braces > 0 ? 1 : -1 : 0;
           next(ls);
           if (ls->current == '=') {
             switch(c) {

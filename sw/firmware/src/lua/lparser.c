@@ -865,6 +865,7 @@ static int block_follow (LexState *ls, int withuntil) {
   switch (ls->t.token) {
     case TK_ELSE: case TK_ELSEIF:
     case TK_END: case TK_EOS:
+    case TK_EOL:  /* EOL indicates end of short if */
       return 1;
     case TK_UNTIL: return withuntil;
     default: return 0;
@@ -1779,18 +1780,27 @@ static void forstat (LexState *ls, int line) {
 }
 
 
-static void test_then_block (LexState *ls, int *escapelist) {
+static int test_then_block (LexState *ls, int *escapelist) {
   /* test_then_block -> [IF | ELSEIF] cond THEN block */
   FuncState *fs = ls->fs;
   int condtrue;
+  int line = ls->linenumber;
+  int short_if = (ls->t.token == TK_IF);  /* if TK_IF, can be a short IF */
   luaX_next(ls);  /* skip IF or ELSEIF */
+  luaX_trackbraces(ls);  /* track braces for short IF */
   condtrue = cond(ls);  /* read condition */
-  checknext(ls, TK_THEN);
+  short_if &= ls->t.token != TK_THEN && ls->t.token != TK_EOS
+           && ls->braces == 0 && line == ls->linenumber;
+  if (short_if)
+    ls->emiteol = 1;
+  else
+    checknext(ls, TK_THEN);
   block(ls);  /* 'then' part */
   if (ls->t.token == TK_ELSE ||
       ls->t.token == TK_ELSEIF)  /* followed by 'else'/'elseif'? */
     luaK_concat(fs, escapelist, luaK_jump(fs));  /* must jump over it */
   luaK_patchtohere(fs, condtrue);
+  return short_if;
 }
 
 
@@ -1798,12 +1808,19 @@ static void ifstat (LexState *ls, int line) {
   /* ifstat -> IF cond THEN block {ELSEIF cond THEN block} [ELSE block] END */
   FuncState *fs = ls->fs;
   int escapelist = NO_JUMP;  /* exit list for finished parts */
-  test_then_block(ls, &escapelist);  /* IF cond THEN block */
+  int short_if = test_then_block(ls, &escapelist);  /* IF cond THEN block */
   while (ls->t.token == TK_ELSEIF)
     test_then_block(ls, &escapelist);  /* ELSEIF cond THEN block */
   if (testnext(ls, TK_ELSE))
     block(ls);  /* 'else' part */
-  check_match(ls, TK_END, TK_IF, line);
+  if (!short_if)
+    check_match(ls, TK_END, TK_IF, line);
+  else if (ls->t.token == TK_EOL || ls->t.token == TK_EOS)
+    luaX_next(ls);  /* eat EOL or EOS */
+  else if (block_follow(ls, 1))
+    ls->emiteol = 0;  /* close the short if */
+  else
+    check_match(ls, TK_EOL, TK_IF, line);  /* we expected EOL */
   luaK_patchtohere(fs, escapelist);  /* patch escape list to 'if' end */
 }
 
