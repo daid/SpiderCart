@@ -1136,26 +1136,30 @@ Return the square root of x
 
 ABS(X)
 */
-lua_Number lua_p8_abs(lua_Number n)
-{ 
+lua_Number lua_p8_abs(lua_Number n) { 
     return std::abs(n);
 }
 /*
 Returns the absolute (positive) value of x
 */
 
-lua_Number lua_p8_rnd(lua_Number n)
-{ /*
-Returns a random number n, where 0 <= n < x
+static int32_t p8_rng_state = 1;
 
-If you want an integer, use flr(rnd(x)). If x is an array-style table, return a random element between table[1] and table[#table].
-*/
-    return 4;
+lua_Number lua_p8_rnd(lua_Number n) {
+    /* Returns a random number n, where 0 <= n < x
+
+    If you want an integer, use flr(rnd(x)). If x is an array-style table, return a random element between table[1] and table[#table].
+    */
+    p8_rng_state = ((p8_rng_state * 1103515245) + 12345) & 0x7fffffff;
+    float res;
+    *(uint32_t*)&res = 0x3f800000 | (p8_rng_state & 0x007FFFFF);
+    return (res - 1.0f) * n;
 }
 
+void lua_p8_srand(lua_Number x) {
+    p8_rng_state = x;
+}
 /*
-SRAND(X)
-
 Sets the random number seed. The seed is automatically randomized on cart startup.
 
 FUNCTION _DRAW()
@@ -1625,4 +1629,5 @@ void setupP8LuaEnv(lua_State* L)
     P8_BIND(sin);
     P8_BIND(abs);
     P8_BIND(rnd);
+    P8_BIND(srand);
 }
