@@ -10,8 +10,16 @@ add_executable(SpiderCart
     src/memchip.cpp
     src/mbc.cpp
     src/pins.cpp
+    src/sddiskio.cpp
     inc/memchip.h
     inc/pins.h
+
+    src/fatfs/diskio.h
+    src/fatfs/ff.c
+    src/fatfs/ff.h
+    src/fatfs/ffconf.h
+    src/fatfs/ffsystem.c
+    src/fatfs/ffunicode.c
     
     src/lua/lapi.c
     src/lua/lauxlib.c
