@@ -13,7 +13,30 @@ int clip_y1 = 127;
 int current_color = 0;
 
 uint8_t p8lua_screen[128*128];
+uint8_t p8lua_button_mask;
 uint8_t* p8lua_card_data;
+
+static void drawTile(int x, int y, int tile_nr)
+{
+    if (x < -8) return;
+    if (y < -8) return;
+    if (x > 127) return;
+    if (y > 127) return;
+    auto ptr = p8lua_card_data + (tile_nr % 16) * 4 + (tile_nr / 16) * 512;
+    for(int py=0; py<8; py++) {
+        for(int px=0; px<8; px++) {
+            int ppx = px + x;
+            int ppy = py + y;
+            if (ppx >= clip_x0 && ppx < clip_x1 && ppy >= clip_y0 && ppy < clip_y1) {
+                auto c = ptr[px/2 + py*64];
+                if (px & 1) c >>= 4; else c &= 0x0F;
+                if (c) {
+                    p8lua_screen[ppx + ppy * 128] = c;
+                }
+            }
+        }
+    }
+}
 
 LuaBindError lua_p8_load(const char* FILENAME, std::optional<const char*> breadcrumb, std::optional<const char*> param_str) {
     return {"Not implemented"};
@@ -277,8 +300,17 @@ When X and Y are out of bounds, SGET returns 0. A custom value can be specified 
 
 POKE(0x5f36, 0x10)
 POKE(0x5f59, NEWVAL)
-
-FGET(N, [F])
+*/
+int lua_p8_fget(lua_State* L) {
+    auto n = luaL_checkinteger(L, 1);
+    auto f = luaL_optinteger(L, 2, -1);
+    if (f >= 0 && f < 7)
+        lua_pushboolean(L, p8lua_card_data[0x3000 + n] & (1 << f));
+    else
+        lua_pushinteger(L, p8lua_card_data[0x3000 + n]);
+    return 1;
+}
+/*
 FSET(N, [F], VAL)
 
 Get or set the value (VAL) of sprite N's flag F.
@@ -344,10 +376,14 @@ void lua_p8_camera(std::optional<int> x, std::optional<int> y) {
 Set a screen offset of -x, -y for all drawing operations
 
 CAMERA() to reset
-
-CIRC(X, Y, R, [COL])
-CIRCFILL(X, Y, R, [COL])
-
+*/
+void lua_p8_circ(int x, int y, int r, std::optional<int> col) {
+    //TODO
+}
+void lua_p8_circfill(int x, int y, int r, std::optional<int> col) {
+    //TODO
+}
+/*
 Draw a circle or filled circle at x,y with radius r
 
 If r is negative, the circle is not drawn.
@@ -468,9 +504,11 @@ PALT() resets to default: all colours opaque except colour 0
 When C is the only parameter, it is treated as a bitfield used to set all 16 values. For example: to set colours 0 and 1 as transparent:
 
 PALT(0B1100000000000000)
-
-SPR(N, X, Y, [W, H], [FLIP_X], [FLIP_Y])
-
+*/
+void lua_p8_spr(int n, int x, int y, std::optional<int> w, std::optional<int> h, std::optional<bool> flip_x, std::optional<bool> flip_y) {
+    drawTile(x, y, n);
+}
+/*
 Draw sprite N (0..255) at position X,Y
 
 W (width) and H (height) are 1, 1 by default and specify how many sprites wide to blit.
@@ -757,12 +795,11 @@ K: BLUE  v:5
 */
 int lua_p8_btn(lua_State* L) {
     if (lua_gettop(L) == 0) {
-        lua_pushinteger(L, 0); //TODO button mask
+        lua_pushinteger(L, p8lua_button_mask);
         return 1;
     }
     int button = luaL_checkinteger(L, 1);
-    //TODO buttons
-    lua_pushboolean(L, false);
+    lua_pushboolean(L, p8lua_button_mask & (1 << button));
     return 1;
 }
 /*
@@ -845,11 +882,20 @@ Reserved channels can still be used to play sound effects on, but only when that
 The PICO-8 map is a 128x32 grid of 8-bit values, or 128x64 when using the shared memory. When using the map editor, the meaning of each value is taken to be an index into the sprite sheet (0..255). However, it can instead be used as a general block of data.
 */
 int lua_p8_mget(int x, int y) {
-    //TODO
-    return 0;
+    if (x < 0 || x >= 128) return 0;
+    if (y < 0 || y >= 32) return 0;
+    if (y < 16)
+        return p8lua_card_data[0x2000 + x + y * 128];
+    return p8lua_card_data[0x0000 + x + y * 128];
 }
+
 void lua_p8_mset(int x, int y, int val) {
-    //TODO
+    if (x < 0 || x >= 128) return;
+    if (y < 0 || y >= 32) return;
+    if (y < 16)
+        p8lua_card_data[0x2000 + x + y * 128] = val;
+    else
+        p8lua_card_data[0x0000 + x + y * 128] = val;
 }
 /*
 Get or set map value (VAL) at X,Y
@@ -860,40 +906,22 @@ POKE(0x5f36, 0x10)
 POKE(0x5f5a, NEWVAL)
 
 */
-static void drawTile(int x, int y, int tile_nr)
-{
-    if (x < -8) return;
-    if (y < -8) return;
-    if (x > 127) return;
-    if (y > 127) return;
-    auto ptr = p8lua_card_data + (tile_nr % 16) * 4 + (tile_nr / 16) * 512;
-    for(int py=0; py<8; py++) {
-        for(int px=0; px<8; px++) {
-            int ppx = px + x;
-            int ppy = py + y;
-            if (ppx >= clip_x0 && ppx < clip_x1 && ppy >= clip_y0 && ppy < clip_y1) {
-                auto c = ptr[px/2 + py*64];
-                if (px & 1) c >>= 4; else c &= 0x0F;
-                //if (c) {
-                    p8lua_screen[ppx + ppy * 128] = c;
-                //}
-            }
-        }
-    }
-}
-
 void lua_p8_map(std::optional<int> tile_x, std::optional<int> tile_y, std::optional<int> sx, std::optional<int> sy, std::optional<int> tile_w, std::optional<int> tile_h, std::optional<int> layers) {
     int rx = sx.value_or(0) + camera_offset_x;
     int ry = sy.value_or(0) + camera_offset_y;
     int tx = tile_x.value_or(0);
     int ty = tile_y.value_or(0);
+    int mask = layers.value_or(0xFF);
 
     for(int y=0; y<tile_h.value_or(16); y++) {
         for(int x=0; x<0+tile_w.value_or(16); x++) {
+            int tile_nr;
             if (ty + y < 16)
-                drawTile(rx + x * 8, ry + y * 8, p8lua_card_data[0x2000 + tx + x + (ty + y) * 128]);
+                tile_nr = p8lua_card_data[0x2000 + tx + x + (ty + y) * 128];
             else
-                drawTile(rx + x * 8, ry + y * 8, p8lua_card_data[0x0000 + tx + x + (ty + y) * 128]);
+                tile_nr = p8lua_card_data[0x0000 + tx + x + (ty + y) * 128];
+            if (tile_nr && p8lua_card_data[0x3000 + tile_nr] & mask)
+                drawTile(rx + x * 8, ry + y * 8, tile_nr);
         }
     }
 }
@@ -1078,8 +1106,8 @@ Returns the closest integer that is equal to or below x
 > ?CEIL( 4.1) -->  5
 > ?CEIL(-2.3) --> -2
 */
-lua_Number lua_p8_cos(lua_Number f) { return std::cos(f / (M_PI * 2.0)); }
-lua_Number lua_p8_sin(lua_Number f) { return -std::sin(f / (M_PI * 2.0)); }
+lua_Number lua_p8_cos(lua_Number f) { return std::cosf(f * (M_PI * 2.0f)); }
+lua_Number lua_p8_sin(lua_Number f) { return -std::sinf(f * (M_PI * 2.0f)); }
 /*
 Returns the cosine or sine of x, where 1.0 means a full turn. For example, to animate a dial that turns once every second:
 
@@ -1599,12 +1627,16 @@ void setupP8LuaEnv(lua_State* L)
 
     P8_BIND(print);
     P8_BIND(clip);
+    P8_BIND(fget);
     P8_BIND(camera);
+    P8_BIND(circ);
+    P8_BIND(circfill);
     P8_BIND(rect);
     P8_BIND(rectfill);
     P8_BIND(rrect);
     P8_BIND(rrectfill);
     P8_BIND(pal);
+    P8_BIND(spr);
 
     P8_BIND(add);
     P8_BIND(del);

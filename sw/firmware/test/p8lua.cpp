@@ -22,6 +22,8 @@ int main(int argc, char** argv)
     runLuaTest("short if else1", "a = 0\nif (true) a = 1 else a = 2\nassert(a == 1)");
     runLuaTest("short if else2", "a = 0\nif (false) a = 1 else a = 2\nassert(a == 2)");
     runLuaTest("rnd", "assert(rnd(1) != rnd(1))");
+    runLuaTest("sin", "assert(sin(0.25) == -1, sin(0.25))");
+    runLuaTest("sin", "assert(sin(0.75) == 1, sin(0.75))");
     if (total_fail_count)
         printf("\x1B[1;31mFAILED: %d\x1B[22;39m\n", total_fail_count);
     return total_fail_count ? 1 : 0;

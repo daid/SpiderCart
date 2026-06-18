@@ -57,11 +57,25 @@ entry:
     call setBGPalette
 
 .loop:
-    halt
-    jr .loop
+    ;call waitVBlank
+    call updateJoypadState
+    ld   a, [wJoypadState]
+    ld   [$A000 + $1FF0], a
 
-HelloWorld:
-    db "Hello World!", 0
+    ld   a, $A0
+    ldh  [rHDMA1], a
+    ld   a, $00
+    ldh  [rHDMA2], a
+    ld   a, $80
+    ldh  [rHDMA3], a
+    ld   a, $00
+    ldh  [rHDMA4], a
+    ld   a, $7F
+    ldh  [rHDMA5], a
+    ld   a, $7F
+    ldh  [rHDMA5], a
+
+    jr .loop
 
 defaultPalette:
     dw $7FFF, $5294, $35ad, $0000

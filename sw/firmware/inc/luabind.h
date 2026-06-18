@@ -18,7 +18,7 @@ template<> struct Convert<bool> {
 };
 template<> struct Convert<int> {
     static int toLua(lua_State* L, int value) { lua_pushinteger(L, value); return 1; }
-    static int fromLua(lua_State* L, int idx) { return lua_tointeger(L, idx); }
+    static int fromLua(lua_State* L, int idx) { return lua_tonumber(L, idx); }
 };
 template<> struct Convert<float> {
     static int toLua(lua_State* L, float value) { lua_pushnumber(L, value); return 1; }
