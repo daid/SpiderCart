@@ -3,6 +3,7 @@ project(SpiderCartEmu)
 set(CMAKE_CXX_STANDARD 17)
 add_subdirectory(binjgb)
 add_subdirectory(../sw/loader loader)
+add_subdirectory(../sw/p8 p8)
 set_property(TARGET binjgb-debugger PROPERTY CXX_STANDARD 17)
 
 set(SOURCES

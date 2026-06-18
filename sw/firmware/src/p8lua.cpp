@@ -2,6 +2,18 @@
 #include "luabind.h"
 #include <utility>
 #include <cmath>
+#include <algorithm>
+
+int camera_offset_x = 0;
+int camera_offset_y = 0;
+int clip_x0 = 0;
+int clip_y0 = 0;
+int clip_x1 = 127;
+int clip_y1 = 127;
+int current_color = 0;
+
+uint8_t p8lua_screen[128*128];
+uint8_t* p8lua_card_data;
 
 LuaBindError lua_p8_load(const char* FILENAME, std::optional<const char*> breadcrumb, std::optional<const char*> param_str) {
     return {"Not implemented"};
@@ -207,9 +219,22 @@ Colour indexes:
    4  brown   5  dark_gray   6  light_gray    7  white
    8  red     9  orange     10  yellow       11  green      
   12  blue   13  indigo     14  pink         15  peach
-
-CLIP(X, Y, W, H, [CLIP_PREVIOUS])
-
+*/
+void lua_p8_clip(std::optional<int> x, std::optional<int> y, std::optional<int> w, std::optional<int> h, std::optional<bool> clip_previous)
+{
+    if (clip_previous.value_or(false)) {
+        clip_x0 = std::clamp(x.value_or(0), clip_x0, clip_x1);
+        clip_y0 = std::clamp(y.value_or(0), clip_y0, clip_y1);
+        clip_x1 = std::clamp(x.value_or(0) + w.value_or(128), clip_x0, clip_x1);
+        clip_y1 = std::clamp(y.value_or(0) + h.value_or(128), clip_y0, clip_y1);
+    } else {
+        clip_x0 = std::clamp(x.value_or(0), 0, 128);
+        clip_y0 = std::clamp(y.value_or(0), 0, 128);
+        clip_x1 = std::clamp(x.value_or(0) + w.value_or(128), clip_x0, 128);
+        clip_y1 = std::clamp(y.value_or(0) + h.value_or(128), clip_y0, 128);
+    }
+}
+/*
 Sets the clipping rectangle in pixels. All drawing operations will be clipped to the rectangle at x, y with a width and height of w,h.
 
 CLIP() to reset.
@@ -310,9 +335,12 @@ CLS([COL])
 Clear the screen and reset the clipping rectangle.
 
 COL defaults to 0 (black)
-
-CAMERA([X, Y])
-
+*/
+void lua_p8_camera(std::optional<int> x, std::optional<int> y) {
+    camera_offset_x = -x.value_or(0);
+    camera_offset_y = -y.value_or(0);
+}
+/*
 Set a screen offset of -x, -y for all drawing operations
 
 CAMERA() to reset
@@ -346,8 +374,31 @@ FOR I=0,6 DO
 END
 */
 void lua_p8_rect(int x0, int y0, int x1, int y1, std::optional<int> col) {
+    x0 = std::clamp(x0+camera_offset_x, clip_x0, clip_x1);
+    x1 = std::clamp(x1+camera_offset_x, clip_x0, clip_x1);
+    y0 = std::clamp(y0+camera_offset_y, clip_y0, clip_y1);
+    y1 = std::clamp(y1+camera_offset_y, clip_y0, clip_y1);
+    auto c = col.value_or(current_color);
+    for(int x=x0; x<x1; x++) {
+        p8lua_screen[x + y0 * 128] = current_color;
+        p8lua_screen[x + (y1-1) * 128] = current_color;
+    }
+    for(int y=y0; y<y1; y++) {
+        p8lua_screen[x0 + y * 128] = current_color;
+        p8lua_screen[(x1-1) + y * 128] = current_color;
+    }
 }
 void lua_p8_rectfill(int x0, int y0, int x1, int y1, std::optional<int> col) {
+    x0 = std::clamp(x0+camera_offset_x, clip_x0, clip_x1);
+    x1 = std::clamp(x1+camera_offset_x, clip_x0, clip_x1);
+    y0 = std::clamp(y0+camera_offset_y, clip_y0, clip_y1);
+    y1 = std::clamp(y1+camera_offset_y, clip_y0, clip_y1);
+    auto c = col.value_or(current_color);
+    for(int y=y0; y<y1; y++) {
+        for(int x=x0; x<x1; x++) {
+            p8lua_screen[x + y * 128] = current_color;
+        }
+    }
 }
 /*
 Draw a rectangle or filled rectangle with corners at (X0, Y0), (X1, Y1).
@@ -746,6 +797,11 @@ POKE(0X5F5D, DELAY) -- SET THE REPEATING DELAY.
 In both cases, 0 can be used for the default behaviour (delays 15 and 4)
 6.5 Audio
 
+*/
+void lua_p8_sfx(int N, std::optional<int> channel, std::optional<int> offset, std::optional<int> length) {
+
+}
+/*
 SFX(N, [CHANNEL], [OFFSET], [LENGTH])
 
 Play sfx N (0..63) on CHANNEL (0..3) from note OFFSET (0..31 in notes) for LENGTH notes.
@@ -804,7 +860,42 @@ POKE(0x5f36, 0x10)
 POKE(0x5f5a, NEWVAL)
 
 */
+static void drawTile(int x, int y, int tile_nr)
+{
+    if (x < -8) return;
+    if (y < -8) return;
+    if (x > 127) return;
+    if (y > 127) return;
+    auto ptr = p8lua_card_data + (tile_nr % 16) * 4 + (tile_nr / 16) * 512;
+    for(int py=0; py<8; py++) {
+        for(int px=0; px<8; px++) {
+            int ppx = px + x;
+            int ppy = py + y;
+            if (ppx >= clip_x0 && ppx < clip_x1 && ppy >= clip_y0 && ppy < clip_y1) {
+                auto c = ptr[px/2 + py*64];
+                if (px & 1) c >>= 4; else c &= 0x0F;
+                //if (c) {
+                    p8lua_screen[ppx + ppy * 128] = c;
+                //}
+            }
+        }
+    }
+}
+
 void lua_p8_map(std::optional<int> tile_x, std::optional<int> tile_y, std::optional<int> sx, std::optional<int> sy, std::optional<int> tile_w, std::optional<int> tile_h, std::optional<int> layers) {
+    int rx = sx.value_or(0) + camera_offset_x;
+    int ry = sy.value_or(0) + camera_offset_y;
+    int tx = tile_x.value_or(0);
+    int ty = tile_y.value_or(0);
+
+    for(int y=0; y<tile_h.value_or(16); y++) {
+        for(int x=0; x<0+tile_w.value_or(16); x++) {
+            if (ty + y < 16)
+                drawTile(rx + x * 8, ry + y * 8, p8lua_card_data[0x2000 + tx + x + (ty + y) * 128]);
+            else
+                drawTile(rx + x * 8, ry + y * 8, p8lua_card_data[0x0000 + tx + x + (ty + y) * 128]);
+        }
+    }
 }
 /*
 MAP(TILE_X, TILE_Y, [SX, SY], [TILE_W, TILE_H], [LAYERS])
@@ -1044,9 +1135,15 @@ SQRT(X)
 Return the square root of x
 
 ABS(X)
-
+*/
+lua_Number lua_p8_abs(lua_Number n)
+{ 
+    return std::abs(n);
+}
+/*
 Returns the absolute (positive) value of x
 */
+
 lua_Number lua_p8_rnd(lua_Number n)
 { /*
 Returns a random number n, where 0 <= n < x
@@ -1497,6 +1594,8 @@ void setupP8LuaEnv(lua_State* L)
     P8_BIND(assert);
 
     P8_BIND(print);
+    P8_BIND(clip);
+    P8_BIND(camera);
     P8_BIND(rect);
     P8_BIND(rectfill);
     P8_BIND(rrect);
@@ -1511,6 +1610,7 @@ void setupP8LuaEnv(lua_State* L)
     P8_BIND(pairs);
     P8_BIND(btn);
 
+    P8_BIND(sfx);
     P8_BIND(music);
     P8_BIND(mget);
     P8_BIND(mset);
@@ -1523,5 +1623,6 @@ void setupP8LuaEnv(lua_State* L)
     P8_BIND(ceil);
     P8_BIND(cos);
     P8_BIND(sin);
+    P8_BIND(abs);
     P8_BIND(rnd);
 }
