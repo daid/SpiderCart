@@ -14,15 +14,15 @@ struct LuaBindError {
 template<typename T> struct Convert {};
 template<> struct Convert<bool> {
     static int toLua(lua_State* L, bool value) { lua_pushboolean(L, value); return 1; }
-    static bool fromLua(lua_State* L, int idx) { return lua_toboolean(L, idx); }
+    static bool fromLua(lua_State* L, int idx) { luaL_checktype(L, idx, LUA_TBOOLEAN); return lua_toboolean(L, idx); }
 };
 template<> struct Convert<int> {
     static int toLua(lua_State* L, int value) { lua_pushinteger(L, value); return 1; }
-    static int fromLua(lua_State* L, int idx) { return lua_tonumber(L, idx); }
+    static int fromLua(lua_State* L, int idx) { return luaL_checknumber(L, idx); }
 };
 template<> struct Convert<float> {
     static int toLua(lua_State* L, float value) { lua_pushnumber(L, value); return 1; }
-    static float fromLua(lua_State* L, int idx) { return lua_tonumber(L, idx); }
+    static float fromLua(lua_State* L, int idx) { return luaL_checknumber(L, idx); }
 };
 template<typename T> struct Convert<std::optional<T>> {
     static int toLua(lua_State* L, std::optional<T> value) { if (value.has_value()) return Convert<T>::toLua(L, value.value()); lua_pushnil(L); return 1; }
@@ -30,7 +30,7 @@ template<typename T> struct Convert<std::optional<T>> {
 };
 template<> struct Convert<const char*> {
     static int toLua(lua_State* L, const char* value) { lua_pushstring(L, value); return 1; }
-    static const char* fromLua(lua_State* L, int idx) { return lua_tostring(L, idx); }
+    static const char* fromLua(lua_State* L, int idx) { return luaL_checkstring(L, idx); }
 };
 template<> struct Convert<LuaBindError> {
     static int toLua(lua_State* L, LuaBindError error) { if (error.error) return luaL_error(L, "%s", error.error); return 0; }

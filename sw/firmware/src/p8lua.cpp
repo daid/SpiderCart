@@ -659,7 +659,7 @@ int lua_p8_del(lua_State* L) {
     lua_Integer size = luaL_len(L, 1);
     lua_Integer pos = -1;
     luaL_checkany(L, 2);
-    for(lua_Integer pos=0; pos<size; pos++)
+    for(lua_Integer pos=1; pos<=size; pos++)
     {
         lua_geti(L, 1, pos);  /* result = t[pos] */
         if (lua_equal(L, 2, -1)) {
@@ -742,12 +742,18 @@ PRINT(#T) -- 5
 */
 int lua_p8_foreach(lua_State* L) {
     //FOREACH(TBL, FUNC)
+    luaL_checktype(L, 1, LUA_TTABLE);
     luaL_checktype(L, 2, LUA_TFUNCTION);
-    lua_pushnil(L);
-    while(lua_next(L, 1) != 0) {
+    for(auto idx=1; idx<=luaL_len(L, 1); idx++) {
+        lua_geti(L, 1, idx);
         lua_pushvalue(L, 2);
-        lua_rotate(L, -2, 1);
+        lua_pushvalue(L, -2);
         lua_call(L, 1, 0);
+        lua_geti(L, 1, idx);
+        if (!lua_equal(L, -2, -1)) {
+            idx--;
+        }
+        lua_pop(L, 2);
     }
     return 0;
 }
@@ -1293,9 +1299,14 @@ Strings can be joined using the .. operator. Joining numbers converts them to st
 When used as part of an arithmetic expression, string values are converted to numbers:
 
 >PRINT(2+"3")   --> 5
-
-TOSTR(VAL, [FORMAT_FLAGS])
-
+*/
+int lua_p8_tostr(lua_State* L) {
+    if (lua_gettop(L) < 1) return 0;
+    lua_pushstring(L, luaL_tolstring(L, 1, nullptr));
+    //TOSTR(VAL, [FORMAT_FLAGS])
+    return 1;
+}
+/*
 Convert VAL to a string.
 
 FORMAT_FLAGS is a bitfield:
@@ -1662,4 +1673,6 @@ void setupP8LuaEnv(lua_State* L)
     P8_BIND(abs);
     P8_BIND(rnd);
     P8_BIND(srand);
+
+    P8_BIND(tostr);
 }
