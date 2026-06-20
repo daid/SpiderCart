@@ -504,9 +504,13 @@ When bits 0x1800.0000 are set in COL, and (PEEK(0x5F34) & 2) == 2, RRECTFILL is 
 int lua_p8_pal(lua_State* L) {
     if (lua_gettop(L) < 1) {
         for(int n=0; n<16; n++) p8lua_pal[n] = n;
+    } else if (lua_gettop(L) < 2) {
+        if (luaL_checkinteger(L, 1) == 0)
+            for(int n=0; n<16; n++) p8lua_pal[n] = n;
     } else {
         auto idx = luaL_checkinteger(L, 1);
-        p8lua_pal[idx] = luaL_optinteger(L, 2, idx);
+        if (luaL_optinteger(L, 3, 0) == 0)
+            p8lua_pal[idx] = luaL_checkinteger(L, 2);
     }
     return 0;
 }
@@ -702,7 +706,8 @@ int lua_p8_add(lua_State* L) {
     case 3:
     {
         lua_Integer i;
-        pos = luaL_checkinteger(L, 2); /* 2nd argument is the position */
+        pos = luaL_checkinteger(L, 3); /* 3th argument is the position */
+        lua_pop(L, 1);
         /* check whether 'pos' is in [1, e] */
         luaL_argcheck(L, (lua_Unsigned)pos - 1u < (lua_Unsigned)e, 2,
                       "position out of bounds");
@@ -1280,9 +1285,11 @@ FUNCTION _DRAW()
     64+COS(A)*10,
     64+SIN(A)*10,7)
 END
-
-SQRT(X)
-
+*/
+lua_Number lua_p8_sqrt(lua_Number n) { 
+    return std::sqrt(n);
+}
+/*
 Return the square root of x
 
 ABS(X)
@@ -1482,9 +1489,20 @@ When NUM_RESULTS is given, ORD returns multiple values starting from INDEX.
 ORD("@")         -- 64
 ORD("123",2)     -- 50 (THE SECOND CHARACTER: "2")
 ORD("123",2,3)   -- 50,51,52
-
-SUB(STR, POS0, [POS1])
-
+*/
+int lua_p8_sub(lua_State* L) {
+    size_t strl;
+    auto str = luaL_checklstring(L, 1, &strl);
+    int pos0 = luaL_checkinteger(L, 2) - 1;
+    int pos1 = luaL_optinteger(L, 3, strl) - 1;
+    pos1 = std::min(pos1, int(strl) - 1);
+    if (pos1 < pos0 || pos0 >= int(strl))
+        lua_pushstring(L, "");
+    else
+        lua_pushlstring(L, str + pos0, pos1 - pos0 + 1);
+    return 1;
+}
+/*
 Grab a substring from string str, from pos0 up to and including pos1. When POS1 is not specified, the remainder of the string is returned. When POS1 is specified, but not a number, a single character at POS0 is returned.
 
 S = "THE QUICK BROWN FOX"
@@ -1860,12 +1878,14 @@ void setupP8LuaEnv(lua_State* L)
     P8_BIND(ceil);
     P8_BIND(cos);
     P8_BIND(sin);
+    P8_BIND(sqrt);
     P8_BIND(abs);
     P8_BIND(rnd);
     P8_BIND(srand);
 
     P8_BIND(menuitem);
     P8_BIND(tostr);
+    P8_BIND(sub);
     P8_BIND(split);
 
     P8_BIND(pack);

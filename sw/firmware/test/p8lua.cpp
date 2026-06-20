@@ -14,6 +14,7 @@ int main(int argc, char** argv)
     runLuaTest("assert false", "assert(false, [[FAIL]])", ":1: FAIL");
     runLuaTest("add", "a = {}\nadd(a, 2)\nassert(#a == 1, [[len]])\nassert(a[1] == 2, [[value]])");
     runLuaTest("add2", "a = {}\nadd(a, 2)\nadd(a, 4)\nassert(#a == 2, [[len]])\nassert(a[2] == 4, [[value]])");
+    runLuaTest("add3", "a = {1,2,3}\nadd(a, 4, 2)\nassert(#a == 4, [[len]])\nassert(a[2] == 4, [[value]])\nassert(a[3] == 2, [[value]])\nassert(a[4] == 3, [[value]])");
     runLuaTest("del", "a = {1,2,3}\ndel(a, 2)\nassert(#a == 2, [[len]])\nassert(a[1] == 1, [[value]])\nassert(a[2] == 3, [[value]])");
     runLuaTest("del2", "a = {1,2,3,2}\ndel(a, 2)\nassert(#a == 3, [[len]])\nassert(a[3] == 2, [[value]])");
     runLuaTest("del last", "a = {1,2,3}\ndel(a, 3)\nassert(#a == 2, [[len]])\nassert(a[1] == 1, [[value]])\nassert(a[2] == 2, [[value]])");
