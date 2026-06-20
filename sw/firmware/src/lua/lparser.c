@@ -1789,11 +1789,11 @@ static int test_then_block (LexState *ls, int *escapelist) {
   luaX_next(ls);  /* skip IF or ELSEIF */
   luaX_trackbraces(ls);  /* track braces for short IF */
   condtrue = cond(ls);  /* read condition */
-  short_if &= ls->t.token != TK_THEN && ls->t.token != TK_EOS
+  short_if &= ls->t.token != TK_THEN && ls->t.token != TK_DO && ls->t.token != TK_EOS
            && ls->braces == 0 && line == ls->linenumber;
   if (short_if)
     ls->emiteol = 1;
-  else
+  else if (!testnext(ls, TK_DO))
     checknext(ls, TK_THEN);
   block(ls);  /* 'then' part */
   if (ls->t.token == TK_ELSE ||

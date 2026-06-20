@@ -18,7 +18,7 @@ int main(int argc, char** argv)
     runLuaTest("del2", "a = {1,2,3,2}\ndel(a, 2)\nassert(#a == 3, [[len]])\nassert(a[3] == 2, [[value]])");
     runLuaTest("del last", "a = {1,2,3}\ndel(a, 3)\nassert(#a == 2, [[len]])\nassert(a[1] == 1, [[value]])\nassert(a[2] == 2, [[value]])");
     runLuaTest("del nil", "a = {1,2,3}\ndel(a, nil)\nassert(#a == 3, [[len]] .. #a)\nassert(a[1] == 1, [[value]])\nassert(a[2] == 2, [[value]])\nassert(a[3] == 3, [[value]])");
-    runLuaTest("foreach del", "a = {1,2,3}\nforeach(a, function(n) print(tostr(n)) del(a, n) end)\nassert(#a == 0, [[len]] .. #a)");
+    runLuaTest("foreach del", "a = {1,2,3}\nforeach(a, function(n) del(a, n) end)\nassert(#a == 0, [[len]] .. #a)");
     runLuaTest("+=", "a = 1\na += 1\nassert(a == 2)");
     runLuaTest("-=", "a = 1\na -= 1\nassert(a == 0)");
     runLuaTest("short if", "a = 0\nif (true) a = 1\nassert(a == 1)");
@@ -28,6 +28,9 @@ int main(int argc, char** argv)
     runLuaTest("sin", "assert(sin(0.25) == -1, sin(0.25))");
     runLuaTest("sin", "assert(sin(0.75) == 1, sin(0.75))");
     runLuaTest("foreach", "a = 0\nforeach({1, 2, 3}, function(n) a += n end)\nassert(a == 6)");
+    runLuaTest("number parse oddness", "a = 0b=2\nassert(b == 2)");
+    runLuaTest("number parse oddness2", "a = 0e=2\nassert(e == 2)");
+    runLuaTest("if .. do .. end", "a = 0\nif a == 0 do a = 2 end\nassert(a==2)");
     if (total_fail_count)
         printf("\x1B[1;31mFAILED: %d\x1B[22;39m\n", total_fail_count);
     return total_fail_count ? 1 : 0;

@@ -255,19 +255,14 @@ static int read_numeral (LexState *ls, SemInfo *seminfo) {
   lua_assert(lisdigit(ls->current));
   save_and_next(ls);
   if (first == '0' && check_next2(ls, "xX")) { /* hexadecimal? */
-    expo = "Pp";
     for (;;) {
-      if (check_next2(ls, expo))  /* exponent mark? */
-        check_next2(ls, "-+");  /* optional exponent sign */
-      else if (lisxdigit(ls->current) || ls->current == '.')  /* '%x|%.' */
+      if (lisxdigit(ls->current) || ls->current == '.')  /* '%x|%.' */
         save_and_next(ls);
       else break;
     }
   } else {
     for (;;) {
-      if (check_next2(ls, expo))  /* exponent mark? */
-        check_next2(ls, "-+");  /* optional exponent sign */
-      else if (lisdigit(ls->current) || ls->current == '.')  /* '%x|%.' */
+      if (lisdigit(ls->current) || ls->current == '.')  /* '%x|%.' */
         save_and_next(ls);
       else break;
     }
