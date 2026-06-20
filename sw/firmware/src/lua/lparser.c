@@ -1535,6 +1535,7 @@ static void compound (LexState *ls, expdesc *v) {
               ls->t.token == TK_SUBE ? OPR_SUB :
               ls->t.token == TK_MULE ? OPR_MUL :
               ls->t.token == TK_DIVE ? OPR_DIV :
+              ls->t.token == TK_MODE ? OPR_MOD :
               OPR_NOBINOPR;
   extra = fs->freereg - fs->nactvar;
   for (i = 0; i < extra; ++i)
@@ -2062,7 +2063,8 @@ static void exprstat (LexState *ls) {
   struct LHS_assign v;
   suffixedexp(ls, &v.v);
   if (ls->t.token == TK_ADDE || ls->t.token == TK_SUBE ||
-        ls->t.token == TK_MULE || ls->t.token == TK_DIVE) {
+        ls->t.token == TK_MULE || ls->t.token == TK_DIVE ||
+        ls->t.token == TK_MODE) {
     v.prev = NULL;
     compound(ls, &v.v);
   }

@@ -51,7 +51,7 @@ static const char *const luaX_tokens [] = {
     "<<", ">>", "::", "<eof>",
     "<number>", "<integer>", "<name>", "<string>",
     "<eol>",
-    "+=", "-=", "*=", "/="
+    "+=", "-=", "*=", "/=", "%="
 };
 
 
@@ -606,6 +606,7 @@ static int llex (LexState *ls, SemInfo *seminfo) {
             case '-': next(ls); return TK_SUBE; // already handled with comments
             case '*': next(ls); return TK_MULE;
             case '/': next(ls); return TK_DIVE;
+            case '%': next(ls); return TK_MODE;
             }
           }
           return c;
