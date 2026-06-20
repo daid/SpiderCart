@@ -12,6 +12,7 @@ int clip_x1 = 128;
 int clip_y1 = 128;
 int current_color = 0;
 
+static uint8_t p8lua_pal[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 uint8_t p8lua_screen[128*128];
 uint8_t p8lua_button_mask;
 uint8_t* p8lua_card_data;
@@ -31,7 +32,7 @@ static void drawTile(int x, int y, int tile_nr)
                 auto c = ptr[px/2 + py*64];
                 if (px & 1) c >>= 4; else c &= 0x0F;
                 if (c) {
-                    p8lua_screen[ppx + ppy * 128] = c;
+                    p8lua_screen[ppx + ppy * 128] = p8lua_pal[c];
                 }
             }
         }
@@ -347,7 +348,7 @@ void lua_p8_print(const char* str, std::optional<int> x_or_col, std::optional<in
                     for(int py=0; py<5; py++) {
                         if (*ptr & (1 << py)) {
                             if (x >= clip_x0 && x < clip_x1 && (y + py) >= clip_y0 && (y + py) < clip_y1) {
-                                p8lua_screen[x + (y + py) * 128] = c;
+                                p8lua_screen[x + (y + py) * 128] = p8lua_pal[c];
                             }
                         }
                     }
@@ -445,12 +446,12 @@ void lua_p8_rect(int x0, int y0, int x1, int y1, std::optional<int> col) {
     y1 = std::clamp(y1+camera_offset_y, clip_y0, clip_y1);
     auto c = col.value_or(current_color);
     for(int x=x0; x<x1; x++) {
-        p8lua_screen[x + y0 * 128] = c;
-        p8lua_screen[x + (y1-1) * 128] = c;
+        p8lua_screen[x + y0 * 128] = p8lua_pal[c];
+        p8lua_screen[x + (y1-1) * 128] = p8lua_pal[c];
     }
     for(int y=y0; y<y1; y++) {
-        p8lua_screen[x0 + y * 128] = c;
-        p8lua_screen[(x1-1) + y * 128] = c;
+        p8lua_screen[x0 + y * 128] = p8lua_pal[c];
+        p8lua_screen[(x1-1) + y * 128] = p8lua_pal[c];
     }
 }
 void lua_p8_rectfill(int x0, int y0, int x1, int y1, std::optional<int> col) {
@@ -461,7 +462,7 @@ void lua_p8_rectfill(int x0, int y0, int x1, int y1, std::optional<int> col) {
     auto c = col.value_or(current_color);
     for(int y=y0; y<y1; y++) {
         for(int x=x0; x<x1; x++) {
-            p8lua_screen[x + y * 128] = c;
+            p8lua_screen[x + y * 128] = p8lua_pal[c];
         }
     }
 }
@@ -485,7 +486,14 @@ Draw a red (colour 8) rounded rectangle 40 pixels wide and 30 pixels talls with 
 
 When bits 0x1800.0000 are set in COL, and (PEEK(0x5F34) & 2) == 2, RRECTFILL is drawn inverted.
 */
-int lua_p8_pal(lua_State* L) { return 0; }
+int lua_p8_pal(lua_State* L) {
+    if (lua_gettop(L) < 1) {
+        for(int n=0; n<16; n++) p8lua_pal[n] = n;
+    } else {
+        p8lua_pal[luaL_checkinteger(L, 1)] = luaL_checkinteger(L, 2);
+    }
+    return 0;
+}
 //PAL(C0, C1, [P])
 /*
 PAL() swaps colour c0 for c1 for one of three palette re-mappings (p defaults to 0):
@@ -556,7 +564,7 @@ void lua_p8_spr(int tile_nr, int x, int y, std::optional<int> w, std::optional<i
                 auto c = ptr[px/2 + py*64];
                 if (px & 1) c >>= 4; else c &= 0x0F;
                 if (c) {
-                    p8lua_screen[ppx + ppy * 128] = c;
+                    p8lua_screen[ppx + ppy * 128] = p8lua_pal[c];
                 }
             }
         }
