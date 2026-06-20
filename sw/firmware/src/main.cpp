@@ -32,21 +32,23 @@ enum class SerialReceiveState {
 SerialReceiveState serial_receive_state = SerialReceiveState::StartChar;
 bool core1_running = false;
 
-void start_mbc() {
+void start_mbc(bool reset=true) {
     if (!core1_running) {
         multicore_launch_core1(core1_mbc_handler);
         sleep_ms(5);
-        gpio_put(PIN_GB_RST, true);
+        if (reset)
+            gpio_put(PIN_GB_RST, true);
         core1_running = true;
     }
 }
 
-void stop_mbc() {
+void stop_mbc(bool reset=true) {
     if (core1_running) {
-        gpio_put(PIN_GB_RST, false);
+        if (reset)
+            gpio_put(PIN_GB_RST, false);
         multicore_reset_core1();
-        gpio_put(PIN_MEM_OE, true);
-        gpio_put(PIN_MEM_WE, true);
+        gpio_put_all(PIN_MASK_MEM_OE | PIN_MASK_MEM_WE);
+        data_write_set_in(pio0, 0);
         core1_running = false;
     }
 }
@@ -175,22 +177,7 @@ int main() {
                                 UINT br;
                                 uint32_t addr = 0;
                                 while(f_read(&fp, ram_data, 2048, &br) == FR_OK && br > 0) {
-                                    //printf("%x %d\r\n", addr, br);
                                     write_memchip(addr, ram_data, br);
-                                    read_memchip(addr, ram_data + br, br);
-                                    if (memcmp(ram_data, ram_data + br, br) != 0) {
-                                        printf("Fail?\r\n");
-                                    }
-                                    if (addr == 0) {
-                                        for(int n=0; n<1024; n+=16) {
-                                            printf("%08x  ", n);
-                                            for(int m=0; m<16; m++) {
-                                                printf("%02x ", ram_data[n + m]);
-                                                if (m == 7) printf(" ");
-                                            }
-                                            printf("\r\n");
-                                        }
-                                    }
                                     addr += br;
                                 }
                                 start_mbc();
@@ -198,6 +185,31 @@ int main() {
                             f_unmount("");
                         }
                     }
+                    break;
+                case COMMAND_LOAD_FOR_QUICKBOOT:
+                    {
+                        FATFS fatfs;
+                        memset(&fatfs, 0, sizeof(fatfs));
+                        if (f_mount(&fatfs, "", 0) == FR_OK) {
+                            FIL fp;
+                            if (f_open(&fp, (const char*)&ram_data[15 * 0x2000], FA_READ) == FR_OK) {
+                                stop_mbc(false);
+                                UINT br;
+                                uint32_t addr = 0;
+                                while(f_read(&fp, ram_data, 2048, &br) == FR_OK && br > 0) {
+                                    write_memchip(addr, ram_data, br);
+                                    addr += br;
+                                }
+                                start_mbc(false);
+                            }
+                            f_unmount("");
+                        }
+                        ram_data[15 * 0x2000 + 0x1FFF] = 0;
+                    }
+                    break;
+                case COMMAND_EXEC_QUICKBOOT:
+                    stop_mbc(false);
+                    start_mbc(false);
                     break;
                 default:
                     ram_data[15 * 0x2000 + 0x1FFF] = 0;

@@ -31,6 +31,15 @@ entry:
     ld   bc, fontData.end - fontData
     call copy1BPP
 
+    ld   hl, execCommandCode
+    ld   de, _execCommand
+    ld   bc, execCommandCode.end - execCommandCode
+    call copyMem
+    ld   hl, execQuickbootCode
+    ld   de, _execQuickboot
+    ld   bc, execQuickbootCode.end - execQuickbootCode
+    call copyMem
+
     ld   a, LCDC_ON | LCDC_BG_ON
     ldh  [rLCDC], a
     call waitVBlank
@@ -82,6 +91,92 @@ _printStr: ; print the string at BC on the background at DE=YX
     ld  [hl+], a
     jr  .loop
 }
+
+#SECTION "ExecCommandCode", ROM0 {
+execCommandCode:
+    ; Execute the command in A and wait for it to complete.
+    ld  hl, $0000
+    ld  [hl], $0A ; enable SRAM
+    ld  hl, $4000
+    ld  [hl], $0F ; Switch to bank 15
+    ld  hl, $BFFF
+    ld  [hl], $FF ; Clear the ready flag
+    dec hl
+    ld  [hl], $5A ; Setup our bus available check
+    dec hl
+    ld  [hl], $A5 ; Setup our bus available check
+    ld  hl, $6000
+    ld  [hl], a   ; Request the command to be run.
+
+    ; From this point on the cartridge bus might become unavailable while the cart is doing other things.
+    ; So keep checking if the bus is available and if our result is available
+.notReady:
+    ld  hl, $0000
+    ld  [hl], $0A ; reenable SRAM, MBC might have restarted
+    ld  hl, $4000
+    ld  [hl], $0F ; Switch to bank 15, MBC might have restarted
+    ld  hl, $BFFF - 2
+    ld  a, [hl+]
+    cp  $A5
+    jr  nz, .notReady
+    ld  a, [hl+]
+    cp  $5A
+    jr  nz, .notReady
+    ld  a, [hl-]
+    ld  c, a
+    cp  $FF
+    jr  z, .notReady
+    ld  a, [hl-]
+    cp  $5A ; check our bus available bytes after the ready byte, as the bus might have gotten disabled between last check and ready read
+    jr  nz, .notReady
+    ld  a, [hl+]
+    cp  $A5
+    jr  nz, .notReady
+    ld  a, c ; return the result
+    ret
+.end:
+}
+#SECTION "ExecQuickboot", ROM0 {
+execQuickbootCode:
+    call _execCommand ; First run the requested quickboot command
+    and  a, a
+    ret  nz ; first quickboot returned an error, so do not continue
+
+    ; Next we request another command, but now we do a fixed delay and then jump to $0100
+    ld  hl, $0000
+    ld  [hl], $0A ; enable SRAM
+    ld  hl, $4000
+    ld  [hl], $0F ; Switch to bank 15
+    ld  hl, $BFFF
+    ld  [hl], $FF ; Clear the ready flag
+    ld  hl, $6000
+    ld  [hl], $F0 ; Request actual MBC switch
+
+    ; From this point on the cartridge bus might become unavailable while the cart is resetting the MBC
+    ; So delay a bit and then jump to the entry point
+    ld  de, 0
+:   dec e
+    jr  nz, :-
+    dec d
+    jr  nz, :-
+    ld  a, $11
+    ld  sp, $FFFE
+
+    jp  $0100
+.end:
+}
+
+#SECTION "ExecCommandWRAM", WRAM0 {
+_execCommand:
+    ds 128
+.end:
+_execQuickboot:
+    ds 128
+.end:
+#ASSERT _execCommand.end - _execCommand >= execCommandCode.end - execCommandCode
+#ASSERT _execQuickboot.end - _execQuickboot >= execQuickbootCode.end - execQuickbootCode
+}
+
 
 #SECTION "Font", ROMX, BANK[1] {
 fontData:

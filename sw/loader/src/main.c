@@ -1,5 +1,7 @@
 #include <stdint.h>
 
+uint8_t execCommand(uint8_t);
+uint8_t execQuickboot(uint8_t);
 void printStr(uint16_t yx, char* str);
 void updateJoypadState(void) __preserves_regs(d, e);
 void waitVBlank(void) __preserves_regs(b, c, d, e, h, l);
@@ -26,12 +28,7 @@ char tempBuffer[32];
 
 void main(void)
 {
-    *((uint8_t*)0x0000) = 0x0A; // enable SRAM
-    *((uint8_t*)0x4000) = 0x0F; // Switch to bank 15
-    *((uint8_t*)0xBFFF) = 0xFF; // Clear the "ready" flag
-    *((uint8_t*)0x6000) = 0x01; // Command to read file list
-    while (*((uint8_t*)0xBFFF) == 0xFF) { // Wait till ready
-    }
+    execCommand(0x01); //List files
     *((uint8_t*)0x4000) = 0x00; // Switch to bank 0
 
     char* ptr = (char*)0xA000;
@@ -64,10 +61,8 @@ void main(void)
             strcpy(tempBuffer, (char*)0xA001 + pos * 0x20);
             *((uint8_t*)0x4000) = 0x0F; // Switch to bank 15
             strcpy((char*)0xA000, tempBuffer);
-            *((uint8_t*)0xBFFF) = 0xFF; // Clear the "ready" flag
-            *((uint8_t*)0x6000) = 0x10; // Command to load file&reset
-            while (*((uint8_t*)0xBFFF) == 0xFF) { // Wait till ready
-            }
+            execCommand(0x10); //Load file and reset
+            //execQuickboot(0x11);
             *((uint8_t*)0x4000) = 0x00; // Switch to bank 0
        }
     }

@@ -1,4 +1,6 @@
 #pragma once
 
-#define COMMAND_LIST_DIR 0x01
-#define COMMAND_LOAD_AND_RESET 0x10
+#define COMMAND_LIST_DIR           0x01
+#define COMMAND_LOAD_AND_RESET     0x10
+#define COMMAND_LOAD_FOR_QUICKBOOT 0x11
+#define COMMAND_EXEC_QUICKBOOT     0xF0
