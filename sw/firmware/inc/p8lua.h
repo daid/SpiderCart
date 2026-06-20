@@ -16,5 +16,6 @@ static constexpr uint8_t P8LUA_BTN_O     = 0x10;
 static constexpr uint8_t P8LUA_BTN_X     = 0x20;
 extern uint8_t p8lua_button_mask;
 extern uint8_t* p8lua_card_data;
+extern float p8lua_time;
 
 void setupP8LuaEnv(lua_State* L);

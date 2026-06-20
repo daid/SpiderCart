@@ -1,7 +1,9 @@
 #include "p8lua.h"
 #include "luabind.h"
+#include "lua/llimits.h"
 #include <utility>
 #include <cmath>
+#include <cstring>
 #include <algorithm>
 
 int camera_offset_x = 0;
@@ -16,6 +18,7 @@ static uint8_t p8lua_pal[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14
 uint8_t p8lua_screen[128*128];
 uint8_t p8lua_button_mask;
 uint8_t* p8lua_card_data;
+float p8lua_time;
 
 static void drawTile(int x, int y, int tile_nr)
 {
@@ -151,10 +154,14 @@ Use a filename of "@clip" to write to the host's clipboard.
 ⓘ
 
 Use stat(4) to read the clipboard, but the contents of the clipboard are only available after pressing CTRL-V during runtime (for security).
-
-TIME()
-T()
-
+*/
+float lua_p8_time() {
+    return p8lua_time;
+}
+float lua_p8_t() {
+    return p8lua_time;
+}
+/*
 Returns the number of seconds elapsed since the cartridge was run.
 
 This is not the real-world time, but is calculated by counting the number of times
@@ -264,9 +271,15 @@ Sets the clipping rectangle in pixels. All drawing operations will be clipped to
 CLIP() to reset.
 
 When CLIP_PREVIOUS is true, clip the new clipping region by the old one.
-
-PSET(X, Y, [COL])
-
+*/
+void lua_p8_pset(int x, int y, std::optional<int> col) {
+    x += camera_offset_x;
+    y += camera_offset_y;
+    if (x >= clip_x0 && x < clip_x1 && y >= clip_y0 && y < clip_y1) {
+        p8lua_screen[x + y * 128] = p8lua_pal[col.value_or(current_color)];
+    }
+}
+/*
 Sets the pixel at x, y to colour index COL (0..15).
 
 When COL is not specified, the current draw colour is used.
@@ -391,9 +404,11 @@ COLOR([COL])
 Set the current colour to be used by drawing functions.
 
 If COL is not specified, the current colour is set to 6
-
-CLS([COL])
-
+*/
+void lua_p8_cls(std::optional<int> col) {
+    memset(p8lua_screen, p8lua_pal[col.value_or(current_color) & 0x0F], sizeof(p8lua_screen));
+}
+/*
 Clear the screen and reset the clipping rectangle.
 
 COL defaults to 0 (black)
@@ -490,7 +505,8 @@ int lua_p8_pal(lua_State* L) {
     if (lua_gettop(L) < 1) {
         for(int n=0; n<16; n++) p8lua_pal[n] = n;
     } else {
-        p8lua_pal[luaL_checkinteger(L, 1)] = luaL_checkinteger(L, 2);
+        auto idx = luaL_checkinteger(L, 1);
+        p8lua_pal[idx] = luaL_optinteger(L, 2, idx);
     }
     return 0;
 }
@@ -791,9 +807,33 @@ int lua_p8_count(lua_State* L)
 }
 /*
 Returns the length of table t (same as #TBL) When VAL is given, returns the number of instances of VAL in that table.
+*/
 
-ALL(TBL)
-
+int lua_p8_all(lua_State* L) {
+    //ALL(TBL)
+    luaL_checktype(L, 1, LUA_TTABLE);
+    lua_pushvalue(L, 1);
+    lua_pushinteger(L, 1);
+    lua_pushnil(L);
+    lua_pushcclosure(L, [](lua_State* L) -> int {
+        auto idx = lua_tointeger(L, lua_upvalueindex(2));
+        if (idx > 1) {
+            lua_geti(L, lua_upvalueindex(1), idx - 1);
+            if (!lua_rawequal(L, -1, lua_upvalueindex(3))) {
+                idx -= 1;
+            }
+            lua_pop(L, 1);
+        }
+        lua_geti(L, lua_upvalueindex(1), idx);
+        lua_pushinteger(L, idx + 1);
+        lua_replace(L, lua_upvalueindex(2));
+        lua_pushvalue(L, -1);
+        lua_replace(L, lua_upvalueindex(3));
+        return 1;
+    }, 3);
+    return 1;
+}
+/*
 Used in FOR loops to iterate over all items in a table (that have a 1-based integer index), in the order they were added.
 
 T = {11,12,13}
@@ -887,9 +927,18 @@ Default keyboard mappings to player buttons:
 ⚠
 
 Although PICO-8 accepts all button combinations, note that it is generally impossible to press both LEFT and RIGHT at the same time on a physical game controller. On some controllers, UP + LEFT/RIGHT is also awkward if [X] or [O] could be used instead of UP (e.g. to jump / accelerate).
-
-BTNP(B, [PL])
-
+*/
+int lua_p8_btnp(lua_State* L) {
+    //TODO
+    if (lua_gettop(L) == 0) {
+        lua_pushinteger(L, p8lua_button_mask);
+        return 1;
+    }
+    int button = luaL_checkinteger(L, 1);
+    lua_pushboolean(L, p8lua_button_mask & (1 << button));
+    return 1;
+}
+/*
 BTNP is short for "Button Pressed"; Instead of being true when a button is held down, BTNP returns true when a button is down AND it was not down the last frame. It also repeats after 15 frames, returning true every 4 frames after that (at 30fps -- double that at 60fps). This can be used for things like menu navigation or grid-wise player movement.
 
 The state that BTNP reads is reset at the start of each call to _UPDATE or _UPDATE60, so it is preferable to use BTNP from inside one of those functions.
@@ -1100,9 +1149,13 @@ PEEK(ADDR, [N])
 Read a byte from an address in base ram. If N is specified, PEEK() returns that number of results (max: 8192). For example, to read the first 2 bytes of video memory:
 
 A, B = PEEK(0x6000, 2)
-
-POKE(ADDR, VAL1, VAL2, ...)
-
+*/
+int lua_p8_poke(lua_State* L) {
+    auto addr = luaL_checkinteger(L, 1);
+    //POKE(ADDR, VAL1, VAL2, ...)
+    return 0;
+}
+/*
 Write one or more bytes to an address in base ram. If more than one parameter is provided, they are written sequentially (max: 8192).
 
 PEEK2(ADDR)
@@ -1122,9 +1175,11 @@ Alternatively, the following operators can be used to peek (but not poke), and a
 @ADDR  -- PEEK(ADDR)
 %ADDR  -- PEEK2(ADDR)
 $ADDR  -- PEEK4(ADDR)
-
-MEMCPY(DEST_ADDR, SOURCE_ADDR, LEN)
-
+*/
+void lua_p8_memcpy(int dst_addr, int src_addr, int len) {
+    //TODO
+}
+/*
 Copy LEN bytes of base ram from source to dest. Sections can be overlapping
 
 RELOAD(DEST_ADDR, SOURCE_ADDR LEN, [FILENAME])
@@ -1301,9 +1356,14 @@ Integer division can be performed with a \
 
 > PRINT(9\2) -- RESULT:4  EQUIVALENT TO FLR(9/2)
 6.9 Custom Menu Items
-
-MENUITEM(INDEX, [LABEL], [CALLBACK])
-
+*/
+int lua_p8_menuitem(lua_State* L) {
+    auto index = luaL_checkinteger(L, 1);
+    auto label = luaL_optstring(L, 2, nullptr);
+    //3 == function
+    return 0;
+}
+/*
 Add or update an item to the pause menu.
 
 INDEX should be 1..5 and determines the order each menu item is displayed.
@@ -1431,9 +1491,38 @@ S = "THE QUICK BROWN FOX"
 PRINT(SUB(S,5,9))    --> "QUICK"
 PRINT(SUB(S,5))      --> "QUICK BROWN FOX"
 PRINT(SUB(S,5,TRUE)) --> "Q"
-
-SPLIT(STR, [SEPARATOR], [CONVERT_NUMBERS])
-
+*/
+int lua_p8_split(lua_State* L) {
+    //SPLIT(STR, [SEPARATOR], [CONVERT_NUMBERS])
+    auto str = luaL_checkstring(L, 1);
+    auto sep = luaL_optstring(L, 2, ",");
+    lua_newtable(L);
+    int idx = 1;
+    auto start = str;
+    auto convert_num = true;
+    auto sep_len = strlen(sep);
+    auto add_entry = [&](const char* start, size_t len) {
+        if (convert_num) {
+            char* end;
+            auto f = strtof(start, &end);
+            if (end == start + len) {
+                lua_pushnumber(L, f);
+                lua_seti(L, -2, idx);
+                return;
+            }
+        }
+        lua_pushlstring(L, start, len);
+        lua_seti(L, -2, idx);
+    };
+    while(auto end = strstr(start, sep)) {
+        add_entry(start, end - start);
+        idx += 1;
+        start = end + sep_len;
+    }
+    add_entry(start, strlen(start));
+    return 1;
+}
+/*
 Split a string into a table of elements delimited by the given separator (defaults to ","). When separator is a number n, the string is split into n-character groups. When convert_numbers is true, numerical tokens are stored as numbers (defaults to true). Empty elements are stored as empty strings.
 
 SPLIT("1,2,3")               -- {1,2,3}
@@ -1686,6 +1775,36 @@ YIELD
 Suspend execution and return to the caller.
 */
 
+static int lua_p8_pack (lua_State *L) {
+  int i;
+  int n = lua_gettop(L);  /* number of elements to pack */
+  lua_createtable(L, n, 1);  /* create result table */
+  lua_insert(L, 1);  /* put it at index 1 */
+  for (i = n; i >= 1; i--)  /* assign elements */
+    lua_seti(L, 1, i);
+  lua_pushinteger(L, n);
+  lua_setfield(L, 1, "n");  /* t.n = number of elements */
+  return 1;  /* return table */
+}
+
+
+static int lua_p8_unpack (lua_State *L) {
+  lua_Unsigned n;
+  lua_Integer i = luaL_optinteger(L, 2, 1);
+  lua_Integer e = luaL_opt(L, luaL_checkinteger, 3, luaL_len(L, 1));
+  if (i > e) return 0;  /* empty range */
+  n = l_castS2U(e) - l_castS2U(i);  /* number of elements minus 1 */
+  if (l_unlikely(n >= (unsigned int)INT_MAX  ||
+                 !lua_checkstack(L, (int)(++n))))
+    return luaL_error(L, "too many results to unpack");
+  for (; i < e; i++) {  /* push arg[i..e - 1] (to avoid overflows) */
+    lua_geti(L, 1, i);
+  }
+  lua_geti(L, 1, e);  /* push last element */
+  return (int)n;
+}
+
+
 #define STR_(s) #s
 #define STR(s) STR_(s)
 #define P8_BIND(f) LUA_BIND(L, lua_p8_ ## f, STR(f))
@@ -1699,8 +1818,12 @@ void setupP8LuaEnv(lua_State* L)
     P8_BIND(assert);
 
     P8_BIND(print);
+    P8_BIND(time);
+    P8_BIND(t);
     P8_BIND(clip);
+    P8_BIND(pset);
     P8_BIND(fget);
+    P8_BIND(cls);
     P8_BIND(camera);
     P8_BIND(circ);
     P8_BIND(circfill);
@@ -1715,16 +1838,21 @@ void setupP8LuaEnv(lua_State* L)
     P8_BIND(del);
     P8_BIND(deli);
     P8_BIND(count);
+    P8_BIND(all);
     P8_BIND(foreach);
     P8_BIND(pairs);
     P8_BIND(btn);
+    P8_BIND(btnp);
 
     P8_BIND(sfx);
     P8_BIND(music);
     P8_BIND(mget);
     P8_BIND(mset);
     P8_BIND(map);
-    
+
+    P8_BIND(poke);
+    P8_BIND(memcpy);
+
     P8_BIND(min);
     P8_BIND(max);
     P8_BIND(mid);
@@ -1736,5 +1864,10 @@ void setupP8LuaEnv(lua_State* L)
     P8_BIND(rnd);
     P8_BIND(srand);
 
+    P8_BIND(menuitem);
     P8_BIND(tostr);
+    P8_BIND(split);
+
+    P8_BIND(pack);
+    P8_BIND(unpack);
 }
