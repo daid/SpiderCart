@@ -31,6 +31,7 @@ int main(int argc, char** argv)
     runLuaTest("number parse oddness", "a = 0b=2\nassert(b == 2)");
     runLuaTest("number parse oddness2", "a = 0e=2\nassert(e == 2)");
     runLuaTest("if .. do .. end", "a = 0\nif a == 0 do a = 2 end\nassert(a==2)");
+    runLuaTest("while (...) ...", "a = 0\nwhile (a < 2) a += 1");
     if (total_fail_count)
         printf("\x1B[1;31mFAILED: %d\x1B[22;39m\n", total_fail_count);
     return total_fail_count ? 1 : 0;
