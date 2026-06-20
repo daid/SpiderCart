@@ -254,17 +254,26 @@ static int read_numeral (LexState *ls, SemInfo *seminfo) {
   int first = ls->current;
   lua_assert(lisdigit(ls->current));
   save_and_next(ls);
-  if (first == '0' && check_next2(ls, "xX"))  /* hexadecimal? */
+  if (first == '0' && check_next2(ls, "xX")) { /* hexadecimal? */
     expo = "Pp";
-  for (;;) {
-    if (check_next2(ls, expo))  /* exponent mark? */
-      check_next2(ls, "-+");  /* optional exponent sign */
-    else if (lisxdigit(ls->current) || ls->current == '.')  /* '%x|%.' */
-      save_and_next(ls);
-    else break;
+    for (;;) {
+      if (check_next2(ls, expo))  /* exponent mark? */
+        check_next2(ls, "-+");  /* optional exponent sign */
+      else if (lisxdigit(ls->current) || ls->current == '.')  /* '%x|%.' */
+        save_and_next(ls);
+      else break;
+    }
+  } else {
+    for (;;) {
+      if (check_next2(ls, expo))  /* exponent mark? */
+        check_next2(ls, "-+");  /* optional exponent sign */
+      else if (lisdigit(ls->current) || ls->current == '.')  /* '%x|%.' */
+        save_and_next(ls);
+      else break;
+    }
   }
-  if (lislalpha(ls->current))  /* is numeral touching a letter? */
-    save_and_next(ls);  /* force an error */
+  //if (lislalpha(ls->current))  /* is numeral touching a letter? */
+  //  save_and_next(ls);  /* force an error */
   save(ls, '\0');
   if (luaO_str2num(luaZ_buffer(ls->buff), &obj) == 0)  /* format error? */
     lexerror(ls, "malformed number", TK_FLT);
