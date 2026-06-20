@@ -65,5 +65,12 @@ void main(void)
             //execQuickboot(0x11);
             *((uint8_t*)0x4000) = 0x00; // Switch to bank 0
        }
+        if (JoypadPressed & PADF_START) {
+            strcpy(tempBuffer, (char*)0xA001 + pos * 0x20);
+            *((uint8_t*)0x4000) = 0x0F; // Switch to bank 15
+            strcpy((char*)0xA000, tempBuffer);
+            execQuickboot(0x11); // Load quickboot
+            *((uint8_t*)0x4000) = 0x00; // Switch to bank 0
+       }
     }
 }

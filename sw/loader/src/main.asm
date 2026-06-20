@@ -53,14 +53,14 @@ HelloWorld:
     db "Hello World!", 0
 
 defaultPalette:
-    dw $FFFF, $0000, $FFFF, $0000
-    dw $FFFF, $0000, $FFFF, $0000
-    dw $FFFF, $0000, $FFFF, $0000
-    dw $FFFF, $0000, $FFFF, $0000
-    dw $FFFF, $0000, $FFFF, $0000
-    dw $FFFF, $0000, $FFFF, $0000
-    dw $FFFF, $0000, $FFFF, $0000
-    dw $FFFF, $0000, $FFFF, $0000
+    dw $7FFF, $5294, $35ad, $0000
+    dw $7FFF, $5294, $35ad, $0000
+    dw $7FFF, $5294, $35ad, $0000
+    dw $7FFF, $5294, $35ad, $0000
+    dw $7FFF, $5294, $35ad, $0000
+    dw $7FFF, $5294, $35ad, $0000
+    dw $7FFF, $5294, $35ad, $0000
+    dw $7FFF, $5294, $35ad, $0000
 }
 
 #SECTION "PrintStr", ROM0 {

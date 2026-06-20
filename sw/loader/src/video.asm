@@ -34,4 +34,15 @@ setBGPalette:
     dec  c
     jr   nz, .copyLoop
     ret
+
+setObjPalette:
+    ld   a, $80
+    ldh  [rOCPS], a
+    ld   c, 2 * 4 * 8
+.copyLoop:   STAT_WAIT
+    ld   a, [hl+]
+    ldh  [rOCPD], a
+    dec  c
+    jr   nz, .copyLoop
+    ret
 }
