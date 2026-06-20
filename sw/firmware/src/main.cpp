@@ -4,6 +4,8 @@
 #include "pins.h"
 #include "memchip.h"
 #include "mbc.h"
+#include "command.h"
+#include "fatfs/ff.h"
 
 
 #include "pico/stdlib.h"
@@ -30,6 +32,26 @@ enum class SerialReceiveState {
 SerialReceiveState serial_receive_state = SerialReceiveState::StartChar;
 bool core1_running = false;
 
+void start_mbc() {
+    if (!core1_running) {
+        multicore_launch_core1(core1_mbc_handler);
+        sleep_ms(5);
+        gpio_put(PIN_GB_RST, true);
+        core1_running = true;
+    }
+}
+
+void stop_mbc() {
+    if (core1_running) {
+        gpio_put(PIN_GB_RST, false);
+        multicore_reset_core1();
+        gpio_put(PIN_MEM_OE, true);
+        gpio_put(PIN_MEM_WE, true);
+        core1_running = false;
+    }
+}
+
+
 void processSerialMessage()
 {
     switch(serial_receive_buffer[0]) {
@@ -52,22 +74,15 @@ void processSerialMessage()
         break;
     case 0x01:
         if (!core1_running) {
-            multicore_launch_core1(core1_mbc_handler);
-            sleep_ms(5);
-            gpio_put(PIN_GB_RST, true);
+            start_mbc();
             printf(".");
-            core1_running = true;
         } else {
             printf("!");
         }
         break;
     case 0x02:
         if (core1_running) {
-            gpio_put(PIN_GB_RST, false);
-            multicore_reset_core1();
-            gpio_put(PIN_MEM_OE, true);
-            gpio_put(PIN_MEM_WE, true);
-            core1_running = false;
+            stop_mbc();
             printf(".");
         } else {
             printf("!");
@@ -79,8 +94,15 @@ void processSerialMessage()
     }
 }
 
+const uint8_t loader_gb_data[] = {
+    #include "Loader.gb.inc"
+};
+
 int main() {
     hwInit();
+
+    write_memchip(0, loader_gb_data, sizeof(loader_gb_data));
+    start_mbc();
 
     stdio_init_all();
     while(1) {
@@ -107,68 +129,82 @@ int main() {
                 break;
             }
         }
-        /*
-        if (c == 'S') {
-            printf("\nI2C Bus Scan\n");
-            printf("   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F\n");
-            for (int addr = 0; addr < (1 << 7); ++addr) {
-                if (addr % 16 == 0) {
-                    printf("%02x ", addr);
+        if (multicore_fifo_rvalid()) {
+            auto cmd = sio_hw->fifo_rd;
+            if (cmd & 0x100) {
+                switch(cmd & 0xFF) {
+                case COMMAND_LIST_DIR:
+                    {
+                        auto* ptr = ram_data;
+                        FATFS fatfs;
+                        memset(&fatfs, 0, sizeof(fatfs));
+                        if (f_mount(&fatfs, "", 0) == FR_OK) {
+                            DIR dir;
+                            if (f_opendir(&dir, "/") == FR_OK) {
+                                FILINFO fno;
+                                while(f_readdir(&dir, &fno) == FR_OK && fno.fname[0]) {
+                                    if (fno.fattrib & AM_DIR) {
+                                        *ptr++ = 0x02;
+                                        strcpy((char*)ptr, fno.fname);
+                                        ptr += 31;
+                                    } else {
+                                        auto ext = strrchr(fno.fname, '.');
+                                        if (strcasecmp(ext, ".gb") == 0 || strcasecmp(ext, ".gbc") == 0) {
+                                            *ptr++ = 0x01;
+                                            strcpy((char*)ptr, fno.fname);
+                                            ptr += 31;
+                                        }
+                                    }
+                                }
+                                f_closedir(&dir);
+                            }
+                            f_unmount("");
+                        }
+                        *ptr = 0;
+                        ram_data[15 * 0x2000 + 0x1FFF] = 0;
+                    }
+                    break;
+                case COMMAND_LOAD_AND_RESET:
+                    {
+                        FATFS fatfs;
+                        memset(&fatfs, 0, sizeof(fatfs));
+                        if (f_mount(&fatfs, "", 0) == FR_OK) {
+                            FIL fp;
+                            if (f_open(&fp, (const char*)&ram_data[15 * 0x2000], FA_READ) == FR_OK) {
+                                stop_mbc();
+                                UINT br;
+                                uint32_t addr = 0;
+                                while(f_read(&fp, ram_data, 2048, &br) == FR_OK && br > 0) {
+                                    //printf("%x %d\r\n", addr, br);
+                                    write_memchip(addr, ram_data, br);
+                                    read_memchip(addr, ram_data + br, br);
+                                    if (memcmp(ram_data, ram_data + br, br) != 0) {
+                                        printf("Fail?\r\n");
+                                    }
+                                    if (addr == 0) {
+                                        for(int n=0; n<1024; n+=16) {
+                                            printf("%08x  ", n);
+                                            for(int m=0; m<16; m++) {
+                                                printf("%02x ", ram_data[n + m]);
+                                                if (m == 7) printf(" ");
+                                            }
+                                            printf("\r\n");
+                                        }
+                                    }
+                                    addr += br;
+                                }
+                                start_mbc();
+                            }
+                            f_unmount("");
+                        }
+                    }
+                    break;
+                default:
+                    ram_data[15 * 0x2000 + 0x1FFF] = 0;
+                    break;
                 }
-
-                // Perform a 1-byte dummy read from the probe address. If a slave
-                // acknowledges this address, the function returns the number of bytes
-                // transferred. If the address byte is ignored, the function returns
-                // -1.
-
-                // Skip over any reserved addresses.
-                int ret;
-                uint8_t rxdata;
-                if (reserved_addr(addr))
-                    ret = PICO_ERROR_GENERIC;
-                else
-                    ret = i2c_read_blocking(i2c1, addr, &rxdata, 1, false);
-
-                printf(ret < 0 ? "." : "@");
-                printf(addr % 16 == 15 ? "\n" : "  ");
-            }
-            printf("Done.\n");
-        }
-        if (c == 'M') {
-            for(uint32_t addr = 0; addr < 0x8000; addr+=4) {
-                write_memchip(addr, (uint8_t*)&addr, 4);
-            }
-            for(uint32_t addr = 0; addr < 0x8000; addr+=4) {
-                uint32_t tmp = 0;
-                read_memchip(addr, (uint8_t*)&tmp, 4);
-                if (tmp != addr)
-                    printf("Fail: %08x != %08x\n", addr, tmp);
-            }
-            printf("MEMCHECK DONE\n");
-        }
-        if (c == 'A') {
-            uint8_t data[6];
-            data[0] = 0x20; // CTRL_REG1
-            data[1] = 0x57;
-            i2c_write_blocking(i2c1, 0x19, data, 2, false);
-            for(int n=0; n<32; n++) {
-                data[0] = 0x28 | 0x80;
-                i2c_write_blocking(i2c1, 0x19, data, 1, true);
-                i2c_read_blocking(i2c1, 0x19, data, 6, false);
-                printf("%x ", data[0] | (data[1] << 8));
-                printf("%x ", data[2] | (data[3] << 8));
-                printf("%x\n", data[4] | (data[5] << 8));
-                sleep_ms(10);
             }
         }
-        if (c == 'C') {
-            uint8_t data[16];
-            data[0] = 0x00;
-            i2c_write_blocking(i2c1, 0x51, data, 1, true);
-            i2c_read_blocking(i2c1, 0x51, data, 16, false);
-            for(int n=0; n<16; n++) printf("%02x: %02x\n", n, data[n]);
-        }
-        */
     }
     return 0;
 }

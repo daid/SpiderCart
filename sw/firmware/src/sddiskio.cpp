@@ -170,6 +170,7 @@ DRESULT disk_read(BYTE pdrv, BYTE* buff, LBA_t sector, UINT count)
             return RES_ERROR;
         count -= 1;
         buff += 512;
+        sector += 1;
     }
     return RES_OK;
 }
@@ -183,6 +184,7 @@ DRESULT disk_write(BYTE pdrv, const BYTE* buff, LBA_t sector, UINT count)
             return RES_ERROR;
         count -= 1;
         buff += 512;
+        sector += 1;
     }
     return RES_OK;
 }

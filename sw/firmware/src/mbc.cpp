@@ -2,6 +2,7 @@
 #include "pins.h"
 
 #include "pico/stdlib.h"
+#include "pico/multicore.h"
 #include "hardware/gpio.h"
 
 
@@ -54,7 +55,10 @@ void __scratch_x("core1_handler") core1_mbc_handler()
                     case 0x4000: //RAM Bank nr
                         ram_ptr = ram_data + 0x2000 * (data_read(pio0, 1) & 0x0F);
                         break;
-                    case 0x6000: //
+                    case 0x6000: //Direct command to co-processor
+                        //Direct IO access, if the fifo is full, command gets ignored instead of blocking here.
+                        sio_hw->fifo_wr = data_read(pio0, 1) | 0x100;
+                        __sev();
                         break;
                     }
                 }
