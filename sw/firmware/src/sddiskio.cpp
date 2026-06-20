@@ -48,7 +48,9 @@ DSTATUS disk_initialize(BYTE pdrv)
 {
     uint8_t buffer[4];
     int status;
-
+ 
+    spi_init(spi1, 100 * 1000);
+ 
     gpio_put(PIN_SD_CS, true);
     // must supply min of 74 clock cycles with CS high.
     for (uint8_t i = 0; i < 10; i++) spi_write_blocking(spi1, (const uint8_t*)"\xFF", 1);
@@ -103,6 +105,7 @@ DSTATUS disk_initialize(BYTE pdrv)
         if ((buffer[0] & 0xC0) == 0xC0)
             sdcard_type = 3; //SDHC
     }
+    spi_init(spi1, 10000 * 1000);
     disk_init_status = 0;
     return disk_init_status;
 

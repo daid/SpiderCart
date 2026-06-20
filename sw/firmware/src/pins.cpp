@@ -11,7 +11,7 @@
 
 void hwInit()
 {
-        gpio_init_mask(
+    gpio_init_mask(
         (0xFFFF << PIN_GB_A0) |
         (0x0001 << PIN_GB_RD) |
         (0x0001 << PIN_GB_WR) |
