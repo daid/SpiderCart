@@ -46,6 +46,8 @@ entry:
 
     ld   hl, defaultPalette
     call setBGPalette
+    ld   hl, defaultPalette
+    call setObjPalette
 
     jp   _main
 
