@@ -38,6 +38,27 @@ entry:
     ld   bc, 16 * 16 * 16
     call copyMem
 
+    ld   a, 1
+    ldh  [rVBK], a
+    ; Set all tiles to 2nd VRAM bank except for the 128x128 render area
+    ld   hl, $9800
+    ld   bc, $0400
+    ld   a, $08
+    call setMem
+
+    ld   a, 00
+    ld   hl, $9800
+    loop b, 16 {
+        loop c, 16 {
+            ld   [hl+], a
+        }
+        ld  de, 16
+        add hl, de
+    }
+
+    ; Setup the tile indexes for the render area
+    xor  a
+    ldh  [rVBK], a
     ld   a, 00
     ld   hl, $9800
     loop b, 16 {
@@ -48,6 +69,22 @@ entry:
         ld  de, 16
         add hl, de
     }
+
+    ld   a, 00
+    ld   hl, $9800
+    loop b, 16 {
+        loop c, 16 {
+            ld   [hl+], a
+            inc  a
+        }
+        ld  de, 16
+        add hl, de
+    }
+
+    ld   a, -16
+    ldh  [rSCX], a
+    ld   a, -8
+    ldh  [rSCY], a
 
     ld   a, LCDC_ON | LCDC_BG_ON | LCDC_BLOCK01
     ldh  [rLCDC], a

@@ -8,8 +8,8 @@ int camera_offset_x = 0;
 int camera_offset_y = 0;
 int clip_x0 = 0;
 int clip_y0 = 0;
-int clip_x1 = 127;
-int clip_y1 = 127;
+int clip_x1 = 128;
+int clip_y1 = 128;
 int current_color = 0;
 
 uint8_t p8lua_screen[128*128];
@@ -327,9 +327,38 @@ FSET(2, 1 | 2 | 8)   -- SETS BITS 0,1 AND 3
 FSET(2, 4, TRUE)     -- SETS BIT 4
 PRINT(FGET(2))       -- 27 (1 | 2 | 8 | 16)
 */
-void lua_p8_print(const char* str, std::optional<int> x_or_col, std::optional<int> y, std::optional<int> col) {
+const uint8_t p8font[] = {
+    #include "p8font.inc"
+};
+
+void lua_p8_print(const char* str, std::optional<int> x_or_col, std::optional<int> opt_y, std::optional<int> col) {
     //PRINT(STR, X, Y, [COL])
     //PRINT(STR, [COL])
+    if (!opt_y.has_value()) {
+        printf("%s\n", str);
+    } else {
+        int x = x_or_col.value();
+        int y = opt_y.value();
+        int c = col.value_or(15);
+        while(*str) {
+            if (*str >= 32) {
+                auto ptr = p8font + (*str - 32) * 3;
+                for(int px=0; px<3; px++) {
+                    for(int py=0; py<5; py++) {
+                        if (*ptr & (1 << py)) {
+                            if (x >= clip_x0 && x < clip_x1 && (y + py) >= clip_y0 && (y + py) < clip_y1) {
+                                p8lua_screen[x + (y + py) * 128] = c;
+                            }
+                        }
+                    }
+                    ptr++;
+                    x++;
+                }
+                x++;
+            }
+            str++;
+        }
+    }
 }
 /*
 Print a string STR and optionally set the draw colour to COL.
@@ -416,12 +445,12 @@ void lua_p8_rect(int x0, int y0, int x1, int y1, std::optional<int> col) {
     y1 = std::clamp(y1+camera_offset_y, clip_y0, clip_y1);
     auto c = col.value_or(current_color);
     for(int x=x0; x<x1; x++) {
-        p8lua_screen[x + y0 * 128] = current_color;
-        p8lua_screen[x + (y1-1) * 128] = current_color;
+        p8lua_screen[x + y0 * 128] = c;
+        p8lua_screen[x + (y1-1) * 128] = c;
     }
     for(int y=y0; y<y1; y++) {
-        p8lua_screen[x0 + y * 128] = current_color;
-        p8lua_screen[(x1-1) + y * 128] = current_color;
+        p8lua_screen[x0 + y * 128] = c;
+        p8lua_screen[(x1-1) + y * 128] = c;
     }
 }
 void lua_p8_rectfill(int x0, int y0, int x1, int y1, std::optional<int> col) {
@@ -432,7 +461,7 @@ void lua_p8_rectfill(int x0, int y0, int x1, int y1, std::optional<int> col) {
     auto c = col.value_or(current_color);
     for(int y=y0; y<y1; y++) {
         for(int x=x0; x<x1; x++) {
-            p8lua_screen[x + y * 128] = current_color;
+            p8lua_screen[x + y * 128] = c;
         }
     }
 }
@@ -505,8 +534,33 @@ When C is the only parameter, it is treated as a bitfield used to set all 16 val
 
 PALT(0B1100000000000000)
 */
-void lua_p8_spr(int n, int x, int y, std::optional<int> w, std::optional<int> h, std::optional<bool> flip_x, std::optional<bool> flip_y) {
-    drawTile(x, y, n);
+void lua_p8_spr(int tile_nr, int x, int y, std::optional<int> w, std::optional<int> h, std::optional<bool> flip_x, std::optional<bool> flip_y) {
+    x += camera_offset_x;
+    y += camera_offset_y;
+    if (x < -8) return;
+    if (y < -8) return;
+    if (x > 127) return;
+    if (y > 127) return;
+    if (tile_nr < 0 || tile_nr > 255) return;
+    int flags = 0;
+    if (flip_x.value_or(false)) flags |= 1;
+    if (flip_y.value_or(false)) flags |= 2;
+    auto ptr = p8lua_card_data + (tile_nr % 16) * 4 + (tile_nr / 16) * 512;
+    for(int py=0; py<8; py++) {
+        int ppy = y + py;
+        if (flags & 2) ppy = y + 7 - py;
+        for(int px=0; px<8; px++) {
+            int ppx = x + px;
+            if (flags & 1) ppx = x + 7 - px;
+            if (ppx >= clip_x0 && ppx < clip_x1 && ppy >= clip_y0 && ppy < clip_y1) {
+                auto c = ptr[px/2 + py*64];
+                if (px & 1) c >>= 4; else c &= 0x0F;
+                if (c) {
+                    p8lua_screen[ppx + ppy * 128] = c;
+                }
+            }
+        }
+    }
 }
 /*
 Draw sprite N (0..255) at position X,Y
@@ -889,16 +943,16 @@ The PICO-8 map is a 128x32 grid of 8-bit values, or 128x64 when using the shared
 */
 int lua_p8_mget(int x, int y) {
     if (x < 0 || x >= 128) return 0;
-    if (y < 0 || y >= 32) return 0;
-    if (y < 16)
+    if (y < 0 || y >= 64) return 0;
+    if (y < 32)
         return p8lua_card_data[0x2000 + x + y * 128];
     return p8lua_card_data[0x0000 + x + y * 128];
 }
 
 void lua_p8_mset(int x, int y, int val) {
     if (x < 0 || x >= 128) return;
-    if (y < 0 || y >= 32) return;
-    if (y < 16)
+    if (y < 0 || y >= 64) return;
+    if (y < 32)
         p8lua_card_data[0x2000 + x + y * 128] = val;
     else
         p8lua_card_data[0x0000 + x + y * 128] = val;
@@ -922,7 +976,7 @@ void lua_p8_map(std::optional<int> tile_x, std::optional<int> tile_y, std::optio
     for(int y=0; y<tile_h.value_or(16); y++) {
         for(int x=0; x<0+tile_w.value_or(16); x++) {
             int tile_nr;
-            if (ty + y < 16)
+            if (ty + y < 32)
                 tile_nr = p8lua_card_data[0x2000 + tx + x + (ty + y) * 128];
             else
                 tile_nr = p8lua_card_data[0x0000 + tx + x + (ty + y) * 128];
