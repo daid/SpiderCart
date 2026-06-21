@@ -4,6 +4,7 @@ set(PICO_BOARD spidercart)
 include(pico_sdk_import.cmake)
 project(SpiderCartFirmware)
 pico_sdk_init()
+add_compile_options(-Wall -Wextra -Wnull-dereference)
 
 find_package(Python3)
 add_subdirectory(../loader loader)
