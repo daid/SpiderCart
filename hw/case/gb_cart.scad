@@ -21,13 +21,13 @@ classic = false; // Whether to include a logo area on the top half
 // bottom();
 
 // normal rendering
-//translate([-width/2 - 1, 0, 0]) top();
-//translate([width/2 + 1, 0, 0]) bottom();
+translate([-width/2 - 1, 0, 0]) top();
+translate([width/2 + 1, 0, 0]) bottom();
 
 translate([width/2 + 1, depth/2-0.7, 1.6]) % color("#ff000080") import("../pcb/SpiderCart.stl");
 translate([-width/2 - 1, depth/2-0.7, 5.8]) rotate([0,180,0]) % color("#ff000080") import("../pcb/SpiderCart.stl");
 
-translate([-width/2 - 1, 0, 0]) color("#ff00ff") label_cutout();
+//translate([-width/2 - 1, 0, 0]) color("#ff00ff") label_cutout();
 
 
 // BOTTOM HALF /////////////////////////////////////////////////////////////////
@@ -62,8 +62,8 @@ ridge_height = 0.2;
 ridge_width = 50;
 
 screw_head_height = 2;
-screw_head_radius = 2.5;
-screw_hole_passthrough_r = 1.1;
+screw_head_radius = 3.0;
+screw_hole_passthrough_r = 1.6;
 screw_y = 17;
 
 type_notch_depth = 3;
@@ -90,7 +90,7 @@ module bottom() {
             bottom_grip(grip_y, grip_count);
         }
         translate([-18, 67, 4]) cube([14, 10, 10], center=true);
-        translate([-4, 67, 4]) cube([16, 10, 5.2], center=true);
+        translate([-2, 67, 4]) cube([14, 10, 4.0], center=true);
     }
 }
 
@@ -271,8 +271,8 @@ logo_width = 44;
 logo_y = label_y + label_depth + 2;
 
 screw_height = 3;
-screw_hole_thread_r = 0.9;
-screw_shaft_r = 2;
+screw_hole_thread_r = 1.45;
+screw_shaft_r = 3;
 
 side_tab_y = 32;
 side_tab_width = 1.5;
@@ -316,7 +316,8 @@ module top() {
         }
 
         translate([18, 66, 4]) cube([14, 10, 10], center=true);
-        translate([4, 66, 4]) cube([16, 10, 5.2], center=true);
+        translate([4, 66, 4]) cube([16, 10, 2.2], center=true);
+        translate([-19.5, 56, 5]) cube([10, 10, 3.2], center=true);
     }
 }
 

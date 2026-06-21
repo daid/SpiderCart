@@ -44,8 +44,22 @@ static uint8_t sdcardCommand(uint8_t cmd, uint32_t arg)
     return buffer[0];
 }
 
+static uint8_t wait_not_busy(uint32_t timeout_time)
+{
+    uint8_t status = 0xFF;
+    auto timeout = make_timeout_time_ms(timeout_time);
+
+    // Wait not busy
+    while(timeout > get_absolute_time()) {
+        spi_read_blocking(spi1, 0xFF, &status, 1);
+        if (status != 0xFF) break;
+    }
+    return status;
+}
+
 DSTATUS disk_initialize(BYTE pdrv)
 {
+    (void)pdrv;
     uint8_t buffer[4];
     int status;
  
@@ -117,6 +131,7 @@ fail:
 
 DSTATUS disk_status(BYTE pdrv)
 {
+    (void)pdrv;
     return disk_init_status;
 }
 
@@ -127,21 +142,14 @@ static DRESULT disk_read_single(BYTE* buff, LBA_t sector)
         return RES_ERROR;
     }
 
-    uint8_t status;
-    auto timeout = make_timeout_time_ms(300);
-    // Wait not busy
-    while(timeout > get_absolute_time()) {
-        spi_read_blocking(spi1, 0xFF, &status, 1);
-        if (status != 0xFF) break;
-    }
-    if (status != 0xFE) {
+    if (wait_not_busy(300) != 0xFE) {
         gpio_put(PIN_SD_CS, true);
         return RES_ERROR;
     }
     spi_read_blocking(spi1, 0xFF, buff, 512);
     //CRC
-    spi_read_blocking(spi1, 0xFF, &status, 1);
-    spi_read_blocking(spi1, 0xFF, &status, 1);
+    uint16_t crc;
+    spi_read_blocking(spi1, 0xFF, (uint8_t*)&crc, 2);
 
     gpio_put(PIN_SD_CS, true);
     return RES_OK;
@@ -149,23 +157,48 @@ static DRESULT disk_read_single(BYTE* buff, LBA_t sector)
 
 static DRESULT disk_write_single(const BYTE* buff, LBA_t sector)
 {
-    return RES_ERROR;
-    /*
     if (sdcardCommand(24, sector) != 0x00) {
         gpio_put(PIN_SD_CS, true);
         return RES_ERROR;
     }
-    write block
-    wait not busy
-    CMD13
+
+    uint8_t cmd = 0xFE; // block start
+    spi_write_blocking(spi1, &cmd, 1);
+    spi_write_blocking(spi1, buff, 512);
+    uint16_t crc = 0xFFFF;
+    spi_write_blocking(spi1, (uint8_t*)&crc, 2);
+    
+    //read status
+    uint8_t status;
+    spi_read_blocking(spi1, 0xFF, &status, 1);
+    if ((status & 0x1F) != 0x05) {
+        gpio_put(PIN_SD_CS, true);
+        return RES_ERROR;
+    }
+
+    if (wait_not_busy(600) == 0xFF) {
+        gpio_put(PIN_SD_CS, true);
+        return RES_ERROR;
+    }
+
+    //Send CMD13
+    if (sdcardCommand(13, sector) != 0x00) {
+        gpio_put(PIN_SD_CS, true);
+        return RES_ERROR;
+    }
+    spi_read_blocking(spi1, 0xFF, &status, 1);
+    if (status != 0)  {
+        gpio_put(PIN_SD_CS, true);
+        return RES_ERROR;
+    }
 
     gpio_put(PIN_SD_CS, true);
     return RES_OK;
-    */
 }
 
 DRESULT disk_read(BYTE pdrv, BYTE* buff, LBA_t sector, UINT count)
 {
+    (void)pdrv;
     if (disk_init_status) return RES_NOTRDY;
     if (sdcard_type != 3) sector <<= 9;
     while(count) {
@@ -180,6 +213,7 @@ DRESULT disk_read(BYTE pdrv, BYTE* buff, LBA_t sector, UINT count)
 
 DRESULT disk_write(BYTE pdrv, const BYTE* buff, LBA_t sector, UINT count)
 {
+    (void)pdrv;
     if (disk_init_status) return RES_NOTRDY;
     if (sdcard_type != 3) sector <<= 9;
     while(count) {
@@ -194,6 +228,7 @@ DRESULT disk_write(BYTE pdrv, const BYTE* buff, LBA_t sector, UINT count)
 
 DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void* buff)
 {
+    (void)pdrv;
     switch(cmd) {
     case CTRL_SYNC:	        /* Complete pending write process (needed at FF_FS_READONLY == 0) */
         break;
