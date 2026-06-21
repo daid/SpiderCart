@@ -16,7 +16,7 @@ int current_color = 0;
 
 static uint8_t p8lua_pal[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 uint8_t p8lua_screen[128*128];
-uint8_t p8lua_button_mask;
+uint8_t p8lua_button_mask, p8lua_button_pressed_mask;
 uint8_t* p8lua_card_data;
 float p8lua_time;
 
@@ -352,12 +352,31 @@ void lua_p8_print(const char* str, std::optional<int> x_or_col, std::optional<in
         printf("%s\n", str);
     } else {
         int x = x_or_col.value();
+        int start_x = x;
         int y = opt_y.value();
         int c = col.value_or(15);
         while(*str) {
-            if (*str >= 32) {
-                auto ptr = p8font + (*str - 32) * 3;
+            int sc = (uint8_t)*str;
+            if (sc == '\n') {
+                x = start_x;
+                y += 6;
+            } else if (sc >= 32 && sc < 128) {
+                auto ptr = p8font + (sc - 32) * 3;
                 for(int px=0; px<3; px++) {
+                    for(int py=0; py<5; py++) {
+                        if (*ptr & (1 << py)) {
+                            if (x >= clip_x0 && x < clip_x1 && (y + py) >= clip_y0 && (y + py) < clip_y1) {
+                                p8lua_screen[x + (y + py) * 128] = p8lua_pal[c];
+                            }
+                        }
+                    }
+                    ptr++;
+                    x++;
+                }
+                x++;
+            } else if (sc >= 128) {
+                auto ptr = p8font + (128 - 32) * 3 + (sc - 128) * 7;
+                for(int px=0; px<7; px++) {
                     for(int py=0; py<5; py++) {
                         if (*ptr & (1 << py)) {
                             if (x >= clip_x0 && x < clip_x1 && (y + py) >= clip_y0 && (y + py) < clip_y1) {
@@ -562,17 +581,8 @@ When C is the only parameter, it is treated as a bitfield used to set all 16 val
 
 PALT(0B1100000000000000)
 */
-void lua_p8_spr(int tile_nr, int x, int y, std::optional<int> w, std::optional<int> h, std::optional<bool> flip_x, std::optional<bool> flip_y) {
-    x += camera_offset_x;
-    y += camera_offset_y;
-    if (x < -8) return;
-    if (y < -8) return;
-    if (x > 127) return;
-    if (y > 127) return;
-    if (tile_nr < 0 || tile_nr > 255) return;
-    int flags = 0;
-    if (flip_x.value_or(false)) flags |= 1;
-    if (flip_y.value_or(false)) flags |= 2;
+static void draw_sprite(int x, int y, int tile_nr, int flags)
+{
     auto ptr = p8lua_card_data + (tile_nr % 16) * 4 + (tile_nr / 16) * 512;
     for(int py=0; py<8; py++) {
         int ppy = y + py;
@@ -589,6 +599,22 @@ void lua_p8_spr(int tile_nr, int x, int y, std::optional<int> w, std::optional<i
             }
         }
     }
+}
+
+void lua_p8_spr(int tile_nr, int x, int y, std::optional<int> w, std::optional<int> h, std::optional<bool> flip_x, std::optional<bool> flip_y) {
+    x += camera_offset_x;
+    y += camera_offset_y;
+    if (x < -8) return;
+    if (y < -8) return;
+    if (x > 127) return;
+    if (y > 127) return;
+    if (tile_nr < 0 || tile_nr > 255) return;
+    int flags = 0;
+    if (flip_x.value_or(false)) flags |= 1;
+    if (flip_y.value_or(false)) flags |= 2;
+    for(int ty=0; ty<h.value_or(1); ty++)
+        for(int tx=0; tx<w.value_or(1); tx++)
+            draw_sprite(x + 8 * tx, y + 8 * ty, tile_nr + tx + ty * 16, flags);
 }
 /*
 Draw sprite N (0..255) at position X,Y
@@ -934,13 +960,12 @@ Default keyboard mappings to player buttons:
 Although PICO-8 accepts all button combinations, note that it is generally impossible to press both LEFT and RIGHT at the same time on a physical game controller. On some controllers, UP + LEFT/RIGHT is also awkward if [X] or [O] could be used instead of UP (e.g. to jump / accelerate).
 */
 int lua_p8_btnp(lua_State* L) {
-    //TODO
     if (lua_gettop(L) == 0) {
-        lua_pushinteger(L, p8lua_button_mask);
+        lua_pushinteger(L, p8lua_button_pressed_mask);
         return 1;
     }
     int button = luaL_checkinteger(L, 1);
-    lua_pushboolean(L, p8lua_button_mask & (1 << button));
+    lua_pushboolean(L, p8lua_button_pressed_mask & (1 << button));
     return 1;
 }
 /*
@@ -1182,6 +1207,14 @@ Alternatively, the following operators can be used to peek (but not poke), and a
 $ADDR  -- PEEK4(ADDR)
 */
 void lua_p8_memcpy(int dst_addr, int src_addr, int len) {
+    while(len) {
+        if (dst_addr >= 0 && dst_addr < 0x4300 && src_addr >= 0 && src_addr < 0x4300) {
+            p8lua_card_data[dst_addr] = p8lua_card_data[src_addr];
+        }
+        dst_addr++;
+        src_addr++;
+        len--;
+    }
     //TODO
 }
 /*
