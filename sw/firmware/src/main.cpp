@@ -5,6 +5,7 @@
 #include "memchip.h"
 #include "mbc.h"
 #include "command.h"
+#include "romload.h"
 #include "fatfs/ff.h"
 
 
@@ -41,8 +42,10 @@ static void core1_mbc_handler()
     core1_start_mbc(mbc_type, mbc_flags, mbc_rom_bank_mask, mbc_ram_bank_mask);
 }
 
-void start_mbc(bool reset=true) {
+void start_mbc(bool reset) {
     if (!core1_running) {
+        if (reset)
+            gpio_put(PIN_GB_RST, false);
         multicore_launch_core1(core1_mbc_handler);
         sleep_ms(5);
         if (reset)
@@ -51,10 +54,8 @@ void start_mbc(bool reset=true) {
     }
 }
 
-void stop_mbc(bool reset=true) {
+void stop_mbc() {
     if (core1_running) {
-        if (reset)
-            gpio_put(PIN_GB_RST, false);
         multicore_reset_core1();
         gpio_put_all(PIN_MASK_MEM_OE | PIN_MASK_MEM_WE);
         data_write_set_in(pio0, 0);
@@ -65,8 +66,8 @@ void stop_mbc(bool reset=true) {
 void prepare_mbc()
 {
     if (core1_running) return;
-    uint8_t header_info[0x50];
-    read_memchip(0x100, header_info, 0x050);
+    uint8_t header_info[0x100];
+    read_memchip(0x100, header_info, 0x100);
     switch(header_info[0x48]) {
     case 0x00: mbc_rom_bank_mask = 0x000; break; //32 KiB	2 (no banking)
     case 0x01: mbc_rom_bank_mask = 0x003; break; //64 KiB	4
@@ -119,6 +120,11 @@ void prepare_mbc()
     case 0xFE: mbc_type = MBC_Type::Unknown; break; //HuC3
     case 0xFF: mbc_type = MBC_Type::Unknown; break; //HuC1+RAM+BATTERY
     }
+
+    if (header_info[0x47] == 0x1A && header_info[0x50] == 0xDD && memcmp((char*)&header_info[0x51], "SPIDER", 6) == 0) {
+        //Special spider cart override, if we are MBC5
+        mbc_type = MBC_Type::Spider;
+    }
 }
 
 void processSerialMessage()
@@ -143,7 +149,7 @@ void processSerialMessage()
         break;
     case 0x01:
         if (!core1_running) {
-            start_mbc();
+            start_mbc(true);
             printf(".");
         } else {
             printf("!");
@@ -167,11 +173,18 @@ const uint8_t loader_gb_data[] = {
     #include "Loader.gb.inc"
 };
 
+enum class SavState {
+    Idle,
+    WaitTillSave,
+    PostSaveDelay,
+} sav_state = SavState::Idle;
+absolute_time_t sav_timer;
+
 int main() {
     hwInit();
 
     write_memchip(0, loader_gb_data, sizeof(loader_gb_data));
-    start_mbc();
+    start_mbc(true);
 
     stdio_init_all();
     while(1) {
@@ -199,10 +212,33 @@ int main() {
                 break;
             }
         }
+        switch(sav_state) {
+        case SavState::Idle: break;
+        case SavState::WaitTillSave:
+            if (absolute_time_diff_us(get_absolute_time(), sav_timer) < 0) {
+                printf("Saving sram");
+                save_sav(mbc_ram_bank_mask + 1);
+                sav_state = SavState::PostSaveDelay;
+                sav_timer = make_timeout_time_ms(10000);
+            }
+            break;
+        case SavState::PostSaveDelay:
+            if (absolute_time_diff_us(get_absolute_time(), sav_timer) < 0) {
+                sav_state = SavState::Idle;
+            }
+            break;
+        }
         if (multicore_fifo_rvalid()) {
             auto cmd = sio_hw->fifo_rd;
             if (cmd == 0) {
                 // request to save SRAM
+                if (sav_state == SavState::Idle) {
+                    sav_state = SavState::WaitTillSave;
+                    sav_timer = make_timeout_time_ms(100);
+                }
+                if (sav_state == SavState::PostSaveDelay) {
+                    sav_state = SavState::WaitTillSave;
+                }                
             } else if (cmd & 0x100) {
                 switch(cmd & 0xFF) {
                 case COMMAND_LIST_DIR:
@@ -237,49 +273,33 @@ int main() {
                     }
                     break;
                 case COMMAND_LOAD_AND_RESET:
-                    {
-                        FATFS fatfs;
-                        memset(&fatfs, 0, sizeof(fatfs));
-                        if (f_mount(&fatfs, "", 0) == FR_OK) {
-                            FIL fp;
-                            if (f_open(&fp, (const char*)&ram_data[15 * 0x2000], FA_READ) == FR_OK) {
-                                stop_mbc();
-                                UINT br;
-                                uint32_t addr = 0;
-                                while(f_read(&fp, ram_data, 2048, &br) == FR_OK && br > 0) {
-                                    write_memchip(addr, ram_data, br);
-                                    addr += br;
-                                }
-                                prepare_mbc();
-                                start_mbc();
-                            }
-                            f_unmount("");
+                    stop_mbc();
+                    if (load_rom((const char*)&ram_data[15 * 0x2000])) {
+                        ram_data[15 * 0x2000 + 0x1FFF] = 1;
+                        start_mbc(false);
+                    } else {
+                        ram_data[15 * 0x2000 + 0x1FFF] = 0;
+                        prepare_mbc();
+                        if (mbc_flags & MBC_FLAG_BATTERY) {
+                            load_sav();
                         }
+                        start_mbc(true);
                     }
                     break;
                 case COMMAND_LOAD_FOR_QUICKBOOT:
-                    {
-                        FATFS fatfs;
-                        memset(&fatfs, 0, sizeof(fatfs));
-                        if (f_mount(&fatfs, "", 0) == FR_OK) {
-                            FIL fp;
-                            if (f_open(&fp, (const char*)&ram_data[15 * 0x2000], FA_READ) == FR_OK) {
-                                stop_mbc(false);
-                                UINT br;
-                                uint32_t addr = 0;
-                                while(f_read(&fp, ram_data, 2048, &br) == FR_OK && br > 0) {
-                                    write_memchip(addr, ram_data, br);
-                                    addr += br;
-                                }
-                                start_mbc(false);
-                            }
-                            f_unmount("");
-                        }
-                        ram_data[15 * 0x2000 + 0x1FFF] = 0;
+                    stop_mbc();
+                    ram_data[15 * 0x2000 + 0x1FFF] = 0;
+                    if (load_rom((const char*)&ram_data[15 * 0x2000])) {
+                        ram_data[15 * 0x2000 + 0x1FFF] = 1;
                     }
+                    start_mbc(false);
                     break;
                 case COMMAND_EXEC_QUICKBOOT:
-                    stop_mbc(false);
+                    stop_mbc();
+                    prepare_mbc();
+                    if (mbc_flags & MBC_FLAG_BATTERY) {
+                        load_sav();
+                    }
                     start_mbc(false);
                     break;
                 default:
