@@ -7,6 +7,11 @@ extern uint8_t ram_data[16 * 0x2000];
 
 char sav_filename[256];
 
+void clear_sav_filename()
+{
+    sav_filename[0] = 0;
+}
+
 int load_rom(const char* filename)
 {
     strcpy(sav_filename, filename);
@@ -34,6 +39,7 @@ int load_rom(const char* filename)
 
 void load_sav()
 {
+    if (!sav_filename[0]) return;
     FATFS fatfs;
     memset(&fatfs, 0, sizeof(fatfs));
     if (f_mount(&fatfs, "", 0) != FR_OK)

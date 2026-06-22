@@ -119,10 +119,11 @@ void prepare_mbc()
     case 0xFD: mbc_type = MBC_Type::Unknown; break; //BANDAI TAMA5
     case 0xFE: mbc_type = MBC_Type::Unknown; break; //HuC3
     case 0xFF: mbc_type = MBC_Type::Unknown; break; //HuC1+RAM+BATTERY
+    default: mbc_type = MBC_Type::Unknown; break;
     }
 
     if (header_info[0x47] == 0x1A && header_info[0x50] == 0xDD && memcmp((char*)&header_info[0x51], "SPIDER", 6) == 0) {
-        //Special spider cart override, if we are MBC5
+        //Special spider cart override.
         mbc_type = MBC_Type::Spider;
     }
 }
@@ -149,6 +150,9 @@ void processSerialMessage()
         break;
     case 0x01:
         if (!core1_running) {
+            //For USB loaded roms, never sav
+            clear_sav_filename();
+            prepare_mbc();
             start_mbc(true);
             printf(".");
         } else {

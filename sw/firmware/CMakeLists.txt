@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(Python3)
 add_subdirectory(../loader loader)
-add_custom_command(OUTPUT Loader.gb.inc COMMAND Python3::Interpreter ${CMAKE_CURRENT_SOURCE_DIR}/rom2inc.py ${CMAKE_CURRENT_BINARY_DIR}/loader/Loader.gb Loader.gb.inc DEPENDS Loader loader/Loader.gb)
+add_custom_command(OUTPUT Loader.gb.inc COMMAND Python3::Interpreter ${CMAKE_CURRENT_SOURCE_DIR}/rom2inc.py ${CMAKE_CURRENT_BINARY_DIR}/loader/Loader.gb Loader.gb.inc DEPENDS Loader loader/Loader.gb ${CMAKE_CURRENT_SOURCE_DIR}/rom2inc.py)
 
 add_executable(SpiderCart
     src/main.cpp

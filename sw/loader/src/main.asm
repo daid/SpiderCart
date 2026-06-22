@@ -180,7 +180,7 @@ _execQuickboot:
 }
 
 
-#SECTION "Font", ROMX, BANK[1] {
+#SECTION "Font", ROM0 {
 fontData:
     #INCGFX "font.1bpp.png", BPP[1], COLORMAP[$000000, $FFFFFF]
 .end:
