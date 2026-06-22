@@ -128,6 +128,7 @@ void prepare_mbc()
     }
 }
 
+uint32_t ram_write_idx = 0;
 void processSerialMessage()
 {
     switch(serial_receive_buffer[0]) {
@@ -163,6 +164,30 @@ void processSerialMessage()
         if (core1_running) {
             stop_mbc();
             printf(".");
+        } else {
+            printf("!");
+        }
+        break;
+    case 0x20:
+        if (serial_receive_length == 4) {
+            ram_write_idx = serial_receive_buffer[1] | (serial_receive_buffer[2] << 8) | (serial_receive_buffer[3] << 16);
+            printf(".");
+        } else {
+            printf("?");
+        }
+        break;
+    case 0x21:
+        for(int n=1; n<serial_receive_length; n++) {
+            ram_data[ram_write_idx] = serial_receive_buffer[n];
+            ram_write_idx = (ram_write_idx + 1) % sizeof(ram_data);
+        }
+        printf(".");
+        break;
+    case 0x22:
+        if (serial_receive_length == 4) {
+            auto ram_read_idx = serial_receive_buffer[1] | (serial_receive_buffer[2] << 8) | (serial_receive_buffer[3] << 16);
+            for(int n=0; n<255; n++)
+                stdio_putchar_raw(ram_data[(ram_read_idx + n) % sizeof(ram_data)]);
         } else {
             printf("!");
         }
