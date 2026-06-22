@@ -1067,7 +1067,7 @@ void lua_p8_map(std::optional<int> tile_x, std::optional<int> tile_y, std::optio
                 tile_nr = p8lua_card_data[0x2000 + tx + x + (ty + y) * 128];
             else
                 tile_nr = p8lua_card_data[0x0000 + tx + x + (ty + y) * 128];
-            if (tile_nr && p8lua_card_data[0x3000 + tile_nr] & mask)
+            if (tile_nr && (!layers.has_value() || (p8lua_card_data[0x3000 + tile_nr] & mask)))
                 drawTile(rx + x * 8, ry + y * 8, tile_nr);
         }
     }
@@ -1215,7 +1215,6 @@ void lua_p8_memcpy(int dst_addr, int src_addr, int len) {
         src_addr++;
         len--;
     }
-    //TODO
 }
 /*
 Copy LEN bytes of base ram from source to dest. Sections can be overlapping

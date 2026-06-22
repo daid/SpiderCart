@@ -94,11 +94,14 @@ entry:
     call setBGPalette
 
 .loop:
-    ;call waitVBlank
     call updateJoypadState
     ld   a, [wJoypadState]
     ld   [$A000 + $1FF0], a
-
+    
+    call waitVBlank
+    ld   a, $01
+    ld   [$A000 + $1FF1], a
+    ; Copy 128 tiles with HDMA in direct copy
     ld   a, $A0
     ldh  [rHDMA1], a
     ld   a, $00
@@ -107,9 +110,10 @@ entry:
     ldh  [rHDMA3], a
     ld   a, $00
     ldh  [rHDMA4], a
-    ld   a, $7F
+    ld   a, 127
     ldh  [rHDMA5], a
-    ld   a, $7F
+    ; Now we are nearing end of VBlank, so copy the rest in HBlank
+    ld   a, 127 | $80
     ldh  [rHDMA5], a
 
     jr .loop
@@ -119,10 +123,10 @@ defaultPalette:
     dw $FFFF, $0000, $FFFF, $0000
     dw $FFFF, $0000, $FFFF, $0000
     dw $FFFF, $0000, $FFFF, $0000
-    dw $FFFF, $0000, $FFFF, $0000
-    dw $FFFF, $0000, $FFFF, $0000
-    dw $FFFF, $0000, $FFFF, $0000
-    dw $FFFF, $0000, $FFFF, $0000
+    dw $0000, $34C6, $34B1, $3260
+    dw $25D4, $31AE, $5ED6, $6B9F
+    dw $301F, $033F, $23FF, $27E0
+    dw $7E48, $4DF1, $51FF, $533F
 }
 
 #SECTION "PrintStr", ROM0 {

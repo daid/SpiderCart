@@ -63,7 +63,7 @@ ridge_width = 50;
 
 screw_head_height = 2;
 screw_head_radius = 3.0;
-screw_hole_passthrough_r = 1.6;
+screw_hole_passthrough_r = 2.0;
 screw_y = 17;
 
 type_notch_depth = 3;
@@ -89,7 +89,7 @@ module bottom() {
         } else {
             bottom_grip(grip_y, grip_count);
         }
-        translate([-18, 67, 4]) cube([14, 10, 10], center=true);
+        translate([-18, 67, 4]) cube([10, 10, 4], center=true);
         translate([-2, 67, 4]) cube([14, 10, 4.0], center=true);
     }
 }
@@ -315,7 +315,7 @@ module top() {
                        fillet=6, edges=EDGES_Z_ALL, center=false);
         }
 
-        translate([18, 66, 4]) cube([14, 10, 10], center=true);
+        translate([18, 66, 4]) cube([10, 10, 4], center=true);
         translate([4, 66, 4]) cube([16, 10, 2.2], center=true);
         translate([-19.5, 56, 5]) cube([10, 10, 3.2], center=true);
     }
