@@ -13,6 +13,7 @@ add_custom_command(OUTPUT Loader.gb.inc COMMAND Python3::Interpreter ${CMAKE_CUR
 
 add_executable(SpiderCart
     src/main.cpp
+    src/usb_descriptors.c
     src/memchip.cpp
     src/mbc.cpp
     src/pins.cpp
@@ -58,8 +59,8 @@ pico_generate_pio_header(SpiderCart ${CMAKE_CURRENT_LIST_DIR}/src/data_read.pio)
 pico_enable_stdio_usb(SpiderCart 1)
 pico_enable_stdio_uart(SpiderCart 0)
 
-target_link_libraries(SpiderCart pico_stdlib hardware_i2c hardware_spi hardware_pio hardware_dma pico_multicore)
-target_include_directories(SpiderCart PRIVATE src inc)
+target_link_libraries(SpiderCart pico_stdlib hardware_i2c hardware_spi hardware_pio hardware_dma pico_multicore tinyusb_device tinyusb_board)
+target_include_directories(SpiderCart PUBLIC src inc)
 pico_add_extra_outputs(SpiderCart)
 
 target_compile_definitions(SpiderCart PRIVATE
@@ -67,6 +68,11 @@ target_compile_definitions(SpiderCart PRIVATE
   PICO_STDIO_DEFAULT_CRLF=0
   PICO_STDIO_ENABLE_CRLF_SUPPORT=0
   PICO_UART_ENABLE_CRLF_SUPPORT=0
+  PICO_STDIO_USB_ENABLE_TINYUSB_INIT=1
+  PICO_STDIO_USB_ENABLE_IRQ_BACKGROUND_TASK=1
+  PICO_STDIO_USB_ENABLE_RESET_VIA_BAUD_RATE=1
+  PICO_STDIO_USB_RESET_MAGIC_BAUD_RATE=1200
+  PICO_STDIO_USB_RESET_BOOTSEL_INTERFACE_DISABLE_MASK=0
   PICO_CORE1_STACK_SIZE=0x200
 )
 
