@@ -458,15 +458,15 @@ OVAL(X0, Y0, X1, Y1, [COL])
 OVALFILL(X0, Y0, X1, Y1, [COL])
 
 Draw an oval that is symmetrical in x and y (an ellipse), with the given bounding rectangle.
-
-LINE(X0, Y0, [X1, Y1, [COL]])
-
-Draw a line from (X0, Y0) to (X1, Y1)
-
-If (X1, Y1) are not given, the end of the last drawn line is used.
-
-LINE() with no parameters means that the next call to LINE(X1, Y1) will only set the end points without drawing.
-
+*/
+int lua_p8_line(lua_State* L) {
+    //LINE(X0, Y0, [X1, Y1, [COL]])
+    //Draw a line from (X0, Y0) to (X1, Y1)
+    //If (X1, Y1) are not given, the end of the last drawn line is used.
+    //LINE() with no parameters means that the next call to LINE(X1, Y1) will only set the end points without drawing.
+    return 0;
+}
+/*
 CLS()
 LINE()
 FOR I=0,6 DO
@@ -1877,6 +1877,7 @@ void setupP8LuaEnv(lua_State* L)
     P8_BIND(camera);
     P8_BIND(circ);
     P8_BIND(circfill);
+    P8_BIND(line);
     P8_BIND(rect);
     P8_BIND(rectfill);
     P8_BIND(rrect);
