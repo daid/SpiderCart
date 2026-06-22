@@ -2,7 +2,7 @@
 
 #define CFG_TUD_ENABLED (1) //enables tinyusb device mode
 #define CFG_TUD_CDC (1)
-#define CFG_TUD_MSC (0)
+#define CFG_TUD_MSC (1)
 
 // Legacy RHPORT configuration
 // Tells TinyUSB that RHPORT0 is active and should run in:

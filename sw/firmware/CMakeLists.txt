@@ -14,6 +14,7 @@ add_custom_command(OUTPUT Loader.gb.inc COMMAND Python3::Interpreter ${CMAKE_CUR
 add_executable(SpiderCart
     src/main.cpp
     src/usb_descriptors.c
+    src/usb_msc.cpp
     src/memchip.cpp
     src/mbc.cpp
     src/pins.cpp
@@ -60,7 +61,7 @@ pico_enable_stdio_usb(SpiderCart 1)
 pico_enable_stdio_uart(SpiderCart 0)
 
 target_link_libraries(SpiderCart pico_stdlib hardware_i2c hardware_spi hardware_pio hardware_dma pico_multicore tinyusb_device tinyusb_board)
-target_include_directories(SpiderCart PUBLIC src inc)
+target_include_directories(SpiderCart PUBLIC src inc inc/usb)
 pico_add_extra_outputs(SpiderCart)
 
 target_compile_definitions(SpiderCart PRIVATE

@@ -33,7 +33,8 @@ char const *string_desc_arr[] = {
     (const char []) {0x09, 0x04}, // 0 : supported language
     "Daid",           // 1 : Manufacturer of the product
     "SpiderCart",     // 2 : Product     
-    usbd_serial_str   // 3  : serial number of the product 
+    usbd_serial_str,  // 3  : serial number of the product 
+    "SpiderCartMSC"
 };
 
 //USB hosts identify interfaces by numbers (0, 1, 2) and the CDC device we make need two interfaces
@@ -42,6 +43,7 @@ char const *string_desc_arr[] = {
 enum {
     ITF_NUM_CDC = 0,
     ITF_NUM_CDC_DATA,
+    ITF_NUM_MSC,
     ITF_NUM_TOTAL
 };
 
@@ -54,8 +56,11 @@ enum {
 #define EPNUM_CDC_OUT 0x02
 #define EPNUM_CDC_IN 0x82
 
+#define EPNUM_MSC_OUT     0x03
+#define EPNUM_MSC_IN      0x83
 
-#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN)
+
+#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + TUD_MSC_DESC_LEN)
 
 uint8_t config_desc[] = {
     TUD_CONFIG_DESCRIPTOR(
@@ -71,6 +76,8 @@ uint8_t config_desc[] = {
         EPNUM_CDC_IN,
         64
     ),
+    
+    TUD_MSC_DESCRIPTOR(ITF_NUM_MSC, 4, EPNUM_MSC_OUT, EPNUM_MSC_IN, 64),
 };
 
 
