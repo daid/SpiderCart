@@ -21,6 +21,7 @@ template<uint32_t FLAGS> static inline void __attribute__((always_inline)) mbc_h
     uint32_t high_bank_pins = PIN_MASK_MEM_WE | PIN_MASK_MBC_A0;
     uint8_t* ram_ptr = ram_data;
     bool ram_enabled = false;
+    bool timer_active = false;
     while(true) {
         auto input_values = gpio_get_all();
         if (!(input_values & PIN_MASK_GB_RD)) {
@@ -34,12 +35,19 @@ template<uint32_t FLAGS> static inline void __attribute__((always_inline)) mbc_h
                 gpio_put_all(PIN_MASK_MEM_OE | PIN_MASK_MEM_WE);
                 if (ram_enabled && !(input_values & PIN_MASK_GB_CS)) {
                     data_write_set_out(pio0, 0);
-                    while(!(input_values & PIN_MASK_GB_CS)) {
-                        input_values = gpio_get_all();
-                        if constexpr (FLAGS & MBC_FLAG_MBC2) {
-                            pio_sm_put(pio0, 0, ram_ptr[input_values & 0x01FF]);
-                        } else {
-                            pio_sm_put(pio0, 0, ram_ptr[input_values & 0x1FFF]);
+                    if ((FLAGS & MBC_FLAG_TIMER) && timer_active) {
+                        while(!(input_values & PIN_MASK_GB_CS)) {
+                            input_values = gpio_get_all();
+                            pio_sm_put(pio0, 0, *ram_ptr);
+                        }
+                    } else {
+                        while(!(input_values & PIN_MASK_GB_CS)) {
+                            input_values = gpio_get_all();
+                            if constexpr (FLAGS & MBC_FLAG_MBC2) {
+                                pio_sm_put(pio0, 0, ram_ptr[input_values & 0x01FF]);
+                            } else {
+                                pio_sm_put(pio0, 0, ram_ptr[input_values & 0x1FFF]);
+                            }
                         }
                     }
                     data_write_set_in(pio0, 0);
@@ -51,14 +59,21 @@ template<uint32_t FLAGS> static inline void __attribute__((always_inline)) mbc_h
                 if (!(input_values & PIN_MASK_GB_CS)) {
                     //RAM write
                     if (ram_enabled) {
-                        if constexpr (FLAGS & MBC_FLAG_MBC2) {
-                            ram_ptr[input_values & 0x01FF] = data_read(pio0, 1) | 0xF0;
-                        } else {
-                            ram_ptr[input_values & 0x1FFF] = data_read(pio0, 1);
-                        }
-                        if constexpr (FLAGS & MBC_FLAG_BATTERY) {
-                            sio_hw->fifo_wr = 0; // Signal RAM update for saving
+                        if ((FLAGS & MBC_FLAG_TIMER) && timer_active) {
+                            ram_ptr[0] = data_read(pio0, 1);
+                            ram_ptr[8] = 1;
+                            sio_hw->fifo_wr = 2; // Signal RTC register write
                             __sev();
+                        } else {
+                            if constexpr (FLAGS & MBC_FLAG_MBC2) {
+                                ram_ptr[input_values & 0x01FF] = data_read(pio0, 1) | 0xF0;
+                            } else {
+                                ram_ptr[input_values & 0x1FFF] = data_read(pio0, 1);
+                            }
+                            if constexpr (FLAGS & MBC_FLAG_BATTERY) {
+                                sio_hw->fifo_wr = 0; // Signal RAM update for saving
+                                __sev();
+                            }
                         }
                     }
                 } else {
@@ -99,6 +114,14 @@ template<uint32_t FLAGS> static inline void __attribute__((always_inline)) mbc_h
                                 else
                                     gpio_put(PIN_RUMBLE, false);
                             }
+                            if constexpr (FLAGS & MBC_FLAG_TIMER) {
+                                if (data & 0x08) {
+                                    ram_ptr = (ram_data + 0x2000 * 0x08) + (data & 0x07);
+                                    timer_active = true;
+                                } else {
+                                    timer_active = false;
+                                }
+                            }
                             break;
                         case 0x6000:
                             if constexpr (FLAGS & MBC_FLAG_SPIDER) {
@@ -106,6 +129,12 @@ template<uint32_t FLAGS> static inline void __attribute__((always_inline)) mbc_h
                                 //Direct IO access, if the fifo is full, command gets ignored instead of blocking here.
                                 sio_hw->fifo_wr = data_read(pio0, 1) | 0x100;
                                 __sev();
+                            }
+                            if constexpr (FLAGS & MBC_FLAG_TIMER) {
+                                if (data_read(pio0, 1) == 0x01) {
+                                    sio_hw->fifo_wr = 1; // signal core0 to update RTC registers
+                                    __sev();
+                                }
                             }
                             break;
                         }
@@ -201,7 +230,7 @@ void core1_start_mbc(MBC_Type base_type, uint32_t flags, uint32_t rom_bank_mask,
         case MBC_FLAG_BATTERY:
             mbc3_handler_battery(rom_bank_mask, ram_bank_mask);
             break;
-        case MBC_FLAG_RUMBLE:
+        case MBC_FLAG_TIMER:
             mbc3_handler_timer(rom_bank_mask, ram_bank_mask);
             break;
         case MBC_FLAG_BATTERY | MBC_FLAG_TIMER:

@@ -242,7 +242,16 @@ int main() {
                 }
                 if (sav_state == SavState::PostSaveDelay) {
                     sav_state = SavState::WaitTillSave;
-                }                
+                }
+            } else if (cmd == 1) {
+                auto ptr = ram_data + 0x2000 * 0x08;
+                *ptr++ = 0; //seconds
+                *ptr++ = 0; //minutes
+                *ptr++ = 0; //hours
+                *ptr++ = 0; //day counter
+                *ptr++ = 0; //flags/state
+                for(int n=0; n<16-5; n++)
+                    *ptr++ = 0;
             } else if (cmd & 0x100) {
                 switch(cmd & 0xFF) {
                 case COMMAND_LIST_DIR:
