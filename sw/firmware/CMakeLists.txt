@@ -5,6 +5,7 @@ include(pico_sdk_import.cmake)
 project(SpiderCartFirmware)
 pico_sdk_init()
 add_compile_options(-Wall -Wextra -Wnull-dereference)
+set(CMAKE_CXX_STANDARD 17)
 
 find_package(Python3)
 add_subdirectory(../loader loader)
@@ -66,6 +67,7 @@ target_compile_definitions(SpiderCart PRIVATE
   PICO_STDIO_DEFAULT_CRLF=0
   PICO_STDIO_ENABLE_CRLF_SUPPORT=0
   PICO_UART_ENABLE_CRLF_SUPPORT=0
+  PICO_CORE1_STACK_SIZE=0x200
 )
 
 add_executable(SpiderCartHWTest
