@@ -34,7 +34,7 @@ uint32_t temp_buffer[1024];
 
 bool testMemPattern(uint32_t pattern)
 {
-    for(int n=0; n<sizeof(temp_buffer)/sizeof(uint32_t); n++) {
+    for(unsigned int n=0; n<sizeof(temp_buffer)/sizeof(uint32_t); n++) {
         temp_buffer[n] = pattern;
     }
     for(int addr=0; addr<MEMCHIP_SIZE; addr+=sizeof(temp_buffer)) {
@@ -42,7 +42,7 @@ bool testMemPattern(uint32_t pattern)
     }
     for(int addr=0; addr<MEMCHIP_SIZE; addr+=sizeof(temp_buffer)) {
         read_memchip(addr, (uint8_t*)temp_buffer, sizeof(temp_buffer));
-        for(int n=0; n<sizeof(temp_buffer)/sizeof(uint32_t); n++) {
+        for(unsigned int n=0; n<sizeof(temp_buffer)/sizeof(uint32_t); n++) {
             if (temp_buffer[n] != pattern)
                 return false;
         }
@@ -53,14 +53,14 @@ bool testMemPattern(uint32_t pattern)
 bool testMemAddr()
 {
     for(int addr=0; addr<MEMCHIP_SIZE; addr+=sizeof(temp_buffer)) {
-        for(int n=0; n<sizeof(temp_buffer)/sizeof(uint32_t); n++) {
+        for(unsigned int n=0; n<sizeof(temp_buffer)/sizeof(uint32_t); n++) {
             temp_buffer[n] = addr + n;
         }
         write_memchip(addr, (uint8_t*)temp_buffer, sizeof(temp_buffer));
     }
     for(int addr=0; addr<MEMCHIP_SIZE; addr+=sizeof(temp_buffer)) {
         read_memchip(addr, (uint8_t*)temp_buffer, sizeof(temp_buffer));
-        for(int n=0; n<sizeof(temp_buffer)/sizeof(uint32_t); n++) {
+        for(unsigned int n=0; n<sizeof(temp_buffer)/sizeof(uint32_t); n++) {
             if (temp_buffer[n] != addr + n)
                 return false;
         }
