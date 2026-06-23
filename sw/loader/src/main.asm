@@ -26,7 +26,7 @@ hGBC: ds 1
 #SECTION "Entry", ROM0 {
 entry:
     cp   a, $11
-    jr   nz, .gbc
+    jr   z, .gbc
     xor  a
 .gbc:
     ldh  [hGBC], a
@@ -62,7 +62,7 @@ entry:
         ld   hl, defaultPalette
         call setObjPalette
     } else {
-        ld   a, %00_01_10_11
+        ld   a, %11_10_01_00
         ldh  [rBGP], a
         ldh  [rOBP0], a
         ldh  [rOBP1], a
