@@ -28,8 +28,10 @@ char tempBuffer[32];
 
 void main(void)
 {
+    printStr(0, "Loading file list...");
     execCommand(0x01); //List files
     *((uint8_t*)0x4000) = 0x00; // Switch to bank 0
+    printStr(0, "                    ");
 
     char* ptr = (char*)0xA000;
     uint16_t pos = 1;
@@ -61,6 +63,7 @@ void main(void)
             strcpy(tempBuffer, (char*)0xA001 + pos * 0x20);
             *((uint8_t*)0x4000) = 0x0F; // Switch to bank 15
             strcpy((char*)0xA000, tempBuffer);
+            printStr(0, "Loading ROM...");
             execCommand(0x10); //Load file and reset
             //execQuickboot(0x11);
             *((uint8_t*)0x4000) = 0x00; // Switch to bank 0
