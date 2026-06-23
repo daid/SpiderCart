@@ -19,8 +19,18 @@ GBC_HEADER "SpiderCart", GB_MBC5_RAM, entry
     db "SPIDER"
 }
 
+#SECTION "HRAM", HRAM {
+hGBC: ds 1
+}
+
 #SECTION "Entry", ROM0 {
 entry:
+    cp   a, $11
+    jr   nz, .gbc
+    xor  a
+.gbc:
+    ldh  [hGBC], a
+
     call lcd_off
     ld   hl, $8000
     ld   bc, $2000
@@ -44,10 +54,19 @@ entry:
     ldh  [rLCDC], a
     call waitVBlank
 
-    ld   hl, defaultPalette
-    call setBGPalette
-    ld   hl, defaultPalette
-    call setObjPalette
+    ldh  a, [hGBC]
+    and  a
+    if nz {
+        ld   hl, defaultPalette
+        call setBGPalette
+        ld   hl, defaultPalette
+        call setObjPalette
+    } else {
+        ld   a, %00_01_10_11
+        ldh  [rBGP], a
+        ldh  [rOBP0], a
+        ldh  [rOBP1], a
+    }
 
     jp   _main
 

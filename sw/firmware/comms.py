@@ -23,6 +23,7 @@ while True:
         break
     sendpacket(bytes([0x10, addr & 0xFF, (addr >> 8) & 0xFF, (addr >> 16) & 0xFF]) + chunk)
     addr += len(chunk)
+    print(addr)
 f.close()
 
 f = open(sys.argv[2], 'rb')
@@ -34,6 +35,7 @@ while True:
     res = sendpacket(bytes([0x11, addr & 0xFF, (addr >> 8) & 0xFF, (addr >> 16) & 0xFF]))
     assert res[:len(chunk)] == chunk, chunk
     addr += len(chunk)
+    print(addr)
 f.close()
 
 sendpacket(b'\x01')  # exit reset
