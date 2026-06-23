@@ -1016,7 +1016,7 @@ SFX(-2,2) --  RELEASE LOOPING ON CHANNEL 2
 SFX(-1)   --  STOP ALL SOUNDS ON ALL CHANNELS
 SFX(-2)   --  RELEASE LOOPING ON ALL CHANNELS
 */
-void lua_p8_music(int N, std::optional<int> fade_len, std::optional<int> channel_mask) {
+void lua_p8_music(std::optional<int> n, std::optional<int> fade_len, std::optional<int> channel_mask) {
 
 }
 /*
