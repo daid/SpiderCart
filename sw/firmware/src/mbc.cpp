@@ -33,15 +33,15 @@ template<uint32_t FLAGS> static inline void __attribute__((always_inline)) mbc_h
                 }
             } else {
                 gpio_put_all(PIN_MASK_MEM_OE | PIN_MASK_MEM_WE);
-                if (ram_enabled && !(input_values & PIN_MASK_GB_CS)) {
+                if (ram_enabled && !(input_values & (PIN_MASK_GB_CS | PIN_MASK_GB_A14))) {
                     data_write_set_out(pio0, 0);
                     if ((FLAGS & MBC_FLAG_TIMER) && timer_active) {
-                        while(!(input_values & PIN_MASK_GB_CS)) {
+                        while(!(input_values & (PIN_MASK_GB_CS | PIN_MASK_GB_A14))) {
                             input_values = gpio_get_all();
                             pio_sm_put(pio0, 0, *ram_ptr);
                         }
                     } else {
-                        while(!(input_values & PIN_MASK_GB_CS)) {
+                        while(!(input_values & (PIN_MASK_GB_CS | PIN_MASK_GB_A14))) {
                             if constexpr (FLAGS & MBC_FLAG_MBC2) {
                                 pio_sm_put(pio0, 0, ram_ptr[input_values & 0x01FF]);
                             } else {
@@ -56,7 +56,7 @@ template<uint32_t FLAGS> static inline void __attribute__((always_inline)) mbc_h
         } else {
             gpio_put_all(PIN_MASK_MEM_OE | PIN_MASK_MEM_WE);
             if (!(input_values & PIN_MASK_GB_WR)) {
-                if (!(input_values & PIN_MASK_GB_CS)) {
+                if (!(input_values & (PIN_MASK_GB_CS | PIN_MASK_GB_A14))) {
                     //RAM write
                     if (ram_enabled) {
                         if ((FLAGS & MBC_FLAG_TIMER) && timer_active) {
