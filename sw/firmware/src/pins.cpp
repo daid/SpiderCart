@@ -66,6 +66,7 @@ void hwInit()
 
     // Configure pio0 for pins 16-47, and setup our pio programs to allow one cycle read/write of the data bus.
     pio_set_gpio_base(pio0, 16);
+    hw_set_bits(&pio0->input_sync_bypass, 0xFF << (PIN_GB_D0 - 16));
     data_read_program_init(pio0, 1, pio_add_program(pio0, &data_read_program), PIN_GB_D0);
     data_write_program_init(pio0, 0, pio_add_program(pio0, &data_write_program), PIN_GB_D0);
 }

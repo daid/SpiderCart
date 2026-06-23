@@ -42,12 +42,12 @@ template<uint32_t FLAGS> static inline void __attribute__((always_inline)) mbc_h
                         }
                     } else {
                         while(!(input_values & PIN_MASK_GB_CS)) {
-                            input_values = gpio_get_all();
                             if constexpr (FLAGS & MBC_FLAG_MBC2) {
                                 pio_sm_put(pio0, 0, ram_ptr[input_values & 0x01FF]);
                             } else {
                                 pio_sm_put(pio0, 0, ram_ptr[input_values & 0x1FFF]);
                             }
+                            input_values = gpio_get_all();
                         }
                     }
                     data_write_set_in(pio0, 0);
