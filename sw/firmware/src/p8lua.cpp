@@ -139,9 +139,11 @@ END
 FLIP()GOTO _
 
 If your program does not call FLIP before a frame is up, and a _DRAW() callback is not in progress, the current contents of the back buffer are copied to screen.
-
-PRINTH(STR, [FILENAME], [OVERWRITE], [SAVE_TO_DESKTOP])
-
+*/
+void lua_p8_printh(const char* str, std::optional<const char*> filename, std::optional<bool> override, std::optional<bool> save_to_desktop) {
+    printf("%s\n", str);
+}
+/*
 Print a string to the host operating system's console for debugging.
 
 If filename is set, append the string to a file on the host operating system (in the current directory by default -- use FOLDER to view).
@@ -318,6 +320,7 @@ POKE(0x5f59, NEWVAL)
 int lua_p8_fget(lua_State* L) {
     auto n = luaL_checkinteger(L, 1);
     auto f = luaL_optinteger(L, 2, -1);
+    if (n < 0 || n > 255) return luaL_error(L, "Sprite nr out of range");
     if (f >= 0 && f < 7)
         lua_pushboolean(L, p8lua_card_data[0x3000 + n] & (1 << f));
     else
@@ -345,53 +348,58 @@ const uint8_t p8font[] = {
     #include "p8font.inc"
 };
 
+static int last_print_x = 0;
+static int last_print_y = 0;
 void lua_p8_print(const char* str, std::optional<int> x_or_col, std::optional<int> opt_y, std::optional<int> col) {
     //PRINT(STR, X, Y, [COL])
     //PRINT(STR, [COL])
     if (!opt_y.has_value()) {
-        printf("%s\n", str);
-    } else {
-        int x = x_or_col.value();
-        int start_x = x;
-        int y = opt_y.value();
-        int c = col.value_or(15);
-        while(*str) {
-            int sc = (uint8_t)*str;
-            if (sc == '\n') {
-                x = start_x;
-                y += 6;
-            } else if (sc >= 32 && sc < 128) {
-                auto ptr = p8font + (sc - 32) * 3;
-                for(int px=0; px<3; px++) {
-                    for(int py=0; py<5; py++) {
-                        if (*ptr & (1 << py)) {
-                            if (x >= clip_x0 && x < clip_x1 && (y + py) >= clip_y0 && (y + py) < clip_y1) {
-                                p8lua_screen[x + (y + py) * 128] = p8lua_pal[c];
-                            }
+        col = x_or_col.value_or(15);
+        x_or_col = last_print_x;
+    }
+
+    int x = x_or_col.value_or(last_print_x);
+    int start_x = x;
+    int y = opt_y.value_or(last_print_y);
+    int c = col.value_or(15);
+    while(*str) {
+        int sc = (uint8_t)*str;
+        if (sc == '\n') {
+            x = start_x;
+            y += 6;
+        } else if (sc >= 32 && sc < 128) {
+            auto ptr = p8font + (sc - 32) * 3;
+            for(int px=0; px<3; px++) {
+                for(int py=0; py<5; py++) {
+                    if (*ptr & (1 << py)) {
+                        if (x >= clip_x0 && x < clip_x1 && (y + py) >= clip_y0 && (y + py) < clip_y1) {
+                            p8lua_screen[x + (y + py) * 128] = p8lua_pal[c];
                         }
                     }
-                    ptr++;
-                    x++;
                 }
-                x++;
-            } else if (sc >= 128) {
-                auto ptr = p8font + (128 - 32) * 3 + (sc - 128) * 7;
-                for(int px=0; px<7; px++) {
-                    for(int py=0; py<5; py++) {
-                        if (*ptr & (1 << py)) {
-                            if (x >= clip_x0 && x < clip_x1 && (y + py) >= clip_y0 && (y + py) < clip_y1) {
-                                p8lua_screen[x + (y + py) * 128] = p8lua_pal[c];
-                            }
-                        }
-                    }
-                    ptr++;
-                    x++;
-                }
+                ptr++;
                 x++;
             }
-            str++;
+            x++;
+        } else if (sc >= 128) {
+            auto ptr = p8font + (128 - 32) * 3 + (sc - 128) * 7;
+            for(int px=0; px<7; px++) {
+                for(int py=0; py<5; py++) {
+                    if (*ptr & (1 << py)) {
+                        if (x >= clip_x0 && x < clip_x1 && (y + py) >= clip_y0 && (y + py) < clip_y1) {
+                            p8lua_screen[x + (y + py) * 128] = p8lua_pal[c];
+                        }
+                    }
+                }
+                ptr++;
+                x++;
+            }
+            x++;
         }
+        str++;
     }
+    last_print_x = x;
+    last_print_y = y;
 }
 /*
 Print a string STR and optionally set the draw colour to COL.
@@ -1868,6 +1876,7 @@ void setupP8LuaEnv(lua_State* L)
     P8_BIND(assert);
 
     P8_BIND(print);
+    P8_BIND(printh);
     P8_BIND(time);
     P8_BIND(t);
     P8_BIND(clip);
