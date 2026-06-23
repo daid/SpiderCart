@@ -75,6 +75,12 @@ total_bottom_base_height = bottom_base_height + bottom_wall_height;
 
 module usb_hole() {
     cube([10, 10, 4], center=true);
+    rotate([90,0,0]) linear_extrude(7, center=true) hull() {
+        translate([ 4,-1.5]) circle(2);
+        translate([-4,-1.5]) circle(2);
+        translate([ 4, 1.5]) circle(2);
+        translate([-4, 1.5]) circle(2);
+    }
 }
 
 module bottom() {
