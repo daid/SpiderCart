@@ -73,6 +73,9 @@ groove_depth = lock_y_near;
 lock_entrance_height = bottom_wall_height - lock_height;
 total_bottom_base_height = bottom_base_height + bottom_wall_height;
 
+module usb_hole() {
+    cube([10, 10, 4], center=true);
+}
 
 module bottom() {
 
@@ -89,7 +92,7 @@ module bottom() {
         } else {
             bottom_grip(grip_y, grip_count);
         }
-        translate([-18, 67, 4]) cube([10, 10, 4], center=true);
+        translate([-18, 67, 4]) usb_hole();
         translate([-2, 67, 4]) cube([14, 10, 4.0], center=true);
     }
 }
@@ -315,7 +318,7 @@ module top() {
                        fillet=6, edges=EDGES_Z_ALL, center=false);
         }
 
-        translate([18, 66, 4]) cube([10, 10, 4], center=true);
+        translate([18, 66, 4]) usb_hole();
         translate([4, 66, 4]) cube([16, 10, 2.2], center=true);
         translate([-19.5, 56, 5]) cube([10, 10, 3.2], center=true);
     }

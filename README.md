@@ -20,19 +20,29 @@ This repository documents the technical side of the SpiderCart. Because of this 
 
 ## Features
 
-The following features are planned/wishes/possabilities.
+The following features are working:
 
 * Support running DMG and GBC roms up to 2MB in size (V1 limitation, design supports up to 8MB)
+* Saves backed up to SD card automatically
+* Menu to load ROMs from SD card
+* Directly loading ROMs through the USB port for quick ROM debugging/testing
+* Optional quickboot to start a rom without resetting and running the bootrom (not compatible with all roms)
+
+The following features are in development:
+
+* Pico-8 support
+* USB port direct access to SD card for easy file updating without taking out the SD card
 * Full support for RTC (Harvest Moon / Pokemon / Homebrew)
 * 3 axis accelerometer (Kirby's Tilt 'n' Tumble / Homebrew)
 * Rumble support
-* Saves backed up to SD card automatically
-* Customizable loader to make rom selection look how you want it
-* Optional quickboot to start a rom without resetting and running the bootrom (not compatible with all roms)
-* SD file access for homebrew
-* USB port direct access to SD card for easy file updating without taking out the SD card
-* 150Mhz ARM Co-processor for whatever we want (Will it run doom?)
 
+The following features are ideas that could work but not actively being developed right now:
+
+* Customizable loader to make rom selection look how you want it, current loader is ugly but functional
+* SD file access for homebrew
+* USB networking
+* NES emulation
+* Doom
 
 ## Implementation
 
@@ -40,3 +50,4 @@ The SpiderCart is implemented by connecting the MCU and RAM chip directly to the
 
 While the gameboy is running, the MCU needs to act like the MBC, controlling when the RAM chip is enabled, as well as simulating the SRAM. It will only need of the two CPU cores this MCU has, so 1 will be available for other functionality.
 
+On the 150Mhz RP2350 Core1 is constantly running as MBC, while core0 handles things like saving SRAM and communicating with the RTC/Accelerometer/USB.
