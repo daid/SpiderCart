@@ -1,8 +1,6 @@
 #pragma once
 
 #include <stdint.h>
-#include "data_write.pio.h"
-#include "data_read.pio.h"
 
 enum class MBC_Type
 {

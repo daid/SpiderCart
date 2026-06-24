@@ -1,18 +1,22 @@
 #include "../binjgb/src/emulator.h"
 #include "../../sw/firmware/inc/command.h"
 #include "../../sw/firmware/inc/p8lua.h"
+#include "../../sw/firmware/inc/memchip.h"
+#include "../../sw/firmware/inc/coprocessor.h"
+#include "../../sw/firmware/inc/mbc_prepare.h"
+#include <pico/multicore.h>
 
-#include <dirent.h>
+#include <thread>
 
 
-FileData rom_filedata;
+FileData* rom_filedata;
 bool ram_enabled = false;
-uint8_t ram_data[16 * 0x2000];
+extern uint8_t ram_data[16 * 0x2000];
 uint8_t* ram_ptr = ram_data;
 uint8_t current_command = 0;
 uint8_t current_command_delay = 0;
 
-extern "C" EmulatorCustomMBC* get_override_mbc(FileData filedata);
+extern "C" EmulatorCustomMBC* get_override_mbc(FileData* filedata);
 
 bool validExt(char* sep)
 {
@@ -22,40 +26,6 @@ bool validExt(char* sep)
     return false;
 }
 
-static void executeCurrentCommand()
-{
-    switch (current_command)
-    {
-    case COMMAND_LIST_DIR:
-        {
-            uint8_t* ptr = ram_data;
-            auto dir = opendir(".");
-            while(auto entry = readdir(dir)) {
-                //*ptr++ = (entry->d_type & DT_DIR) ? 2 : 1;
-                auto sep = strrchr(entry->d_name, '.');
-                if (validExt(sep)) {
-                    *ptr++ = 1;
-                    strncpy((char*)ptr, entry->d_name, 31);
-                    printf("%s\n", entry->d_name);
-                    ptr += 31;
-                }
-            }
-            *ptr = 0;
-            closedir(dir);
-        }
-        //Mark command done.
-        ram_data[15 * 0x2000 + 0x1FFF] = 0;
-        break;
-    case COMMAND_LOAD_AND_RESET:
-        printf("Want to load&reset: %s\n", &ram_data[15 * 0x2000]);
-        //Mark command done.
-        ram_data[15 * 0x2000 + 0x1FFF] = 0;
-        break;
-    default:
-        break;
-    }
-}
-
 static void mbc_write_rom(Emulator* e, MaskedAddress addr, u8 value)
 {
     switch(addr & 0xE000) {
@@ -63,31 +33,25 @@ static void mbc_write_rom(Emulator* e, MaskedAddress addr, u8 value)
         ram_enabled = (value & 0x0F) == 0x0A;
         break;
     case 0x2000:
-        set_rom_bank(e, 1, value);
+        set_rom_bank(e, 1, value & mbc_rom_bank_mask);
         break;
     case 0x4000:
-        ram_ptr = ram_data + (value & 0x0F) * 0x2000;
+        ram_ptr = ram_data + (value & mbc_ram_bank_mask) * 0x2000;
         break;
     case 0x6000:
-        current_command = value;
-        current_command_delay = 16;
+        sio_hw->fifo_rd = value | 0x100;
+        sio_hw->fifo_valid = true;
         break;
     }
-    printf("MBC Write: %04x: %02x\n", addr, value);
+    //printf("MBC Write: %04x: %02x\n", addr, value);
 }
+
+extern "C" void emulator_set_PC(Emulator* e, u16 pc);
 
 static u8 mbc_read_ext_ram(Emulator* e, MaskedAddress addr)
 {
     if (!ram_enabled) return 0xFF;
-    if (current_command) {
-        if (current_command_delay) {
-            current_command_delay -= 1;
-        }else{
-            executeCurrentCommand();
-            current_command = 0;
-        }
-    }
-    printf("MBC RAM Read: %04x: %02x\n", addr, ram_ptr[addr]);
+    //printf("MBC RAM Read: %04x: %02x\n", addr, ram_ptr[addr]);
     return ram_ptr[addr];
 }
 
@@ -95,7 +59,7 @@ static void mbc_write_ext_ram(Emulator* e, MaskedAddress addr, u8 value)
 {
     if (!ram_enabled) return;
     ram_ptr[addr] = value;
-    printf("MBC RAM Write: %04x: %02x\n", addr, value);
+    //printf("MBC RAM Write: %04x: %02x\n", addr, value);
 }
 
 static EmulatorCustomMBC mbc = {
@@ -104,13 +68,38 @@ static EmulatorCustomMBC mbc = {
     .write_ext_ram = &mbc_write_ext_ram
 };
 
-EmulatorCustomMBC* get_override_mbc(FileData filedata)
+static void coprocessorThread()
 {
-    if (filedata.size < 0x200) return nullptr;
-    if (filedata.data[0x147] != 0x1A) return nullptr; //SpiderCartMBC should indicate MBC5+RAM
-    if (filedata.data[0x150] != 0xDD) return nullptr; //Common first instruction should be invalid
-    if (memcmp(&filedata.data[0x151], "SPIDER", 6) != 0) return nullptr; // No spider indicator
+    while(true) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        processCoProcessor();
+    }
+}
+
+EmulatorCustomMBC* get_override_mbc(FileData* filedata)
+{
+    if (filedata->size < 0x200) return nullptr;
+    if (filedata->data[0x147] != 0x1A) return nullptr; //SpiderCartMBC should indicate MBC5+RAM
+    if (filedata->data[0x150] != 0xDD) return nullptr; //Common first instruction should be invalid
+    if (memcmp(&filedata->data[0x151], "SPIDER", 6) != 0) return nullptr; // No spider indicator
     printf("Loading rom with SpiderCartMBC\n");
+    filedata->data[0x148] = 0x08;
+    //We resize the rom so we can load any size rom in it in the future.
+    filedata->size = 8*1024*1024;
+    filedata->data = (u8*)realloc(filedata->data, filedata->size);
     rom_filedata = filedata;
+
+    new std::thread(coprocessorThread);
+
     return &mbc;
+}
+
+void write_memchip(uint32_t addr, const uint8_t* data, size_t size)
+{
+    memcpy(rom_filedata->data + addr, data, size);
+}
+
+void read_memchip(uint32_t addr, uint8_t* data, size_t size)
+{
+    memcpy(data, rom_filedata->data + addr, size);
 }
