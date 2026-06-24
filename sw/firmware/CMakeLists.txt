@@ -17,9 +17,11 @@ add_executable(SpiderCart
     src/usb_msc.cpp
     src/memchip.cpp
     src/mbc.cpp
+    src/mbc_prepare.cpp
     src/pins.cpp
     src/sddiskio.cpp
     src/romload.cpp
+    src/coprocessor.cpp
     inc/memchip.h
     inc/pins.h
 
