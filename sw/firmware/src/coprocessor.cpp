@@ -32,6 +32,18 @@ bool valid_rom_ext(const char* ext)
     return false;
 }
 
+int co_error(int error_nr, const char* fmt, ...)
+{
+    va_list arg_ptr;
+
+    va_start(arg_ptr, fmt);
+    vsnprintf((char*)&ram_data[15 * 0x2000 + 0x1F00], 0xF0, fmt, arg_ptr);
+    printf("%s\n", (char*)&ram_data[15 * 0x2000 + 0x1F00]);
+    va_end(arg_ptr);
+
+    ram_data[15 * 0x2000 + 0x1FFF] = error_nr; // indicate an error
+    return error_nr;
+}
 
 void processCoProcessor()
 {

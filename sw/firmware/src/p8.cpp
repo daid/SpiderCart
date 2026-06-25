@@ -24,15 +24,11 @@ const uint8_t p8_gb_data[] = {
 static lua_State* p8_lua_state;
 static bool p8_lua_60fps;
 
-void p8_error(const char* fmt, ...)
-{
-    va_list arg_ptr;
-
-    va_start(arg_ptr, fmt);
-    vsnprintf((char*)&ram_data[15 * 0x2000 + 0x1F00], 0xF0, fmt, arg_ptr);
-    printf("%s\n", (char*)&ram_data[15 * 0x2000 + 0x1F00]);
-    va_end(arg_ptr);
-    ram_data[15 * 0x2000 + 0x1FF1] = 1;
+int p8lua_error() {
+    co_error(1, "%s", lua_tostring(p8_lua_state, -1));
+    lua_close(p8_lua_state);
+    p8_lua_state = nullptr;
+    return 1;
 }
 
 int p8_load(const char* filename)
@@ -47,11 +43,12 @@ int p8_load(const char* filename)
 
     FATFS fatfs;
     memset(&fatfs, 0, sizeof(fatfs));
-    if (f_mount(&fatfs, "", 0) != FR_OK)
-        return 1;
+    if (f_mount(&fatfs, "", 0) != FR_OK) {
+        return co_error(1, "mount failed");
+    }
     FIL fp;
     if (f_open(&fp, filename, FA_READ) != FR_OK)
-        return 2;
+        return co_error(2, "read error");
 
     stbi_io_callbacks callbacks = {
         [](void *user, char *data,int size) -> int {
@@ -73,9 +70,9 @@ int p8_load(const char* filename)
     int x = 0, y = 0;
     auto pixels = stbi_load_from_callbacks(&callbacks, &fp, &x, &y, nullptr, 4);
     if (!pixels)
-        return 1;
+        return co_error(3, "image error");;
     if (x != 160 || y != 205)
-        return 2;
+        return co_error(4, "image error");;
     auto read_ptr = pixels;
     auto write_ptr = ram_data;
     for(y=0; y<205; y++) {
@@ -117,10 +114,7 @@ int p8_load(const char* filename)
             }
         }
         if (luaL_loadbufferx(p8_lua_state, (char*)ram_data + 0x11000, decompressed_size, "=", nullptr) != LUA_OK) {
-            p8_error("%s", lua_tostring(p8_lua_state, -1));
-            lua_close(p8_lua_state);
-            p8_lua_state = nullptr;
-            return 3;
+            return p8lua_error();
         }
     } else if (memcmp(ram_data + 0x4300, "\x00pxa", 4) == 0) { // new compression
         uint8_t mapping[256];
@@ -184,35 +178,23 @@ int p8_load(const char* filename)
             }
         }
         if (luaL_loadbufferx(p8_lua_state, (char*)ram_data + 0x11000, decompressed_size, "=", nullptr) != LUA_OK) {
-            p8_error("%s", lua_tostring(p8_lua_state, -1));
-            lua_close(p8_lua_state);
-            p8_lua_state = nullptr;
-            return 3;
+            return p8lua_error();
         }
     } else {
         if (luaL_loadbufferx(p8_lua_state, (char*)ram_data + 0x4300, strlen((char*)ram_data + 0x4300), "=", nullptr) != LUA_OK) {
-            p8_error("%s", lua_tostring(p8_lua_state, -1));
-            lua_close(p8_lua_state);
-            p8_lua_state = nullptr;
-            return 3;
+            return p8lua_error();
         }
     }
 
     if (lua_pcall(p8_lua_state, 0, 0, 0) != LUA_OK) {
-        p8_error("%s", lua_tostring(p8_lua_state, -1));
-        lua_close(p8_lua_state);
-        p8_lua_state = nullptr;
-        return 4;
+            return p8lua_error();
     }
 
     lua_getglobal(p8_lua_state, "_init");
     if (lua_isfunction(p8_lua_state, -1)) {
         auto res = lua_pcall(p8_lua_state, 0, 0, 0);
         if (res) {
-            p8_error("%d: _init: %s", res, lua_tostring(p8_lua_state, -1));
-            lua_close(p8_lua_state);
-            p8_lua_state = nullptr;
-            return 5;
+            return p8lua_error();
         }
     } else {
         lua_pop(p8_lua_state, 1);
@@ -254,10 +236,7 @@ static int p8_update()
     if (lua_isfunction(p8_lua_state, -1)) {
         auto res = lua_pcall(p8_lua_state, 0, 0, 0);
         if (res) {
-            p8_error("%d: _update: %s", res, lua_tostring(p8_lua_state, -1));
-            lua_close(p8_lua_state);
-            p8_lua_state = nullptr;
-            return 2;
+            return p8lua_error();
         }
     } else {
         lua_pop(p8_lua_state, 1);
@@ -274,10 +253,7 @@ int p8_draw()
     if (lua_isfunction(p8_lua_state, -1)) {
         auto res = lua_pcall(p8_lua_state, 0, 0, 0);
         if (res) {
-            p8_error("%d: _draw: %s", res, lua_tostring(p8_lua_state, -1));
-            lua_close(p8_lua_state);
-            p8_lua_state = nullptr;
-            return 2;
+            return p8lua_error();
         }
     } else {
         lua_pop(p8_lua_state, 1);
