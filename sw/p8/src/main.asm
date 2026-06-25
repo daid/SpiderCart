@@ -70,25 +70,15 @@ entry:
     ld   bc, fontData.end - fontData
     call copy1BPP
 
+    ; Enable SRAM and switch to bank 15
     ld   a, $0A
     ld   [$0000], a
-    ld   a, $00
+    ld   a, $0F
     ld   [$4000], a
     ld   hl, $A000
     ld   de, $8000
     ld   bc, 16 * 16 * 16
     call copyMem
-
-    ; TMPTMP
-    ld   hl, $8000
-    ld   bc, $1000
-    ld   a, $55
-    call setMem
-    ld   hl, $A000
-    ld   bc, $2000
-    ld   a, $AA
-    call setMem
-    ; !TMPTMP
 
     ldh  a, [hGBC]
     and  a, a
@@ -158,6 +148,8 @@ entry:
     call updateJoypadState
     ld   a, [wJoypadState]
     ld   [$A000 + $1FF0], a
+    ld   a, $80 ; COMMAND_P8_CYCLE_60
+    ld   [$6000], a
     
     call waitVBlank
     ld   a, $01
@@ -206,6 +198,8 @@ entry:
     call updateJoypadState
     ld   a, [wJoypadState]
     ld   [$A000 + $1FF0], a
+    ld   a, $81 ; COMMAND_P8_CYCLE_30
+    ld   [$6000], a
 
     ld   sp, $A000
     ld   hl, $8000
@@ -214,8 +208,6 @@ entry:
     ; This code is tuned to copy exactly 128 tiles per frame in VBlank and HBlank time.
     #FOR FRAME_LOOP, 0, 2 {    
         HALT_FOR IE_VBLANK
-        ld   a, $01
-        ld   [$A000 + $1FF1], a
         ld   a, e
         #FOR n, 0, 93 {
             POPSLIDE

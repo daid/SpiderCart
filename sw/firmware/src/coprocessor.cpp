@@ -3,6 +3,7 @@
 #include "mbc.h"
 #include "mbc_prepare.h"
 #include "command.h"
+#include "p8.h"
 
 #include "fatfs/ff.h"
 #include <pico/multicore.h>
@@ -133,6 +134,12 @@ void processCoProcessor()
                     load_sav();
                 }
                 start_mbc(false);
+                break;
+            case COMMAND_P8_CYCLE_60:
+                p8_cycle60();
+                break;
+            case COMMAND_P8_CYCLE_30:
+                p8_cycle30();
                 break;
             default:
                 ram_data[15 * 0x2000 + 0x1FFF] = 1; // indicate an error

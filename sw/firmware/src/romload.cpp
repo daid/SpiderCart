@@ -17,7 +17,7 @@ void clear_sav_filename()
 int load_rom(const char* filename)
 {
     if (strlen(filename) > 7 && strcmp(filename + strlen(filename) - 7, ".p8.png") == 0) {
-        return load_p8(filename);
+        return p8_load(filename);
     }
     strcpy(sav_filename, filename);
     auto sep = strrchr(sav_filename, '.');

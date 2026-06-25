@@ -180,7 +180,7 @@ execQuickbootCode:
     jr  nz, :-
     dec d
     jr  nz, :-
-    ld  a, $11
+    ldh a, [hGBC]
     ld  sp, $FFFE
 
     jp  $0100
