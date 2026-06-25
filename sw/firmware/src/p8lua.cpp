@@ -1274,8 +1274,8 @@ Returns the closest integer that is equal to or below x
 > ?CEIL( 4.1) -->  5
 > ?CEIL(-2.3) --> -2
 */
-lua_Number lua_p8_cos(lua_Number f) { return std::cosf(f * (M_PI * 2.0f)); }
-lua_Number lua_p8_sin(lua_Number f) { return -std::sinf(f * (M_PI * 2.0f)); }
+lua_Number lua_p8_cos(lua_Number f) { return std::cos(f * (M_PI * 2.0f)); }
+lua_Number lua_p8_sin(lua_Number f) { return -std::sin(f * (M_PI * 2.0f)); }
 /*
 Returns the cosine or sine of x, where 1.0 means a full turn. For example, to animate a dial that turns once every second:
 

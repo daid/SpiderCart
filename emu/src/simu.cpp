@@ -4,6 +4,7 @@
 #include <dirent.h>
 #include <chrono>
 #include <string>
+#include <cstring>
 
 static sio_hw_t sio_hw_impl;
 sio_hw_t* sio_hw = &sio_hw_impl;

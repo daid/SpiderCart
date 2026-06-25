@@ -1,6 +1,9 @@
 #include "mbc.h"
 #include "pins.h"
 
+#include "data_write.pio.h"
+#include "data_read.pio.h"
+
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
 #include "hardware/gpio.h"

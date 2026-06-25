@@ -3,6 +3,9 @@
 #include "pins.h"
 #include "memchip.h"
 
+#include "data_write.pio.h"
+#include "data_read.pio.h"
+
 #include <string.h>
 #include <hardware/gpio.h>
 #include <pico/multicore.h>

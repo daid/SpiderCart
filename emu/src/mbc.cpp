@@ -6,6 +6,7 @@
 #include "../../sw/firmware/inc/mbc_prepare.h"
 #include <pico/multicore.h>
 
+#include <cstring>
 #include <thread>
 
 
@@ -17,14 +18,6 @@ uint8_t current_command = 0;
 uint8_t current_command_delay = 0;
 
 extern "C" EmulatorCustomMBC* get_override_mbc(FileData* filedata);
-
-bool validExt(char* sep)
-{
-    if (!sep) return false;
-    if (strcmpi(sep, ".gb") == 0) return true;
-    if (strcmpi(sep, ".gbc") == 0) return true;
-    return false;
-}
 
 static void mbc_write_rom(Emulator* e, MaskedAddress addr, u8 value)
 {
