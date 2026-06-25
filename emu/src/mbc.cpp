@@ -12,7 +12,6 @@
 
 FileData* rom_filedata;
 bool ram_enabled = false;
-extern uint8_t ram_data[16 * 0x2000];
 uint8_t* ram_ptr = ram_data;
 uint8_t current_command = 0;
 uint8_t current_command_delay = 0;

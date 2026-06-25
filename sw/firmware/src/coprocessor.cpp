@@ -8,6 +8,7 @@
 #include <pico/multicore.h>
 #include <string.h>
 #include <stdio.h>
+#include <ctype.h>
 
 uint8_t ram_data[16 * 0x2000];
 
@@ -17,6 +18,18 @@ enum class SavState {
     PostSaveDelay,
 } sav_state = SavState::Idle;
 absolute_time_t sav_timer;
+
+bool valid_rom_ext(const char* ext)
+{
+    if (strcasecmp(ext, ".gb") == 0) return true;
+    if (strcasecmp(ext, ".gbc") == 0) return true;
+    if (strcasecmp(ext, ".png") == 0) {
+        if (tolower(ext[-1]) == '8' && tolower(ext[-2]) == 'p' && tolower(ext[-3]) == '.') {
+            return true;
+        }
+    }
+    return false;
+}
 
 
 void processCoProcessor()
@@ -76,7 +89,7 @@ void processCoProcessor()
                                     ptr += 31;
                                 } else {
                                     auto ext = strrchr(fno.fname, '.');
-                                    if (strcasecmp(ext, ".gb") == 0 || strcasecmp(ext, ".gbc") == 0) {
+                                    if (ext && valid_rom_ext(ext)) {
                                         *ptr++ = 0x01;
                                         strcpy((char*)ptr, fno.fname);
                                         ptr += 31;
@@ -127,5 +140,4 @@ void processCoProcessor()
             }
         }
     }
-
 }

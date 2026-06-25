@@ -2,6 +2,8 @@
 extern "C" {
 #include <class/msc/msc_device.h>
 }
+#include "fatfs/ff.h"
+#include "fatfs/diskio.h"
 
 // Copy disk's data to buffer (up to bufsize) and return number of copied bytes.
 int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void* buffer, uint32_t bufsize)

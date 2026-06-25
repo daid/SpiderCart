@@ -22,8 +22,6 @@
 #include "data_read.pio.h"
 
 
-extern uint8_t ram_data[16 * 0x2000];
-
 uint8_t serial_receive_buffer[255];
 uint8_t serial_receive_index;
 uint8_t serial_receive_length;

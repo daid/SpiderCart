@@ -1,9 +1,11 @@
 #include "fatfs/ff.h"
 #include "memchip.h"
 #include "romload.h"
+#include "coprocessor.h"
+#include "p8.h"
+#include <stdio.h>
 #include <cstring>
 
-extern uint8_t ram_data[16 * 0x2000];
 
 char sav_filename[256];
 
@@ -14,6 +16,9 @@ void clear_sav_filename()
 
 int load_rom(const char* filename)
 {
+    if (strlen(filename) > 7 && strcmp(filename + strlen(filename) - 7, ".p8.png") == 0) {
+        return load_p8(filename);
+    }
     strcpy(sav_filename, filename);
     auto sep = strrchr(sav_filename, '.');
     if (!sep) sep = sav_filename + strlen(sav_filename);

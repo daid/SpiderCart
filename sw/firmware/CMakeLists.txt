@@ -10,6 +10,8 @@ set(CMAKE_CXX_STANDARD 17)
 find_package(Python3)
 add_subdirectory(../loader loader)
 add_custom_command(OUTPUT Loader.gb.inc COMMAND Python3::Interpreter ${CMAKE_CURRENT_SOURCE_DIR}/rom2inc.py ${CMAKE_CURRENT_BINARY_DIR}/loader/Loader.gb Loader.gb.inc DEPENDS Loader loader/Loader.gb ${CMAKE_CURRENT_SOURCE_DIR}/rom2inc.py)
+add_subdirectory(../p8 p8)
+add_custom_command(OUTPUT p8.gb.inc COMMAND Python3::Interpreter ${CMAKE_CURRENT_SOURCE_DIR}/rom2inc.py ${CMAKE_CURRENT_BINARY_DIR}/p8/p8.gb p8.gb.inc DEPENDS p8 p8/p8.gb ${CMAKE_CURRENT_SOURCE_DIR}/rom2inc.py)
 
 add_executable(SpiderCart
     src/main.cpp
@@ -22,6 +24,8 @@ add_executable(SpiderCart
     src/sddiskio.cpp
     src/romload.cpp
     src/coprocessor.cpp
+    src/p8.cpp
+    src/p8lua.cpp
     inc/memchip.h
     inc/pins.h
 
@@ -55,6 +59,7 @@ add_executable(SpiderCart
     src/lua/lctype.c
 
     Loader.gb.inc
+    p8.gb.inc
 )
 pico_generate_pio_header(SpiderCart ${CMAKE_CURRENT_LIST_DIR}/src/data_write.pio)
 pico_generate_pio_header(SpiderCart ${CMAKE_CURRENT_LIST_DIR}/src/data_read.pio)

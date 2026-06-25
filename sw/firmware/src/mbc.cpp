@@ -1,5 +1,6 @@
 #include "mbc.h"
 #include "pins.h"
+#include "coprocessor.h"
 
 #include "data_write.pio.h"
 #include "data_read.pio.h"
@@ -13,8 +14,6 @@
 #define MBC_FLAG_NO_BANK0 0x0200
 #define MBC_FLAG_SPIDER   0x1000
 
-
-extern uint8_t ram_data[16 * 0x2000];
 
 #define MBC_FUNC(name) __attribute__((noinline)) __scratch_x("mbc_handler_spider") name
 
