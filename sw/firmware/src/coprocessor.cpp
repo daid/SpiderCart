@@ -10,6 +10,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <stdarg.h>
+
 
 uint8_t ram_data[16 * 0x2000];
 
