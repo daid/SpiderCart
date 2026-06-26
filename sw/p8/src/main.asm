@@ -151,7 +151,13 @@ entry:
     ld   a, $80 ; COMMAND_P8_CYCLE_60
     ld   [$6000], a
     
-    call waitVBlank
+    ; Wait for VBLank
+    ld   a, IE_VBLANK
+    ldh  [rIE], a
+    xor  a
+    ldh  [rIF], a
+    halt
+    
     ld   a, $01
     ld   [$A000 + $1FF1], a
     ; Copy 128 tiles with HDMA in direct copy

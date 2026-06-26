@@ -1,9 +1,9 @@
 #include "../binjgb/src/emulator.h"
-#include "../../sw/firmware/inc/command.h"
-#include "../../sw/firmware/inc/p8lua.h"
-#include "../../sw/firmware/inc/memchip.h"
-#include "../../sw/firmware/inc/coprocessor.h"
-#include "../../sw/firmware/inc/mbc_prepare.h"
+#include "command.h"
+#include "p8lua.h"
+#include "memchip.h"
+#include "coprocessor.h"
+#include "mbc_prepare.h"
 #include <pico/multicore.h>
 
 #include <cstring>
