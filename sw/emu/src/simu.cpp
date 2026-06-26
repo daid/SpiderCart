@@ -106,7 +106,7 @@ FRESULT f_write (FIL* fp, const void* buff, unsigned int btw, unsigned int* bw)
     return FR_OK;
 }
 
-bool core1_running;
+bool core1_running = true;
 
 MBC_Type mbc_type = MBC_Type::Spider;
 uint32_t mbc_flags = MBC_FLAG_RAM;

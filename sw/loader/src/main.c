@@ -2,6 +2,7 @@
 
 uint8_t execCommand(uint8_t);
 uint8_t execQuickboot(uint8_t);
+void clearScreen(void);
 void printStr(uint16_t yx, char* str);
 void updateJoypadState(void) __preserves_regs(d, e);
 void waitVBlank(void) __preserves_regs(b, c, d, e, h, l);
@@ -64,8 +65,16 @@ void main(void)
             *((uint8_t*)0x4000) = 0x0F; // Switch to bank 15
             strcpy((char*)0xA000, tempBuffer);
             printStr(0, "Loading ROM...");
-            execCommand(0x10); //Load file and reset
-            //execQuickboot(0x11);
+            if (execCommand(0x10)) { //Load file and reset
+                // Error
+                clearScreen();
+                printStr(0x000, "ERROR:");
+                printStr(0x100, (const char*)0xBF00);
+                do {
+                    waitVBlank();
+                    updateJoypadState();
+                } while((JoypadPressed & (PADF_A | PADF_B)) == 0);
+            }
             *((uint8_t*)0x4000) = 0x00; // Switch to bank 0
        }
         if (JoypadPressed & PADF_START) {

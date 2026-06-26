@@ -111,6 +111,18 @@ _printStr: ; print the string at BC on the background at DE=YX
     ld  a, e
     ld  [hl+], a
     jr  .loop
+
+_clearScreen:
+    ld  hl, $9800
+    ld  bc, $0400
+.loop:
+    STAT_WAIT
+    ld  [hl+], a
+    dec c
+    jr  nz, .loop
+    dec b
+    jr  nz, .loop
+    ret
 }
 
 #SECTION "ExecCommandCode", ROM0 {

@@ -122,7 +122,6 @@ void processCoProcessor()
             case COMMAND_LOAD_AND_RESET:
                 stop_mbc();
                 if (load_rom((const char*)&ram_data[15 * 0x2000])) {
-                    ram_data[15 * 0x2000 + 0x1FFF] = 1;
                     start_mbc(false);
                 } else {
                     ram_data[15 * 0x2000 + 0x1FFF] = 0;
@@ -136,14 +135,13 @@ void processCoProcessor()
             case COMMAND_LOAD_FOR_QUICKBOOT:
                 stop_mbc();
                 ram_data[15 * 0x2000 + 0x1FFF] = 0;
-                if (load_rom((const char*)&ram_data[15 * 0x2000])) {
-                    ram_data[15 * 0x2000 + 0x1FFF] = 1;
-                }
+                load_rom((const char*)&ram_data[15 * 0x2000]);
                 start_mbc(false);
                 break;
             case COMMAND_EXEC_QUICKBOOT:
                 stop_mbc();
                 prepare_mbc();
+                ram_data[15 * 0x2000 + 0x1FFF] = 0;
                 if (mbc_flags & MBC_FLAG_BATTERY) {
                     load_sav();
                 }
@@ -156,7 +154,7 @@ void processCoProcessor()
                 p8_cycle30();
                 break;
             default:
-                ram_data[15 * 0x2000 + 0x1FFF] = 1; // indicate an error
+                co_error(1, "Unknown command: %x", cmd);
                 break;
             }
         }

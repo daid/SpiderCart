@@ -27,10 +27,10 @@ int load_rom(const char* filename)
     FATFS fatfs;
     memset(&fatfs, 0, sizeof(fatfs));
     if (f_mount(&fatfs, "", 0) != FR_OK)
-        return 1;
+        return co_error(1, "FS failure");
     FIL fp;
     if (f_open(&fp, filename, FA_READ) != FR_OK)
-        return 2;
+        return co_error(2, "FS failure");
     UINT br;
     uint32_t addr = 0;
     while(f_read(&fp, ram_data, 2048, &br) == FR_OK && br > 0) {

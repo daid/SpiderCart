@@ -59,6 +59,7 @@ entry:
     xor  a
 .gbc:
     ldh  [hGBC], a
+    ld   sp, $e000
 
     call lcd_off
     ld   hl, $8000
@@ -75,10 +76,11 @@ entry:
     ld   [$0000], a
     ld   a, $0F
     ld   [$4000], a
+
     ld   hl, $A000
     ld   de, $8000
     ld   bc, 16 * 16 * 16
-    call copyMem
+    call copyMem ; Copy initial screen
 
     ldh  a, [hGBC]
     and  a, a
@@ -175,6 +177,11 @@ entry:
     ld   a, 127 | $80
     ldh  [rHDMA5], a
 
+    ; Check for errors
+    ld   a, [$BFFF]
+    and  a, a
+    jp   nz, displayError
+
     jr .loopGBC
 
 .startDMG:
@@ -239,7 +246,12 @@ entry:
         ldh  [rBGP], a
         ; We are only at line 136, so we have some spare time till VBlank here.
     }
-    ld   sp, $FFFF
+    ld   sp, $E000
+
+    ; Check for errors
+    ld   a, [$BFFF]
+    and  a, a
+    jp   nz, displayError
 
     jp .loopDMG
 
@@ -263,6 +275,49 @@ dmgOAM:
     #FOR N, 0, 8 {
         db 0, 0, 0, 0
     }
+}
+
+#SECTION "ErrorDisplay", ROM0 {
+displayError:
+    ld   sp, $E000
+    call lcd_off
+
+    xor  a
+    ldh  [rSCX], a
+    ldh  [rSCY], a
+    ld   hl, $9C00
+    ld   bc, $0400
+    call clearMem
+
+    ; Copy error message
+    ld   de, $BF00
+    ld   hl, $9C00
+    loop {
+        ld   a, [de]
+        sub  a, $20
+        jr   c, .errorDone
+        ld   [hl+], a
+        inc  de
+        ld   a, l
+        and  a, $1F
+        cp   20
+        if   nc {
+            ld  bc, 32 - 20
+            add hl, bc
+        }
+    }
+
+.errorDone:
+    ld   a, LCDC_ON | LCDC_BG_9C00 | LCDC_BG_ON | LCDC_BLOCK21
+    ldh  [rLCDC], a
+
+.loop:
+    xor  a
+    ldh  [rIF], a
+    ldh  [rIE], a
+    halt
+    nop
+    jr .loop
 }
 
 #SECTION "PrintStr", ROM0 {

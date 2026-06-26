@@ -20,6 +20,8 @@ extern "C" EmulatorCustomMBC* get_override_mbc(FileData* filedata);
 
 static void mbc_write_rom(Emulator* e, MaskedAddress addr, u8 value)
 {
+    if (!core1_running) return;
+
     switch(addr & 0xE000) {
     case 0x0000:
         ram_enabled = (value & 0x0F) == 0x0A;
@@ -43,6 +45,7 @@ extern "C" void emulator_set_PC(Emulator* e, u16 pc);
 static u8 mbc_read_ext_ram(Emulator* e, MaskedAddress addr)
 {
     if (!ram_enabled) return 0xFF;
+    if (!core1_running) return 0xFF;
     //printf("MBC RAM Read: %04x: %02x\n", addr, ram_ptr[addr]);
     return ram_ptr[addr];
 }
@@ -50,6 +53,7 @@ static u8 mbc_read_ext_ram(Emulator* e, MaskedAddress addr)
 static void mbc_write_ext_ram(Emulator* e, MaskedAddress addr, u8 value)
 {
     if (!ram_enabled) return;
+    if (!core1_running) return;
     ram_ptr[addr] = value;
     //printf("MBC RAM Write: %04x: %02x\n", addr, value);
 }

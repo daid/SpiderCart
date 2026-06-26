@@ -33,13 +33,10 @@ int p8lua_error() {
 
 int p8_load(const char* filename)
 {
-    ram_data[15 * 0x2000 + 0x1FF1] = 0;
     if (p8_lua_state) {
         lua_close(p8_lua_state);
         p8_lua_state = nullptr;
     }
-
-    write_memchip(0, p8_gb_data, sizeof(p8_gb_data));
 
     FATFS fatfs;
     memset(&fatfs, 0, sizeof(fatfs));
@@ -203,6 +200,8 @@ int p8_load(const char* filename)
     lua_getglobal(p8_lua_state, "_update60");
     p8_lua_60fps = lua_isfunction(p8_lua_state, -1);
     lua_pop(p8_lua_state, 1);
+
+    write_memchip(0, p8_gb_data, sizeof(p8_gb_data));
 
     return 0;
 }
