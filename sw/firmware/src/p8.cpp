@@ -20,6 +20,12 @@ const uint8_t p8_gb_data[] = {
     #include "p8.gb.inc"
 };
 
+static const uint8_t p8_default_pal_lookup[16] = {
+    3, 2, 2, 1,
+    1, 2, 1, 0,
+    1, 0, 0, 0,
+    2, 1, 0, 0
+};
 
 static lua_State* p8_lua_state;
 static bool p8_lua_60fps;
@@ -202,16 +208,10 @@ int p8_load(const char* filename)
     lua_pop(p8_lua_state, 1);
 
     write_memchip(0, p8_gb_data, sizeof(p8_gb_data));
+    memcpy(&ram_data[15 * 0x2000 + 0x1E00], p8_default_pal_lookup, sizeof(p8_default_pal_lookup));
 
     return 0;
 }
-
-uint8_t p8_pal_lookup[16] = {
-    3, 2, 2, 1,
-    1, 2, 1, 0,
-    1, 0, 0, 0,
-    2, 1, 0, 0
-};
 
 static int p8_update()
 {
@@ -263,7 +263,7 @@ int p8_draw()
             for(int y=0; y<8; y++) {
                 uint8_t a = 0, b = 0;
                 for(int x=0; x<8; x++) {
-                    auto c = p8_pal_lookup[p8lua_screen[tx*8+x + (ty*8+y)*128]];
+                    auto c = ram_data[15 * 0x2000 + 0x1E00 + p8lua_screen[tx*8+x + (ty*8+y)*128]];
                     if (c & 1) a |= 0x80 >> x;
                     if (c & 2) b |= 0x80 >> x;
                 }

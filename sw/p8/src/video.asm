@@ -4,6 +4,12 @@
     jr  nz, :-
 }
 
+#SECTION "VideoMem", WRAM0 {
+wBGPalette:
+_BGPalette:
+    ds 8 * 4 * 2
+}
+
 #SECTION "Video", ROM0 {
 
 lcd_off:
@@ -25,6 +31,8 @@ waitVBlank:
     ret
 
 setBGPalette:
+_setBGPalette:
+    ld   hl, wBGPalette
     ld   a, $80
     ldh  [rBCPS], a
     ld   c, 2 * 4 * 8
