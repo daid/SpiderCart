@@ -70,6 +70,7 @@ pico_enable_stdio_uart(SpiderCart 0)
 target_link_libraries(SpiderCart pico_stdlib hardware_i2c hardware_spi hardware_pio hardware_dma pico_multicore tinyusb_device tinyusb_board)
 target_include_directories(SpiderCart PUBLIC src inc inc/usb)
 target_link_options(SpiderCart PUBLIC -Wl,--print-memory-usage)
+pico_set_linker_script(SpiderCart ${CMAKE_CURRENT_SOURCE_DIR}/link.ld)
 pico_add_extra_outputs(SpiderCart)
 
 target_compile_definitions(SpiderCart PRIVATE
