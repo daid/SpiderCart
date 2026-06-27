@@ -587,12 +587,29 @@ static int llex (LexState *ls, SemInfo *seminfo) {
       case 0x80: next(ls); seminfo->r = 0.5f; return TK_FLT; // SHIFT+A
       case 0x81: next(ls); seminfo->r = 23130.5f; return TK_FLT; // SHIFT+B
       case 0x82: next(ls); seminfo->r = 20767.5f; return TK_FLT; // SHIFT+C
-      case 0x83: next(ls); seminfo->r = 3.0f; return TK_FLT; // SHIFT+D
+      case 0x83: next(ls); seminfo->i = 3; return TK_INT; // SHIFT+D
       case 0x84: next(ls); seminfo->r = 32125.5f; return TK_FLT; // SHIFT+E
       case 0x85: next(ls); seminfo->r = -18402.5f; return TK_FLT; // SHIFT+F
       case 0x86: next(ls); seminfo->r = -1632.5f; return TK_FLT; // SHIFT+G
       case 0x87: next(ls); seminfo->r = 20927.5f; return TK_FLT; // SHIFT+H
       case 0x88: next(ls); seminfo->r = -19008.5f; return TK_FLT; // SHIFT+I
+      case 0x89: next(ls); seminfo->r = -26208.5f; return TK_FLT; // SHIFT+J
+      case 0x8A: next(ls); seminfo->r = -20192.5f; return TK_FLT; // SHIFT+K
+      case 0x8B: next(ls); seminfo->i = 0; return TK_INT; // SHIFT+L
+      case 0x8C: next(ls); seminfo->r = -24351.5f; return TK_FLT; // SHIFT+M
+      case 0x8D: next(ls); seminfo->r = -25792.5f; return TK_FLT; // SHIFT+N
+      case 0x8E: next(ls); seminfo->i = 4; return TK_INT; // SHIFT+O
+      case 0x8F: next(ls); seminfo->r = -20032.5f; return TK_FLT; // SHIFT+P
+      case 0x90: next(ls); seminfo->r = -2560.5f; return TK_FLT; // SHIFT+Q
+      case 0x91: next(ls); seminfo->i = 1; return TK_INT; // SHIFT+R
+      case 0x92: next(ls); seminfo->r = -20128.5; return TK_FLT; // SHIFT+S
+      case 0x93: next(ls); seminfo->r = 6943.5; return TK_FLT; // SHIFT+T
+      case 0x94: next(ls); seminfo->i = 2; return TK_INT; // SHIFT+U
+      case 0x95: next(ls); seminfo->r = -2624.5; return TK_FLT; // SHIFT+V
+      case 0x96: next(ls); seminfo->r = 31455.5; return TK_FLT; // SHIFT+W
+      case 0x97: next(ls); seminfo->i = 2; return TK_INT; // SHIFT+X
+      case 0x98: next(ls); seminfo->r = 3855.5; return TK_FLT; // SHIFT+Y
+      case 0x99: next(ls); seminfo->r = 21845.5; return TK_FLT; // SHIFT+Z
       default: {
         if (lislalpha(ls->current)) {  /* identifier or reserved word? */
           TString *ts;
