@@ -1492,9 +1492,20 @@ TOSTR(17)       -- "17"
 TOSTR(17,0x1)   -- "0x0011.0000"
 TOSTR(17,0x3)   -- "0x00110000"
 TOSTR(17,0x2)   -- "1114112"
-
-TONUM(VAL, [FORMAT_FLAGS])
-
+*/
+int lua_p8_tonum(lua_State* L)
+{
+    //TONUM(VAL, [FORMAT_FLAGS])
+    luaL_checkany(L, 1);
+    if (lua_isstring(L, 1)) {
+        //TODO: Handle format flags
+        lua_pushnumber(L, atof(lua_tostring(L, 1)));
+    } else {
+        lua_pushvalue(L, 1);
+    }
+    return 1;
+}
+/*
 Converts VAL to a number.
 
 TONUM("17.5")  -- 17.5
@@ -1607,9 +1618,12 @@ Another alternative is to write directly to a second cartridge by specifying a f
 CSTORE(0,0,0X2000, "SPRITE SHEET.P8")
 -- LATER, RESTORE THE SAVED DATA:
 RELOAD(0,0,0X2000, "SPRITE SHEET.P8")
-
-CARTDATA(ID)
-
+*/
+void lua_p8_cartdata(const char* str)
+{
+    (void)str;
+}
+/*
 Opens a permanent data storage slot indexed by ID that can be used to store and retrieve up to 256 bytes (64 numbers) worth of data using DSET() and DGET().
 
 CARTDATA("ZEP_DARK_FOREST")
@@ -1624,15 +1638,15 @@ CARTDATA can be called once per cartridge execution, and so only a single data s
 Once a cartdata ID has been set, the area of memory 0X5E00..0X5EFF is mapped to permanent storage, and can either be accessed directly or via DGET()/@DSET().
 
 There is no need to flush written data -- it is automatically saved to permanent storage even if modified by directly POKE()'ing 0X5E00..0X5EFF.
-
-DGET(INDEX)
-
+*/
+float lua_p8_dget(int index) { return 0.0f; }
+/*
 Get the number stored at INDEX (0..63)
 
 Use this only after you have called CARTDATA()
-
-DSET(INDEX, VALUE)
-
+*/
+void lua_p8_dset(int index, float value) { }
+/*
 Set the number stored at index (0..63)
 
 Use this only after you have called CARTDATA()
@@ -1928,8 +1942,13 @@ void setupP8LuaEnv(lua_State* L)
 
     P8_BIND(menuitem);
     P8_BIND(tostr);
+    P8_BIND(tonum);
     P8_BIND(sub);
     P8_BIND(split);
+
+    P8_BIND(cartdata);
+    P8_BIND(dget);
+    P8_BIND(dset);
 
     P8_BIND(pack);
     P8_BIND(unpack);
