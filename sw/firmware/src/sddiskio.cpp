@@ -233,7 +233,23 @@ DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void* buff)
     case CTRL_SYNC:	        /* Complete pending write process (needed at FF_FS_READONLY == 0) */
         break;
     case GET_SECTOR_COUNT:  /* Get media size (needed at FF_USE_MKFS == 1) */
-        return RES_PARERR;
+        *(DWORD*)buff = 0;
+        if (sdcardCommand(9, 0) == 0) {
+            wait_not_busy(300);
+            uint8_t csd[16];
+            spi_read_blocking(spi1, 0xFF, csd, 16);
+            auto csd_ver = (csd[0] & 0xC0) >> 6;
+            if (csd_ver == 0) { //V1
+                uint8_t read_bl_len = csd[5] & 0x0F;
+                uint16_t c_size = ((csd[6] & 0x03) << 10) | (csd[7] << 2) | (csd[8] >> 6);
+                uint8_t c_size_mult = ((csd[9] & 0x03) << 1) | ((csd[10] & 0x80) >> 7);
+                *(DWORD*)buff = (c_size + 1) << (c_size_mult + read_bl_len - 7);
+            } else if (csd_ver == 1) { //V2
+                uint32_t c_size = ((csd[7] & 0xFC) << 14) | (csd[8] << 8) | csd[9];
+                *(DWORD*)buff = (c_size + 1) << 10;
+            }
+        } 
+        gpio_put(PIN_SD_CS, true);
         break;
     case GET_SECTOR_SIZE:   /* Get sector size (needed at FF_MAX_SS != FF_MIN_SS) */
         *(WORD*)buff = 512;

@@ -1349,8 +1349,9 @@ lua_Number lua_p8_rnd(lua_Number n) {
     If you want an integer, use flr(rnd(x)). If x is an array-style table, return a random element between table[1] and table[#table].
     */
     p8_rng_state = ((p8_rng_state * 1103515245) + 12345) & 0x7fffffff;
-    float res;
-    *(uint32_t*)&res = 0x3f800000 | (p8_rng_state & 0x007FFFFF);
+    float res = 0.0f;
+    auto ptr = (uint32_t*)&res;
+    *ptr = 0x3f800000 | (p8_rng_state & 0x007FFFFF);
     return (res - 1.0f) * n;
 }
 
