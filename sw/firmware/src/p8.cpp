@@ -123,7 +123,7 @@ int p8_load(const char* filename)
         uint8_t mapping[256];
         for(int n=0; n<256; n++) mapping[n] = n;
         uint32_t decompressed_size = (ram_data[0x4304] << 8) | ram_data[0x4305];
-        uint32_t compressed_size = (ram_data[0x4306] << 8) | ram_data[0x4307];
+        //uint32_t compressed_size = (ram_data[0x4306] << 8) | ram_data[0x4307];
         auto read_ptr = &ram_data[0x4308];
         auto bit_mask = 0x01;
         auto write_ptr = ram_data + 0x11000;
@@ -190,7 +190,7 @@ int p8_load(const char* filename)
     }
 
     if (lua_pcall(p8_lua_state, 0, 0, 0) != LUA_OK) {
-            return p8lua_error();
+        return p8lua_error();
     }
 
     lua_getglobal(p8_lua_state, "_init");
@@ -209,6 +209,7 @@ int p8_load(const char* filename)
 
     write_memchip(0, p8_gb_data, sizeof(p8_gb_data));
     memcpy(&ram_data[15 * 0x2000 + 0x1E00], p8_default_pal_lookup, sizeof(p8_default_pal_lookup));
+    ram_data[15 * 0x2000 + 0x1E10] = 0; // button swap
 
     return 0;
 }
@@ -220,8 +221,13 @@ static int p8_update()
 
     auto prev_button_mask = p8lua_button_mask;
     p8lua_button_mask = 0;
-    if (ram_data[15 * 0x2000 + 0x1FF0] & 0x02) p8lua_button_mask |= P8LUA_BTN_O;
-    if (ram_data[15 * 0x2000 + 0x1FF0] & 0x01) p8lua_button_mask |= P8LUA_BTN_X;
+    if (ram_data[15 * 0x2000 + 0x1E10]) {
+        if (ram_data[15 * 0x2000 + 0x1FF0] & 0x01) p8lua_button_mask |= P8LUA_BTN_O;
+        if (ram_data[15 * 0x2000 + 0x1FF0] & 0x02) p8lua_button_mask |= P8LUA_BTN_X;
+    } else {
+        if (ram_data[15 * 0x2000 + 0x1FF0] & 0x02) p8lua_button_mask |= P8LUA_BTN_O;
+        if (ram_data[15 * 0x2000 + 0x1FF0] & 0x01) p8lua_button_mask |= P8LUA_BTN_X;
+    }
     if (ram_data[15 * 0x2000 + 0x1FF0] & 0x20) p8lua_button_mask |= P8LUA_BTN_LEFT;
     if (ram_data[15 * 0x2000 + 0x1FF0] & 0x10) p8lua_button_mask |= P8LUA_BTN_RIGHT;
     if (ram_data[15 * 0x2000 + 0x1FF0] & 0x40) p8lua_button_mask |= P8LUA_BTN_UP;

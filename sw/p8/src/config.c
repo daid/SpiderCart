@@ -22,6 +22,7 @@ extern const uint16_t picoColors[16];
 #define PADF_A      0x01
 
 #define P8_PAL_MAP_ENTRY(n) (*((uint8_t*)0xBE00 + (n)))
+#define P8_BUTTON_SWAP() (*((uint8_t*)0xBE10))
 
 void colormapMenu(void) {
     uint8_t cursor = 1;
@@ -115,7 +116,7 @@ void configMenu(void)
         printStr(0, "PICO-8 CONFIG");
         printStr((1 << 8) | 1, "Colormap");
         printStr((2 << 8) | 1, "Palette");
-        printStr((3 << 8) | 1, "[B] = [O] [A] = [X]");
+        printStr((3 << 8) | 1, P8_BUTTON_SWAP() ? "[B] = [X] [A] = [O]" : "[B] = [O] [A] = [X]");
 
         printStr((cursor << 8) | 0, ">");
         while(1) {
@@ -138,6 +139,7 @@ void configMenu(void)
             if (JoypadPressed & (PADF_A | PADF_B)) {
                 if (cursor == 1) colormapMenu();
                 if (cursor == 2) paletteMenu();
+                if (cursor == 3) P8_BUTTON_SWAP() ^= 0x01;
                 break;
             }
         }

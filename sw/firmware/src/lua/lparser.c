@@ -2113,6 +2113,48 @@ static void retstat (LexState *ls) {
 }
 
 
+static void shortprint (LexState *ls) {
+  int line = ls->linenumber;
+  FuncState *fs = ls->fs;
+
+  /* same as suffixedexp() except we push "print" first */
+  expdesc f;
+  TString *n = luaS_new(ls->L, "print");
+  ls->t.seminfo.ts = n;
+  ls->t.token = TK_NAME;
+  singlevar(ls, &f);
+  luaK_exp2nextreg(fs, &f);
+
+  /* now we do the same as funcargs() */
+  expdesc args;
+  if (ls->t.token == TK_EOL || ls->t.token == TK_EOS)  /* arg list is empty? */
+    args.k = VVOID;
+  else {
+    explist(ls, &args);
+    if (hasmultret(args.k))
+      luaK_setmultret(fs, &args);
+  }
+
+  if (!testnext(ls, TK_EOS)) /* check that we are at EOL or EOS */
+    check_match(ls, TK_EOL, '?', line);
+
+  int base, nparams;
+  lua_assert(f.k == VNONRELOC);
+  base = f.u.info;  /* base register for call */
+  if (hasmultret(args.k))
+    nparams = LUA_MULTRET;  /* open call */
+  else {
+    if (args.k != VVOID)
+      luaK_exp2nextreg(fs, &args);  /* close last argument */
+    nparams = fs->freereg - (base+1);
+  }
+
+  init_exp(&f, VCALL, luaK_codeABC(fs, OP_CALL, base, nparams+1, 2));
+  luaK_fixline(fs, line);
+  fs->freereg = cast_byte(base + 1);
+}
+
+
 static void statement (LexState *ls) {
   int line = ls->linenumber;  /* may be needed for error messages */
   enterlevel(ls);
@@ -2121,6 +2163,9 @@ static void statement (LexState *ls) {
       luaX_next(ls);  /* skip ';' */
       break;
     }
+    case TK_PRINT:
+      shortprint(ls);  /* stat -> shortprint (on a single line) */
+      break;
     case TK_IF: {  /* stat -> ifstat */
       ifstat(ls, line);
       break;

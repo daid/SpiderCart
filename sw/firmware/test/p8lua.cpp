@@ -37,6 +37,8 @@ int main(int argc, char** argv)
     runLuaTest("while (...) ...", "a = 0\nwhile (a < 2) a += 1");
     runLuaTest("int div", "a = 10 \\ 3\nassert(a == 3)");
     runLuaTest("split", "a = split(\"a,b,1,2\", \",\")\nassert(#a == 4)\nassert(a[1] == \"a\", 1)\nassert(a[2] == \"b\", 2)\nassert(a[3] == 1, 3)\nassert(a[4] == 2, 4)");
+    runLuaTest("?", "?\"1\"\n?1\n?1,2,3");
+    runLuaTest("special chars", "assert(\x81 == 23130.5)");
     if (total_fail_count)
         printf("\x1B[1;31mFAILED: %d\x1B[22;39m\n", total_fail_count);
     return total_fail_count ? 1 : 0;

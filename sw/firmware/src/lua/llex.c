@@ -50,7 +50,7 @@ static const char *const luaX_tokens [] = {
     "//", "..", "...", "==", ">=", "<=", "~=",
     "<<", ">>", "::", "<eof>",
     "<number>", "<integer>", "<name>", "<string>",
-    "<eol>",
+    "?", "<eol>",
     "+=", "-=", "*=", "/=", "%="
 };
 
@@ -488,6 +488,11 @@ static int llex (LexState *ls, SemInfo *seminfo) {
         next(ls);
         break;
       }
+      case '?': {  /* '?' not in string */
+        next(ls);
+        ls->emiteol = 1;
+        return TK_PRINT;
+      }
       case '-': {  /* '-' or '--' (comment) */
         next(ls);
         if (ls->current == '=') { next(ls); return TK_SUBE; }
@@ -579,6 +584,15 @@ static int llex (LexState *ls, SemInfo *seminfo) {
       case EOZ: {
         return TK_EOS;
       }
+      case 0x80: next(ls); seminfo->r = 0.5f; return TK_FLT; // SHIFT+A
+      case 0x81: next(ls); seminfo->r = 23130.5f; return TK_FLT; // SHIFT+B
+      case 0x82: next(ls); seminfo->r = 20767.5f; return TK_FLT; // SHIFT+C
+      case 0x83: next(ls); seminfo->r = 3.0f; return TK_FLT; // SHIFT+D
+      case 0x84: next(ls); seminfo->r = 32125.5f; return TK_FLT; // SHIFT+E
+      case 0x85: next(ls); seminfo->r = -18402.5f; return TK_FLT; // SHIFT+F
+      case 0x86: next(ls); seminfo->r = -1632.5f; return TK_FLT; // SHIFT+G
+      case 0x87: next(ls); seminfo->r = 20927.5f; return TK_FLT; // SHIFT+H
+      case 0x88: next(ls); seminfo->r = -19008.5f; return TK_FLT; // SHIFT+I
       default: {
         if (lislalpha(ls->current)) {  /* identifier or reserved word? */
           TString *ts;
