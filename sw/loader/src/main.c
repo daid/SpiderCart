@@ -3,7 +3,7 @@
 uint8_t execCommand(uint8_t);
 uint8_t execQuickboot(uint8_t);
 void clearScreen(void);
-void printStr(uint16_t yx, char* str);
+void printStr(uint16_t yx, const char* str);
 void updateJoypadState(void) __preserves_regs(d, e);
 void waitVBlank(void) __preserves_regs(b, c, d, e, h, l);
 extern uint8_t JoypadState;
@@ -48,16 +48,16 @@ void main(void)
         updateJoypadState();
         if (JoypadPressed & PADF_DOWN) {
             if (((char*)0xA000)[(pos + 1) * 32]) {
-                printStr(pos * 0x20, " ");
+                printStr(pos << 8, " ");
                 pos += 1;
-                printStr(pos * 0x20, ">");
+                printStr(pos << 8, ">");
             }
         }
         if (JoypadPressed & PADF_UP) {
             if (pos > 0) {
-                printStr(pos * 0x20, " ");
+                printStr(pos << 8, " ");
                 pos -= 1;
-                printStr(pos * 0x20, ">");
+                printStr(pos << 8, ">");
             }
         }
         if (JoypadPressed & PADF_A) {

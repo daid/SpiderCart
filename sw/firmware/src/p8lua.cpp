@@ -576,9 +576,13 @@ Or to re-colour the whole screen shades of gray (including everything that is al
 PAL({1,1,5,5,5,6,7,13,6,7,7,6,13,6,7,1}, 1)
 
 Because table indexes start at 1, colour 0 is given at the end in this case.
-
-PALT(C, [T])
-
+*/
+int lua_p8_palt(lua_State* L)
+{
+    //PALT(C, [T])
+    return 0; 
+}
+/*
 Set transparency for colour index to T (boolean) Transparency is observed by SPR(), SSPR(), MAP() AND TLINE()
 
 PALT(8, TRUE) -- RED PIXELS NOT DRAWN IN SUBSEQUENT SPRITE/TLINE DRAW CALLS
@@ -1343,7 +1347,7 @@ Returns the absolute (positive) value of x
 
 static int32_t p8_rng_state = 1;
 
-lua_Number lua_p8_rnd(lua_Number n) {
+lua_Number lua_p8_rnd(std::optional<lua_Number> n) {
     /* Returns a random number n, where 0 <= n < x
 
     If you want an integer, use flr(rnd(x)). If x is an array-style table, return a random element between table[1] and table[#table].
@@ -1352,7 +1356,7 @@ lua_Number lua_p8_rnd(lua_Number n) {
     float res = 0.0f;
     auto ptr = (uint32_t*)&res;
     *ptr = 0x3f800000 | (p8_rng_state & 0x007FFFFF);
-    return (res - 1.0f) * n;
+    return (res - 1.0f) * n.value_or(1.0);
 }
 
 void lua_p8_srand(lua_Number x) {
@@ -1639,13 +1643,14 @@ Once a cartdata ID has been set, the area of memory 0X5E00..0X5EFF is mapped to 
 
 There is no need to flush written data -- it is automatically saved to permanent storage even if modified by directly POKE()'ing 0X5E00..0X5EFF.
 */
-float lua_p8_dget(int index) { return 0.0f; }
+static float cart_data[64];
+float lua_p8_dget(int index) { return cart_data[index & 0x3F]; }
 /*
 Get the number stored at INDEX (0..63)
 
 Use this only after you have called CARTDATA()
 */
-void lua_p8_dset(int index, float value) { }
+void lua_p8_dset(int index, float value) { cart_data[index & 0x3F] = value; }
 /*
 Set the number stored at index (0..63)
 
@@ -1877,6 +1882,8 @@ static int lua_p8_unpack (lua_State *L) {
   return (int)n;
 }
 
+float lua_p8_sgn(float f) { return f >= 0.0f ? 1.0f : -1.0f; }
+
 
 #define STR_(s) #s
 #define STR(s) STR_(s)
@@ -1907,6 +1914,7 @@ void setupP8LuaEnv(lua_State* L)
     P8_BIND(rrect);
     P8_BIND(rrectfill);
     P8_BIND(pal);
+    P8_BIND(palt);
     P8_BIND(spr);
 
     P8_BIND(add);
@@ -1952,4 +1960,5 @@ void setupP8LuaEnv(lua_State* L)
 
     P8_BIND(pack);
     P8_BIND(unpack);
+    P8_BIND(sgn);
 }
