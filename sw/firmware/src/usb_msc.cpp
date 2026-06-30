@@ -1,3 +1,4 @@
+#include "usb_msc.h"
 #include <tusb.h>
 extern "C" {
 #include <class/msc/msc_device.h>
@@ -5,13 +6,29 @@ extern "C" {
 #include "fatfs/ff.h"
 #include "fatfs/diskio.h"
 
+static bool msc_enabled = false;
+
+bool is_usb_msc_enabled()
+{
+    return msc_enabled;
+}
+
+void set_usb_msc_enable(bool enabled)
+{
+    msc_enabled = enabled;
+}
+
+
 // Copy disk's data to buffer (up to bufsize) and return number of copied bytes.
 int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void* buffer, uint32_t bufsize)
 {
     (void)lun;
     (void)offset;
-    // if (disk_read(0, (BYTE*)buffer, lba, 1) == FR_OK)
-    //     return 512;
+    (void)bufsize;
+    if (!msc_enabled) return 0;
+
+    if (disk_read(0, (BYTE*)buffer, lba, 1) == RES_OK)
+        return 512;
     return 0;
 }
 
@@ -20,8 +37,11 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t* 
 {
     (void)lun;
     (void)offset;
-    // if (disk_write(0, (BYTE*)buffer, lba, 1) == FR_OK)
-    //     return 512;
+    (void)bufsize;
+    if (!msc_enabled) return 0;
+
+    if (disk_write(0, (BYTE*)buffer, lba, 1) == RES_OK)
+        return 512;
     return 0;
 }
 
@@ -37,16 +57,19 @@ int32_t tud_msc_scsi_cb(uint8_t lun, uint8_t const scsi_cmd[16], void* buffer, u
 void tud_msc_capacity_cb(uint8_t lun, uint32_t* block_count, uint16_t* block_size)
 {
     (void)lun;
-    // if (disk_ioctl(0, GET_SECTOR_COUNT, &block_count) != 0)
-        *block_count = 0;
+    *block_count = 0;
     *block_size  = 512;
+    if (!msc_enabled) return;
+
+    if (disk_ioctl(0, GET_SECTOR_COUNT, &block_count) != 0)
+        *block_count = 0;
 }
 
 bool tud_msc_test_unit_ready_cb(uint8_t lun)
 {
     (void)lun;
-    // return disk_status(0) == 0;
-    return false;
+    if (!msc_enabled) return false;
+    return disk_status(0) == 0;
 }
 
 // Fill vendor id, product id, revision with string up to 8, 16, 4 characters respectively
