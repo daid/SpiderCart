@@ -5,6 +5,7 @@
 #include "command.h"
 #include "p8.h"
 
+#include "usb_msc.h"
 #include "fatfs/ff.h"
 #include <pico/multicore.h>
 #include <string.h>
@@ -146,6 +147,10 @@ void processCoProcessor()
                     load_sav();
                 }
                 start_mbc(false);
+                break;
+            case COMMAND_SET_USB_MSC:
+                set_usb_msc_enable(ram_data[15 * 0x2000] != 0);
+                ram_data[15 * 0x2000 + 0x1FFF] = 0;
                 break;
             case COMMAND_P8_CYCLE_60:
                 p8_cycle60();

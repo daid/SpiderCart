@@ -18,9 +18,33 @@ uint8_t current_command_delay = 0;
 
 extern "C" EmulatorCustomMBC* get_override_mbc(FileData* filedata);
 
+bool backup_valid = false;
+uint8_t rom_backup[8 * 1024 * 1024];
+
+void start_fake_reset(void)
+{
+    printf("Fake reset time!\n");
+    read_memchip(0, rom_backup, sizeof(rom_backup));
+    memset(rom_filedata->data, 0xFF, 8*1024*1024); // turn all instructions into "RST $38"
+    rom_filedata->data[0x38] = 0x3E; // ld a, $11
+    rom_filedata->data[0x39] = 0x11;
+    rom_filedata->data[0x3A] = 0xC3; // jp $00FD
+    rom_filedata->data[0x3B] = 0xFD;
+    rom_filedata->data[0x3C] = 0x00;
+    rom_filedata->data[0xFD] = 0xEA; // ld [$7FFF], a
+    rom_filedata->data[0xFE] = 0xFF;
+    rom_filedata->data[0xFF] = 0x7F;
+    backup_valid = true;
+}
+
 static void mbc_write_rom(Emulator* e, MaskedAddress addr, u8 value)
 {
     if (!core1_running) return;
+    if (backup_valid && addr == 0x7FFF) {
+        printf("Fake reset done\n");
+        write_memchip(0, rom_backup, sizeof(rom_backup));
+        return;
+    }
 
     switch(addr & 0xE000) {
     case 0x0000:

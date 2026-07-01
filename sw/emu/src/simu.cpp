@@ -1,5 +1,6 @@
 #include "mbc_prepare.h"
 #include "memchip.h"
+#include "usb_msc.h"
 #define DIR FF_DIR
 #include "../src/fatfs/ff.h"
 #undef DIR
@@ -121,12 +122,14 @@ void prepare_mbc()
     printf("%s\n", header_info);
 }
 
+void start_fake_reset(void);
+
 void start_mbc(bool reset)
 {
     core1_running = true;
     printf("start_mbc\n");
     if (reset) {
-        printf("wanting to reset, but cannot in emulator...\n");
+        start_fake_reset();
     }
 }
 
@@ -135,3 +138,16 @@ void stop_mbc()
     core1_running = false;
     printf("stop_mbc\n");
 }
+
+static bool msc_enabled = false;
+
+bool is_usb_msc_enabled()
+{
+    return msc_enabled;
+}
+
+void set_usb_msc_enable(bool enabled)
+{
+    msc_enabled = enabled;
+}
+
