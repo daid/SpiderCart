@@ -15,6 +15,11 @@
 
 #include <cstring>
 
+static constexpr unsigned int RAM_DISPLAY_IDX = 15 * 0x2000; //0x1000 bytes
+static constexpr unsigned int RAM_SFX_PLAY_IDX = 15 * 0x2000 + 0x1D00; //0x15 bytes: 1 byte flags, 5x4 bytes sound data
+static constexpr unsigned int RAM_PAL_MAPPING_IDX = 15 * 0x2000 + 0x1E00; //0x10 bytes
+static constexpr unsigned int RAM_BUTTON_SWAP_IDX = 15 * 0x2000 + 0x1E10; //1 byte
+static constexpr unsigned int RAM_BUTTON_INPUT_IDX = 15 * 0x2000 + 0x1FF0; //1 byte
 
 const uint8_t p8_gb_data[] = {
     #include "p8.gb.inc"
@@ -91,7 +96,7 @@ int p8_load(const char* filename)
     f_close(&fp);
     f_unmount("");
 
-    p8lua_state.card_data = ram_data;
+    p8_state.card_data = ram_data;
 
     p8_lua_state = luaL_newstate();
     setupP8LuaEnv(p8_lua_state);
@@ -208,8 +213,8 @@ int p8_load(const char* filename)
     lua_pop(p8_lua_state, 1);
 
     write_memchip(0, p8_gb_data, sizeof(p8_gb_data));
-    memcpy(&ram_data[15 * 0x2000 + 0x1E00], p8_default_pal_lookup, sizeof(p8_default_pal_lookup));
-    ram_data[15 * 0x2000 + 0x1E10] = 0; // button swap
+    memcpy(&ram_data[RAM_PAL_MAPPING_IDX], p8_default_pal_lookup, sizeof(p8_default_pal_lookup));
+    ram_data[RAM_BUTTON_SWAP_IDX] = 0; // button swap
 
     return 0;
 }
@@ -219,20 +224,20 @@ static int p8_update()
     if (!p8_lua_state)
         return 1;
 
-    auto prev_button_mask = p8lua_state.button_mask;
-    p8lua_state.button_mask = 0;
-    if (ram_data[15 * 0x2000 + 0x1E10]) {
-        if (ram_data[15 * 0x2000 + 0x1FF0] & 0x01) p8lua_state.button_mask |= P8LuaState::BTN_O;
-        if (ram_data[15 * 0x2000 + 0x1FF0] & 0x02) p8lua_state.button_mask |= P8LuaState::BTN_X;
+    auto prev_button_mask = p8_state.button_mask;
+    p8_state.button_mask = 0;
+    if (ram_data[RAM_BUTTON_SWAP_IDX]) {
+        if (ram_data[RAM_BUTTON_INPUT_IDX] & 0x01) p8_state.button_mask |= P8State::BTN_O;
+        if (ram_data[RAM_BUTTON_INPUT_IDX] & 0x02) p8_state.button_mask |= P8State::BTN_X;
     } else {
-        if (ram_data[15 * 0x2000 + 0x1FF0] & 0x02) p8lua_state.button_mask |= P8LuaState::BTN_O;
-        if (ram_data[15 * 0x2000 + 0x1FF0] & 0x01) p8lua_state.button_mask |= P8LuaState::BTN_X;
+        if (ram_data[RAM_BUTTON_INPUT_IDX] & 0x02) p8_state.button_mask |= P8State::BTN_O;
+        if (ram_data[RAM_BUTTON_INPUT_IDX] & 0x01) p8_state.button_mask |= P8State::BTN_X;
     }
-    if (ram_data[15 * 0x2000 + 0x1FF0] & 0x20) p8lua_state.button_mask |= P8LuaState::BTN_LEFT;
-    if (ram_data[15 * 0x2000 + 0x1FF0] & 0x10) p8lua_state.button_mask |= P8LuaState::BTN_RIGHT;
-    if (ram_data[15 * 0x2000 + 0x1FF0] & 0x40) p8lua_state.button_mask |= P8LuaState::BTN_UP;
-    if (ram_data[15 * 0x2000 + 0x1FF0] & 0x80) p8lua_state.button_mask |= P8LuaState::BTN_DOWN;
-    p8lua_state.button_pressed_mask = p8lua_state.button_mask & ~prev_button_mask;
+    if (ram_data[RAM_BUTTON_INPUT_IDX] & 0x20) p8_state.button_mask |= P8State::BTN_LEFT;
+    if (ram_data[RAM_BUTTON_INPUT_IDX] & 0x10) p8_state.button_mask |= P8State::BTN_RIGHT;
+    if (ram_data[RAM_BUTTON_INPUT_IDX] & 0x40) p8_state.button_mask |= P8State::BTN_UP;
+    if (ram_data[RAM_BUTTON_INPUT_IDX] & 0x80) p8_state.button_mask |= P8State::BTN_DOWN;
+    p8_state.button_pressed_mask = p8_state.button_mask & ~prev_button_mask;
 
     if (p8_lua_60fps)
         lua_getglobal(p8_lua_state, "_update60");
@@ -269,21 +274,133 @@ int p8_draw()
             for(int y=0; y<8; y++) {
                 uint8_t a = 0, b = 0;
                 for(int x=0; x<8; x++) {
-                    auto c = ram_data[15 * 0x2000 + 0x1E00 + p8lua_state.screen[tx*8+x + (ty*8+y)*128]];
+                    auto c = ram_data[RAM_PAL_MAPPING_IDX + p8_state.screen[tx*8+x + (ty*8+y)*128]];
                     if (c & 1) a |= 0x80 >> x;
                     if (c & 2) b |= 0x80 >> x;
                 }
-                ram_data[15 * 0x2000 + tx * 16 + ty * 16 * 16 + y * 2] = a;
-                ram_data[15 * 0x2000 + tx * 16 + ty * 16 * 16 + y * 2 + 1] = b;
+                ram_data[RAM_DISPLAY_IDX + tx * 16 + ty * 16 * 16 + y * 2] = a;
+                ram_data[RAM_DISPLAY_IDX + tx * 16 + ty * 16 * 16 + y * 2 + 1] = b;
             }
         }
     }
     return 0;
 }
 
+//HZ = 131072 / (2048 - period)
+#define FREQ_TO_GB_PERIOD(HZ) uint16_t(2048.0 - (131072.0 / (HZ)))
+
+static const uint16_t pitch_to_period[64] = {
+    FREQ_TO_GB_PERIOD(65.27),
+    FREQ_TO_GB_PERIOD(68.97),
+    FREQ_TO_GB_PERIOD(73.35),
+    FREQ_TO_GB_PERIOD(77.72),
+    FREQ_TO_GB_PERIOD(82.09),
+    FREQ_TO_GB_PERIOD(87.14),
+    FREQ_TO_GB_PERIOD(92.19),
+    FREQ_TO_GB_PERIOD(97.9),
+    FREQ_TO_GB_PERIOD(103.63),
+    FREQ_TO_GB_PERIOD(109.68),
+    FREQ_TO_GB_PERIOD(116.42),
+    FREQ_TO_GB_PERIOD(122.81),
+    FREQ_TO_GB_PERIOD(130.55),
+    FREQ_TO_GB_PERIOD(138.28),
+    FREQ_TO_GB_PERIOD(146.69),
+    FREQ_TO_GB_PERIOD(155.45),
+    FREQ_TO_GB_PERIOD(164.53),
+    FREQ_TO_GB_PERIOD(174.29),
+    FREQ_TO_GB_PERIOD(184.71),
+    FREQ_TO_GB_PERIOD(195.82),
+    FREQ_TO_GB_PERIOD(207.59),
+    FREQ_TO_GB_PERIOD(219.71),
+    FREQ_TO_GB_PERIOD(232.83),
+    FREQ_TO_GB_PERIOD(245.95),
+    FREQ_TO_GB_PERIOD(261-43),
+    FREQ_TO_GB_PERIOD(276.9),
+    FREQ_TO_GB_PERIOD(293.38),
+    FREQ_TO_GB_PERIOD(310.89),
+    FREQ_TO_GB_PERIOD(329.39),
+    FREQ_TO_GB_PERIOD(348.91),
+    FREQ_TO_GB_PERIOD(369.77),
+    FREQ_TO_GB_PERIOD(391.97),
+    FREQ_TO_GB_PERIOD(415.18),
+    FREQ_TO_GB_PERIOD(439.75),
+    FREQ_TO_GB_PERIOD(466),
+    FREQ_TO_GB_PERIOD(491.91),
+    FREQ_TO_GB_PERIOD(522.86),
+    FREQ_TO_GB_PERIOD(553.81),
+    FREQ_TO_GB_PERIOD(586.79),
+    FREQ_TO_GB_PERIOD(621.76),
+    FREQ_TO_GB_PERIOD(658.79),
+    FREQ_TO_GB_PERIOD(697.81),
+    FREQ_TO_GB_PERIOD(739.87),
+    FREQ_TO_GB_PERIOD(783.94),
+    FREQ_TO_GB_PERIOD(830.72),
+    FREQ_TO_GB_PERIOD(879.85),
+    FREQ_TO_GB_PERIOD(931.99),
+    FREQ_TO_GB_PERIOD(983.82),
+    FREQ_TO_GB_PERIOD(1045.72),
+    FREQ_TO_GB_PERIOD(1107.61),
+    FREQ_TO_GB_PERIOD(1173.56),
+    FREQ_TO_GB_PERIOD(1243.56),
+    FREQ_TO_GB_PERIOD(1317.58),
+    FREQ_TO_GB_PERIOD(1395.62),
+    FREQ_TO_GB_PERIOD(1479.74),
+    FREQ_TO_GB_PERIOD(1567.88),
+    FREQ_TO_GB_PERIOD(1661.43),
+    FREQ_TO_GB_PERIOD(1759.67),
+    FREQ_TO_GB_PERIOD(1863.97),
+    FREQ_TO_GB_PERIOD(1967.59),
+    FREQ_TO_GB_PERIOD(2091.41),
+    FREQ_TO_GB_PERIOD(2215.22),
+    FREQ_TO_GB_PERIOD(2347.12),
+    FREQ_TO_GB_PERIOD(2487.07),
+};
+
+void p8_sfx()
+{
+    ram_data[RAM_SFX_PLAY_IDX] = 0;
+    for(int n=0; n<4; n++) {
+        auto& sfx = p8_state.sfx[n];
+        if (!sfx.active) continue;
+        auto data = &p8_state.card_data[0x3200 + sfx.sfx_nr * 68];
+        while(sfx.speed_counter <= 0) {
+            auto volume = (data[sfx.sample_idx * 2 + 1] >> 1) & 0x07;
+            if (volume) {
+                auto pitch = data[sfx.sample_idx * 2] & 0x3F;
+                
+                if ((ram_data[RAM_SFX_PLAY_IDX] & 1) == 0) {
+                    ram_data[RAM_SFX_PLAY_IDX+1] = 0x00; //no volume sweep
+                    ram_data[RAM_SFX_PLAY_IDX+2] = 0xBA; //50% duty, slightly more then 1 frame timing
+                    ram_data[RAM_SFX_PLAY_IDX+3] = volume << 5; // no volume sweep
+                    ram_data[RAM_SFX_PLAY_IDX+4] = pitch_to_period[pitch] & 0xFF;
+                    ram_data[RAM_SFX_PLAY_IDX+5] = (pitch_to_period[pitch] >> 8) | 0xC0; // trigger+length enable
+                    ram_data[RAM_SFX_PLAY_IDX] |= 1;
+                } else if ((ram_data[RAM_SFX_PLAY_IDX] & 2) == 0) {
+                    ram_data[RAM_SFX_PLAY_IDX+6] = 0xBA; //50% duty, slightly more then 1 frame timing
+                    ram_data[RAM_SFX_PLAY_IDX+7] = volume << 5; // no volume sweep
+                    ram_data[RAM_SFX_PLAY_IDX+8] = pitch_to_period[pitch] & 0xFF;
+                    ram_data[RAM_SFX_PLAY_IDX+9] = (pitch_to_period[pitch] >> 8) | 0xC0; // trigger+length enable
+                    ram_data[RAM_SFX_PLAY_IDX] |= 2;
+                }
+            }
+            sfx.sample_idx += 1;
+            if (sfx.sample_idx >= 32) {
+                sfx.active = false;
+                break;
+            }
+            if (data[65])
+                sfx.speed_counter += data[65];
+            else
+                sfx.speed_counter += 1;
+        }
+        sfx.speed_counter -= 2;
+    }
+}
+
 int p8_cycle30()
 {
     //Called on DMG at 30FPS, so we can _update and _draw once and be done.
+    p8_sfx();
     if (auto res = p8_update())
         return res;
     if (p8_lua_60fps) {
@@ -292,7 +409,7 @@ int p8_cycle30()
     }
     if (auto res = p8_draw())
         return res;
-    p8lua_state.time += 1.0/30.0;
+    p8_state.time += 1.0/30.0;
     return 0;
 }
 
@@ -302,6 +419,7 @@ int p8_cycle60()
     //Called on GBC at 60FPS
     if (!p8_lua_state)
         return 1;
+    p8_sfx();
     if (!odd_frame) {
         if (auto res = p8_update())
             return res;
@@ -315,6 +433,6 @@ int p8_cycle60()
     }
 
     odd_frame = !odd_frame;
-    p8lua_state.time += 1.0/60.0;
+    p8_state.time += 1.0/60.0;
     return 0;
 }

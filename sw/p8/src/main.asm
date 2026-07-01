@@ -142,6 +142,13 @@ entry:
     ld   bc, $0400
     ld   a, $00
     call setMem
+    ; Prepare audio
+    ld   a, $8F
+    ldh  [rNR52], a
+    ld   a, $FF
+    ldh  [rNR51], a
+    ld   a, $77
+    ldh  [rNR50], a
 
     ldh  a, [hGBC]
     and  a, a
@@ -185,6 +192,42 @@ entry:
     ; Now we are nearing end of VBlank, so copy the rest in HBlank
     ld   a, 127 | $80
     ldh  [rHDMA5], a
+
+    ld   hl, $BD00
+    ld   e, [hl] ; active sound flags
+    inc  hl
+    bit  0, e
+    if   nz {
+        ld  a, [hl+]
+        ldh [rNR10], a
+        ld  a, [hl+]
+        ldh [rNR11], a
+        ld  a, [hl+]
+        ldh [rNR12], a
+        ld  a, [hl+]
+        ldh [rNR13], a
+        ld  a, [hl+]
+        ldh [rNR14], a
+    } else {
+        ld  a, 5
+        add a, l
+        ld  l, a
+    }
+    bit  1, e
+    if   nz {
+        ld  a, [hl+]
+        ldh [rNR21], a
+        ld  a, [hl+]
+        ldh [rNR22], a
+        ld  a, [hl+]
+        ldh [rNR23], a
+        ld  a, [hl+]
+        ldh [rNR24], a
+    } else {
+        ld  a, 4
+        add a, l
+        ld  l, a
+    }
 
     ; Check for errors
     ld   a, [$BFFF]

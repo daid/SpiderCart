@@ -7,7 +7,7 @@ extern "C" {
 #include "../src/lua/lauxlib.h"
 }
 
-class P8LuaState
+class P8State
 {
 public:
     static constexpr uint8_t BTN_LEFT  = 0x01;
@@ -22,7 +22,15 @@ public:
 
     uint8_t* card_data;
     float time;
+
+    struct P8SfxChannel {
+        bool active = false;
+        int sfx_nr = 0;
+        int sample_idx = 0;
+        int speed_counter = 0;
+    };
+    P8SfxChannel sfx[4];
 };
-extern P8LuaState p8lua_state;
+extern P8State p8_state;
 
 void setupP8LuaEnv(lua_State* L);
