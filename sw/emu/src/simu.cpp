@@ -122,12 +122,14 @@ void prepare_mbc()
     printf("%s\n", header_info);
 }
 
+void start_fake_reset(void);
+
 void start_mbc(bool reset)
 {
     core1_running = true;
     printf("start_mbc\n");
     if (reset) {
-        printf("wanting to reset, but cannot in emulator...\n");
+        start_fake_reset();
     }
 }
 
