@@ -91,7 +91,7 @@ int p8_load(const char* filename)
     f_close(&fp);
     f_unmount("");
 
-    p8lua_card_data = ram_data;
+    p8lua_state.card_data = ram_data;
 
     p8_lua_state = luaL_newstate();
     setupP8LuaEnv(p8_lua_state);
@@ -219,20 +219,20 @@ static int p8_update()
     if (!p8_lua_state)
         return 1;
 
-    auto prev_button_mask = p8lua_button_mask;
-    p8lua_button_mask = 0;
+    auto prev_button_mask = p8lua_state.button_mask;
+    p8lua_state.button_mask = 0;
     if (ram_data[15 * 0x2000 + 0x1E10]) {
-        if (ram_data[15 * 0x2000 + 0x1FF0] & 0x01) p8lua_button_mask |= P8LUA_BTN_O;
-        if (ram_data[15 * 0x2000 + 0x1FF0] & 0x02) p8lua_button_mask |= P8LUA_BTN_X;
+        if (ram_data[15 * 0x2000 + 0x1FF0] & 0x01) p8lua_state.button_mask |= P8LuaState::BTN_O;
+        if (ram_data[15 * 0x2000 + 0x1FF0] & 0x02) p8lua_state.button_mask |= P8LuaState::BTN_X;
     } else {
-        if (ram_data[15 * 0x2000 + 0x1FF0] & 0x02) p8lua_button_mask |= P8LUA_BTN_O;
-        if (ram_data[15 * 0x2000 + 0x1FF0] & 0x01) p8lua_button_mask |= P8LUA_BTN_X;
+        if (ram_data[15 * 0x2000 + 0x1FF0] & 0x02) p8lua_state.button_mask |= P8LuaState::BTN_O;
+        if (ram_data[15 * 0x2000 + 0x1FF0] & 0x01) p8lua_state.button_mask |= P8LuaState::BTN_X;
     }
-    if (ram_data[15 * 0x2000 + 0x1FF0] & 0x20) p8lua_button_mask |= P8LUA_BTN_LEFT;
-    if (ram_data[15 * 0x2000 + 0x1FF0] & 0x10) p8lua_button_mask |= P8LUA_BTN_RIGHT;
-    if (ram_data[15 * 0x2000 + 0x1FF0] & 0x40) p8lua_button_mask |= P8LUA_BTN_UP;
-    if (ram_data[15 * 0x2000 + 0x1FF0] & 0x80) p8lua_button_mask |= P8LUA_BTN_DOWN;
-    p8lua_button_pressed_mask = p8lua_button_mask & ~prev_button_mask;
+    if (ram_data[15 * 0x2000 + 0x1FF0] & 0x20) p8lua_state.button_mask |= P8LuaState::BTN_LEFT;
+    if (ram_data[15 * 0x2000 + 0x1FF0] & 0x10) p8lua_state.button_mask |= P8LuaState::BTN_RIGHT;
+    if (ram_data[15 * 0x2000 + 0x1FF0] & 0x40) p8lua_state.button_mask |= P8LuaState::BTN_UP;
+    if (ram_data[15 * 0x2000 + 0x1FF0] & 0x80) p8lua_state.button_mask |= P8LuaState::BTN_DOWN;
+    p8lua_state.button_pressed_mask = p8lua_state.button_mask & ~prev_button_mask;
 
     if (p8_lua_60fps)
         lua_getglobal(p8_lua_state, "_update60");
@@ -269,7 +269,7 @@ int p8_draw()
             for(int y=0; y<8; y++) {
                 uint8_t a = 0, b = 0;
                 for(int x=0; x<8; x++) {
-                    auto c = ram_data[15 * 0x2000 + 0x1E00 + p8lua_screen[tx*8+x + (ty*8+y)*128]];
+                    auto c = ram_data[15 * 0x2000 + 0x1E00 + p8lua_state.screen[tx*8+x + (ty*8+y)*128]];
                     if (c & 1) a |= 0x80 >> x;
                     if (c & 2) b |= 0x80 >> x;
                 }
@@ -292,7 +292,7 @@ int p8_cycle30()
     }
     if (auto res = p8_draw())
         return res;
-    p8lua_time += 1.0/30.0;
+    p8lua_state.time += 1.0/30.0;
     return 0;
 }
 
@@ -315,6 +315,6 @@ int p8_cycle60()
     }
 
     odd_frame = !odd_frame;
-    p8lua_time += 1.0/60.0;
+    p8lua_state.time += 1.0/60.0;
     return 0;
 }

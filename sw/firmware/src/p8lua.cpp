@@ -6,6 +6,8 @@
 #include <cstring>
 #include <algorithm>
 
+P8LuaState p8lua_state;
+
 int camera_offset_x = 0;
 int camera_offset_y = 0;
 int clip_x0 = 0;
@@ -15,10 +17,7 @@ int clip_y1 = 128;
 int current_color = 0;
 
 static uint8_t p8lua_pal[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-uint8_t p8lua_screen[128*128];
-uint8_t p8lua_button_mask, p8lua_button_pressed_mask;
-uint8_t* p8lua_card_data;
-float p8lua_time;
+
 
 static void drawTile(int x, int y, int tile_nr)
 {
@@ -26,7 +25,7 @@ static void drawTile(int x, int y, int tile_nr)
     if (y < -8) return;
     if (x > 127) return;
     if (y > 127) return;
-    auto ptr = p8lua_card_data + (tile_nr % 16) * 4 + (tile_nr / 16) * 512;
+    auto ptr = p8lua_state.card_data + (tile_nr % 16) * 4 + (tile_nr / 16) * 512;
     for(int py=0; py<8; py++) {
         for(int px=0; px<8; px++) {
             int ppx = px + x;
@@ -35,7 +34,7 @@ static void drawTile(int x, int y, int tile_nr)
                 auto c = ptr[px/2 + py*64];
                 if (px & 1) c >>= 4; else c &= 0x0F;
                 if (c) {
-                    p8lua_screen[ppx + ppy * 128] = p8lua_pal[c];
+                    p8lua_state.screen[ppx + ppy * 128] = p8lua_pal[c];
                 }
             }
         }
@@ -158,10 +157,10 @@ Use a filename of "@clip" to write to the host's clipboard.
 Use stat(4) to read the clipboard, but the contents of the clipboard are only available after pressing CTRL-V during runtime (for security).
 */
 float lua_p8_time() {
-    return p8lua_time;
+    return p8lua_state.time;
 }
 float lua_p8_t() {
-    return p8lua_time;
+    return p8lua_state.time;
 }
 /*
 Returns the number of seconds elapsed since the cartridge was run.
@@ -278,7 +277,7 @@ void lua_p8_pset(int x, int y, std::optional<int> col) {
     x += camera_offset_x;
     y += camera_offset_y;
     if (x >= clip_x0 && x < clip_x1 && y >= clip_y0 && y < clip_y1) {
-        p8lua_screen[x + y * 128] = p8lua_pal[col.value_or(current_color)];
+        p8lua_state.screen[x + y * 128] = p8lua_pal[col.value_or(current_color)];
     }
 }
 /*
@@ -322,9 +321,9 @@ int lua_p8_fget(lua_State* L) {
     auto f = luaL_optinteger(L, 2, -1);
     if (n < 0 || n > 255) return luaL_error(L, "Sprite nr out of range");
     if (f >= 0 && f < 7)
-        lua_pushboolean(L, p8lua_card_data[0x3000 + n] & (1 << f));
+        lua_pushboolean(L, p8lua_state.card_data[0x3000 + n] & (1 << f));
     else
-        lua_pushinteger(L, p8lua_card_data[0x3000 + n]);
+        lua_pushinteger(L, p8lua_state.card_data[0x3000 + n]);
     return 1;
 }
 /*
@@ -373,7 +372,7 @@ void lua_p8_print(const char* str, std::optional<int> x_or_col, std::optional<in
                 for(int py=0; py<5; py++) {
                     if (*ptr & (1 << py)) {
                         if (x >= clip_x0 && x < clip_x1 && (y + py) >= clip_y0 && (y + py) < clip_y1) {
-                            p8lua_screen[x + (y + py) * 128] = p8lua_pal[c];
+                            p8lua_state.screen[x + (y + py) * 128] = p8lua_pal[c];
                         }
                     }
                 }
@@ -387,7 +386,7 @@ void lua_p8_print(const char* str, std::optional<int> x_or_col, std::optional<in
                 for(int py=0; py<5; py++) {
                     if (*ptr & (1 << py)) {
                         if (x >= clip_x0 && x < clip_x1 && (y + py) >= clip_y0 && (y + py) < clip_y1) {
-                            p8lua_screen[x + (y + py) * 128] = p8lua_pal[c];
+                            p8lua_state.screen[x + (y + py) * 128] = p8lua_pal[c];
                         }
                     }
                 }
@@ -433,7 +432,7 @@ Set the current colour to be used by drawing functions.
 If COL is not specified, the current colour is set to 6
 */
 void lua_p8_cls(std::optional<int> col) {
-    memset(p8lua_screen, p8lua_pal[col.value_or(current_color) & 0x0F], sizeof(p8lua_screen));
+    memset(p8lua_state.screen, p8lua_pal[col.value_or(current_color) & 0x0F], sizeof(p8lua_state.screen));
 }
 /*
 Clear the screen and reset the clipping rectangle.
@@ -488,12 +487,12 @@ void lua_p8_rect(int x0, int y0, int x1, int y1, std::optional<int> col) {
     y1 = std::clamp(y1+camera_offset_y, clip_y0, clip_y1);
     auto c = col.value_or(current_color);
     for(int x=x0; x<x1; x++) {
-        p8lua_screen[x + y0 * 128] = p8lua_pal[c];
-        p8lua_screen[x + (y1-1) * 128] = p8lua_pal[c];
+        p8lua_state.screen[x + y0 * 128] = p8lua_pal[c];
+        p8lua_state.screen[x + (y1-1) * 128] = p8lua_pal[c];
     }
     for(int y=y0; y<y1; y++) {
-        p8lua_screen[x0 + y * 128] = p8lua_pal[c];
-        p8lua_screen[(x1-1) + y * 128] = p8lua_pal[c];
+        p8lua_state.screen[x0 + y * 128] = p8lua_pal[c];
+        p8lua_state.screen[(x1-1) + y * 128] = p8lua_pal[c];
     }
 }
 void lua_p8_rectfill(int x0, int y0, int x1, int y1, std::optional<int> col) {
@@ -504,7 +503,7 @@ void lua_p8_rectfill(int x0, int y0, int x1, int y1, std::optional<int> col) {
     auto c = col.value_or(current_color);
     for(int y=y0; y<y1; y++) {
         for(int x=x0; x<x1; x++) {
-            p8lua_screen[x + y * 128] = p8lua_pal[c];
+            p8lua_state.screen[x + y * 128] = p8lua_pal[c];
         }
     }
 }
@@ -595,7 +594,7 @@ PALT(0B1100000000000000)
 */
 static void draw_sprite(int x, int y, int tile_nr, int flags)
 {
-    auto ptr = p8lua_card_data + (tile_nr % 16) * 4 + (tile_nr / 16) * 512;
+    auto ptr = p8lua_state.card_data + (tile_nr % 16) * 4 + (tile_nr / 16) * 512;
     for(int py=0; py<8; py++) {
         int ppy = y + py;
         if (flags & 2) ppy = y + 7 - py;
@@ -606,7 +605,7 @@ static void draw_sprite(int x, int y, int tile_nr, int flags)
                 auto c = ptr[px/2 + py*64];
                 if (px & 1) c >>= 4; else c &= 0x0F;
                 if (c) {
-                    p8lua_screen[ppx + ppy * 128] = p8lua_pal[c];
+                    p8lua_state.screen[ppx + ppy * 128] = p8lua_pal[c];
                 }
             }
         }
@@ -946,11 +945,11 @@ K: BLUE  v:5
 */
 int lua_p8_btn(lua_State* L) {
     if (lua_gettop(L) == 0) {
-        lua_pushinteger(L, p8lua_button_mask);
+        lua_pushinteger(L, p8lua_state.button_mask);
         return 1;
     }
     int button = luaL_checkinteger(L, 1);
-    lua_pushboolean(L, p8lua_button_mask & (1 << button));
+    lua_pushboolean(L, p8lua_state.button_mask & (1 << button));
     return 1;
 }
 /*
@@ -973,11 +972,11 @@ Although PICO-8 accepts all button combinations, note that it is generally impos
 */
 int lua_p8_btnp(lua_State* L) {
     if (lua_gettop(L) == 0) {
-        lua_pushinteger(L, p8lua_button_pressed_mask);
+        lua_pushinteger(L, p8lua_state.button_pressed_mask);
         return 1;
     }
     int button = luaL_checkinteger(L, 1);
-    lua_pushboolean(L, p8lua_button_pressed_mask & (1 << button));
+    lua_pushboolean(L, p8lua_state.button_pressed_mask & (1 << button));
     return 1;
 }
 /*
@@ -1044,17 +1043,17 @@ int lua_p8_mget(int x, int y) {
     if (x < 0 || x >= 128) return 0;
     if (y < 0 || y >= 64) return 0;
     if (y < 32)
-        return p8lua_card_data[0x2000 + x + y * 128];
-    return p8lua_card_data[0x0000 + x + y * 128];
+        return p8lua_state.card_data[0x2000 + x + y * 128];
+    return p8lua_state.card_data[0x0000 + x + y * 128];
 }
 
 void lua_p8_mset(int x, int y, int val) {
     if (x < 0 || x >= 128) return;
     if (y < 0 || y >= 64) return;
     if (y < 32)
-        p8lua_card_data[0x2000 + x + y * 128] = val;
+        p8lua_state.card_data[0x2000 + x + y * 128] = val;
     else
-        p8lua_card_data[0x0000 + x + y * 128] = val;
+        p8lua_state.card_data[0x0000 + x + y * 128] = val;
 }
 /*
 Get or set map value (VAL) at X,Y
@@ -1076,10 +1075,10 @@ void lua_p8_map(std::optional<int> tile_x, std::optional<int> tile_y, std::optio
         for(int x=0; x<0+tile_w.value_or(16); x++) {
             int tile_nr;
             if (ty + y < 32)
-                tile_nr = p8lua_card_data[0x2000 + tx + x + (ty + y) * 128];
+                tile_nr = p8lua_state.card_data[0x2000 + tx + x + (ty + y) * 128];
             else
-                tile_nr = p8lua_card_data[0x0000 + tx + x + (ty + y) * 128];
-            if (tile_nr && (!layers.has_value() || (p8lua_card_data[0x3000 + tile_nr] & mask)))
+                tile_nr = p8lua_state.card_data[0x0000 + tx + x + (ty + y) * 128];
+            if (tile_nr && (!layers.has_value() || (p8lua_state.card_data[0x3000 + tile_nr] & mask)))
                 drawTile(rx + x * 8, ry + y * 8, tile_nr);
         }
     }
@@ -1221,7 +1220,7 @@ $ADDR  -- PEEK4(ADDR)
 void lua_p8_memcpy(int dst_addr, int src_addr, int len) {
     while(len) {
         if (dst_addr >= 0 && dst_addr < 0x4300 && src_addr >= 0 && src_addr < 0x4300) {
-            p8lua_card_data[dst_addr] = p8lua_card_data[src_addr];
+            p8lua_state.card_data[dst_addr] = p8lua_state.card_data[src_addr];
         }
         dst_addr++;
         src_addr++;
