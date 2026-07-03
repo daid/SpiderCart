@@ -21,6 +21,7 @@ GBC_HEADER "SpiderCart", GB_MBC5_RAM, entry
 
 #SECTION "HRAM", HRAM {
 hLCDC: ds 1
+hVBlankDone: ds 1
 hGBC: ds 1
 }
 
@@ -473,6 +474,68 @@ clearScreenImpl:
     dec b
     jr  nz, .loop
     ret
+
+_startSplitScreen:
+    ld   a, 100
+    ldh  [rWY], a
+    ldh  [rLYC], a
+    ld   a, STAT_LYC
+    ld   [rSTAT], a
+    ld   a, IE_VBLANK | IE_STAT
+    ldh  [rIE], a
+    ei
+    ret
+
+_updateP8Screen:
+    ; Copy 128 tiles with HDMA in direct copy
+    ld   a, $A0
+    ldh  [rHDMA1], a
+    ld   a, $00
+    ldh  [rHDMA2], a
+    ld   a, $80
+    ldh  [rHDMA3], a
+    ld   a, $00
+    ldh  [rHDMA4], a
+    ld   a, 127
+    ldh  [rHDMA5], a
+    ; Now we are nearing end of VBlank, so copy the rest in HBlank
+    ld   a, 127 | $80
+    ldh  [rHDMA5], a
+
+    ld   a, $82 ; COMMAND_P8_RENDER
+    ld   [$6000], a
+    ret
+
+_endSplitScreen:
+    di
+    xor  a
+    ldh  [rWY], a
+    ld   a, LCDC_ON | LCDC_WIN_9C00 | LCDC_WIN_ON | LCDC_BG_ON | LCDC_BLOCK21
+    ldh  [rLCDC], a
+    ret
+}
+
+#SECTION "VBlankISR", ROM0[$0040] {
+VBlankISR:
+    jp  VBlankISRImpl
+}
+
+#SECTION "VBlankISRImpl", ROM0 {
+VBlankISRImpl:
+    ldh  a, [hLCDC]
+    ldh  [rLCDC], a
+    ld   a, 1
+    ldh  [hVBlankDone], a
+    reti
+}
+
+#SECTION "StatISR", ROM0[$0048] {
+StatISR:
+    pushpop af {
+        ld   a, LCDC_ON | LCDC_WIN_9C00 | LCDC_WIN_ON | LCDC_BG_ON | LCDC_BLOCK21
+        ldh  [rLCDC], a
+    }
+    reti
 }
 
 #SECTION "Font", ROM0 {

@@ -268,7 +268,12 @@ int p8_draw()
     } else {
         lua_pop(p8_lua_state, 1);
     }
+    p8_render();
+    return 0;
+}
 
+void p8_render()
+{
     for(int ty=0; ty<16; ty++) {
         for(int tx=0; tx<16; tx++) {
             for(int y=0; y<8; y++) {
@@ -283,7 +288,6 @@ int p8_draw()
             }
         }
     }
-    return 0;
 }
 
 //HZ = 131072 / (2048 - period)

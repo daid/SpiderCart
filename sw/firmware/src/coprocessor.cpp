@@ -158,6 +158,9 @@ void processCoProcessor()
             case COMMAND_P8_CYCLE_30:
                 p8_cycle30();
                 break;
+            case COMMAND_P8_RENDER:
+                p8_render();
+                break;
             default:
                 co_error(1, "Unknown command: %x", cmd);
                 break;

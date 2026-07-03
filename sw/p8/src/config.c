@@ -3,6 +3,9 @@
 
 uint8_t execCommand(uint8_t);
 void clearScreen(void);
+void startSplitScreen(void);
+void updateP8Screen(void);
+void endSplitScreen(void);
 void setBGPalette(void);
 void printStr(uint16_t yx, char* str);
 void setTileGBC(uint16_t yx, uint16_t tile_nr_attr);
@@ -26,37 +29,41 @@ extern const uint16_t picoColors[16];
 
 void colormapMenu(void) {
     uint8_t cursor = 1;
+    startSplitScreen();
     clearScreen();
     while(1) {
         for(uint8_t n=0; n<16; n++) {
-            setTileGBC( ((n+1) << 8) | 1, (0x7C04) | ((n & 0x03) << 8) | (n >> 2));
-            printStr( ((n+1) << 8) | 2, "->");
-            setTileGBC( ((n+1) << 8) | 4, 0x7C01 | (P8_PAL_MAP_ENTRY(n) << 8));
+            setTileGBC( (n+1) | (1 << 8), (0x7C04) | ((n & 0x03) << 8) | (n >> 2));
+            printStr( (n+1) | (2 << 8), "V");
+            setTileGBC( (n+1) | (3 << 8), 0x7C01 | (P8_PAL_MAP_ENTRY(n) << 8));
         }
 
-        printStr((cursor << 8) | 0, ">");
+        printStr(cursor | (4 << 8), "^");
         while(1) {
             waitVBlank();
+            updateP8Screen();
             updateJoypadState();
-            if (JoypadPressed & PADF_START)
+            if (JoypadPressed & (PADF_START | PADF_A | PADF_B)) {
+                endSplitScreen();
                 return;
-            if (JoypadPressed & PADF_UP) {
-                printStr((cursor << 8) | 0, " ");
-                cursor -= 1;
-                if (cursor == 0) cursor = 16;
-                printStr((cursor << 8) | 0, ">");
-            }
-            if (JoypadPressed & PADF_DOWN) {
-                printStr((cursor << 8) | 0, " ");
-                cursor += 1;
-                if (cursor == 17) cursor = 1;
-                printStr((cursor << 8) | 0, ">");
             }
             if (JoypadPressed & PADF_LEFT) {
+                printStr(cursor | (4 << 8), " ");
+                cursor -= 1;
+                if (cursor == 0) cursor = 16;
+                printStr(cursor | (4 << 8), "^");
+            }
+            if (JoypadPressed & PADF_RIGHT) {
+                printStr(cursor | (4 << 8), " ");
+                cursor += 1;
+                if (cursor == 17) cursor = 1;
+                printStr(cursor | (4 << 8), "^");
+            }
+            if (JoypadPressed & PADF_UP) {
                 P8_PAL_MAP_ENTRY(cursor - 1) = (P8_PAL_MAP_ENTRY(cursor - 1) + 3) & 3;
                 break;
             }
-            if (JoypadPressed & PADF_RIGHT) {
+            if (JoypadPressed & PADF_DOWN) {
                 P8_PAL_MAP_ENTRY(cursor - 1) = (P8_PAL_MAP_ENTRY(cursor - 1) + 1) & 3;
                 break;
             }
@@ -68,37 +75,40 @@ void paletteMenu(void)
 {
     uint8_t cursor = 1;
     uint8_t n = 0;
+    startSplitScreen();
     clearScreen();
     while(1) {
         for(uint8_t n=0; n<4; n++) {
-            setTileGBC( ((n+1) << 8) | 1, (0x7C01) | ((n & 0x03) << 8));
+            setTileGBC( (n+1) | (1 << 8), (0x7C01) | ((n & 0x03) << 8));
         }
 
-        printStr((cursor << 8) | 0, ">");
+        printStr(cursor | (2 << 8), "^");
         while(1) {
             waitVBlank();
             updateJoypadState();
-            if (JoypadPressed & PADF_START)
+            if (JoypadPressed & (PADF_START | PADF_A | PADF_B)) {
+                endSplitScreen();
                 return;
-            if (JoypadPressed & PADF_UP) {
-                printStr((cursor << 8) | 0, " ");
-                cursor -= 1;
-                if (cursor == 0) cursor = 16;
-                printStr((cursor << 8) | 0, ">");
-            }
-            if (JoypadPressed & PADF_DOWN) {
-                printStr((cursor << 8) | 0, " ");
-                cursor += 1;
-                if (cursor == 5) cursor = 1;
-                printStr((cursor << 8) | 0, ">");
             }
             if (JoypadPressed & PADF_LEFT) {
+                printStr(cursor | (2 << 8), " ");
+                cursor -= 1;
+                if (cursor == 0) cursor = 4;
+                printStr(cursor | (2 << 8), "^");
+            }
+            if (JoypadPressed & PADF_RIGHT) {
+                printStr(cursor | (2 << 8), " ");
+                cursor += 1;
+                if (cursor == 5) cursor = 1;
+                printStr(cursor | (2 << 8), "^");
+            }
+            if (JoypadPressed & PADF_UP) {
                 n = (n + 15) & 0x0F;
                 BGPalette[cursor + 3] = picoColors[n];
                 setBGPalette();
                 break;
             }
-            if (JoypadPressed & PADF_RIGHT) {
+            if (JoypadPressed & PADF_DOWN) {
                 n = (n + 1) & 0x0F;
                 BGPalette[cursor + 3] = picoColors[n];
                 setBGPalette();

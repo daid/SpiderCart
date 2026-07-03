@@ -6,6 +6,8 @@
 #include <cstring>
 #include <algorithm>
 
+#define PLACEHOLDER() do { static bool placeholder_send = false; if (!placeholder_send) { placeholder_send = true; printf("Placeholder called: %s\n", __PRETTY_FUNCTION__);  } } while(0)
+
 P8State p8_state;
 
 int camera_offset_x = 0;
@@ -17,7 +19,7 @@ int clip_y1 = 128;
 int current_color = 0;
 
 static uint8_t p8lua_pal[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-static uint8_t p8lua_trans_mask = 0;
+static uint32_t p8lua_trans_mask = 0xFFFE;
 
 static void drawTile(int x, int y, int tile_nr)
 {
@@ -41,10 +43,14 @@ static void drawTile(int x, int y, int tile_nr)
     }
 }
 
+
+
 LuaBindError lua_p8_load(const char* FILENAME, std::optional<const char*> breadcrumb, std::optional<const char*> param_str) {
+    PLACEHOLDER();
     return {"Not implemented"};
 }
 LuaBindError lua_p8_save(const char* FILENAME) {
+    PLACEHOLDER();
     return {"Not implemented"};
 }
 /*
@@ -63,6 +69,7 @@ FOLDER
 Open the carts folder in the host operating system.
 */
 LuaBindError lua_p8_ls(std::optional<const char*> directory) {
+    PLACEHOLDER();
     return {"Not implemented"};
 }
 /*
@@ -74,6 +81,7 @@ Directories can only resolve inside of PICO-8's virtual drive; LS("..") from the
 */
 
 LuaBindError lua_p8_run(std::optional<const char*> param_str) {
+    PLACEHOLDER();
     return {"Not implemented"};
 }
 /*
@@ -84,6 +92,7 @@ RUN() Can be called from inside a running program to reset.
 When PARAM_STR is supplied, it can be accessed during runtime with STAT(6)
 */
 LuaBindError lua_p8_stop(std::optional<const char*> message) {
+    PLACEHOLDER();
     return {"Not implemented"};
 }
 /*
@@ -452,10 +461,10 @@ Set a screen offset of -x, -y for all drawing operations
 CAMERA() to reset
 */
 void lua_p8_circ(int x, int y, int r, std::optional<int> col) {
-    //TODO
+    PLACEHOLDER();
 }
 void lua_p8_circfill(int x, int y, int r, std::optional<int> col) {
-    //TODO
+    PLACEHOLDER();
 }
 /*
 Draw a circle or filled circle at x,y with radius r
@@ -470,6 +479,7 @@ OVALFILL(X0, Y0, X1, Y1, [COL])
 Draw an oval that is symmetrical in x and y (an ellipse), with the given bounding rectangle.
 */
 int lua_p8_line(lua_State* L) {
+    PLACEHOLDER();
     //LINE(X0, Y0, [X1, Y1, [COL]])
     //Draw a line from (X0, Y0) to (X1, Y1)
     //If (X1, Y1) are not given, the end of the last drawn line is used.
@@ -514,8 +524,10 @@ void lua_p8_rectfill(int x0, int y0, int x1, int y1, std::optional<int> col) {
 Draw a rectangle or filled rectangle with corners at (X0, Y0), (X1, Y1).
 */
 void lua_p8_rrect(int x0, int y0, int x1, int y1, int r, std::optional<int> col) {
+    PLACEHOLDER();
 }
 void lua_p8_rrectfill(int x0, int y0, int x1, int y1, int r, std::optional<int> col) {
+    PLACEHOLDER();
 }
 /*
 Draw a rounded rectangle or filled rectangle with rounded corners.
@@ -583,13 +595,13 @@ void lua_p8_palt(std::optional<int> c, std::optional<bool> transparent)
 {
     if (transparent.has_value()) {
         if (transparent.value())
-            p8lua_trans_mask |= 1 << c.value();
-        else
             p8lua_trans_mask &=~(1 << c.value());
+        else
+            p8lua_trans_mask |= 1 << c.value();
     } else if (c.has_value()) {
-        p8lua_trans_mask = c.value();
+        p8lua_trans_mask = ~c.value();
     } else {
-        p8lua_trans_mask = 1;
+        p8lua_trans_mask = 0xFFFE;
     }
 }
 /*
@@ -1089,7 +1101,7 @@ SFX(-1)   --  STOP ALL SOUNDS ON ALL CHANNELS
 SFX(-2)   --  RELEASE LOOPING ON ALL CHANNELS
 */
 void lua_p8_music(std::optional<int> n, std::optional<int> fade_len, std::optional<int> channel_mask) {
-
+    PLACEHOLDER();
 }
 /*
 Play music starting from pattern N (0..63)
@@ -1262,6 +1274,7 @@ A, B = PEEK(0x6000, 2)
 */
 int lua_p8_poke(lua_State* L) {
     auto addr = luaL_checkinteger(L, 1);
+    PLACEHOLDER();
     //POKE(ADDR, VAL1, VAL2, ...)
     return 0;
 }

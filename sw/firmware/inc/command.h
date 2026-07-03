@@ -7,3 +7,4 @@
 #define COMMAND_EXEC_QUICKBOOT     0xF0
 #define COMMAND_P8_CYCLE_60        0x80
 #define COMMAND_P8_CYCLE_30        0x81
+#define COMMAND_P8_RENDER          0x82
