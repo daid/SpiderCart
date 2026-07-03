@@ -1925,6 +1925,7 @@ float lua_p8_sgn(float f) { return f >= 0.0f ? 1.0f : -1.0f; }
 #define STR_(s) #s
 #define STR(s) STR_(s)
 #define P8_BIND(f) LUA_BIND(L, lua_p8_ ## f, STR(f))
+#define SET_GLOBAL(name, value) do { Convert<decltype(value)>::toLua(L, value); lua_setglobal(L, name); } while(0)
 void setupP8LuaEnv(lua_State* L)
 {
     P8_BIND(save);
@@ -1998,4 +1999,31 @@ void setupP8LuaEnv(lua_State* L)
     P8_BIND(pack);
     P8_BIND(unpack);
     P8_BIND(sgn);
+
+    SET_GLOBAL("\x80", 0.5f); // SHIFT+A
+    SET_GLOBAL("\x81", 23130.5f); // SHIFT+B
+    SET_GLOBAL("\x82", 20767.5f); // SHIFT+C
+    SET_GLOBAL("\x83", 3); // SHIFT+D
+    SET_GLOBAL("\x84", 32125.5f); // SHIFT+E
+    SET_GLOBAL("\x85", -18402.5f); // SHIFT+F
+    SET_GLOBAL("\x86", -1632.5f); // SHIFT+G
+    SET_GLOBAL("\x87", 20927.5f); // SHIFT+H
+    SET_GLOBAL("\x88", -19008.5f); // SHIFT+I
+    SET_GLOBAL("\x89", -26208.5f); // SHIFT+J
+    SET_GLOBAL("\x8A", -20192.5f); // SHIFT+K
+    SET_GLOBAL("\x8B", 0); // SHIFT+L
+    SET_GLOBAL("\x8C", -24351.5f); // SHIFT+M
+    SET_GLOBAL("\x8D", -25792.5f); // SHIFT+N
+    SET_GLOBAL("\x8E", 4); // SHIFT+O
+    SET_GLOBAL("\x8F", -20032.5f); // SHIFT+P
+    SET_GLOBAL("\x90", -2560.5f); // SHIFT+Q
+    SET_GLOBAL("\x91", 1); // SHIFT+R
+    SET_GLOBAL("\x92", -20128.5f); // SHIFT+S
+    SET_GLOBAL("\x93", 6943.5f); // SHIFT+T
+    SET_GLOBAL("\x94", 2); // SHIFT+U
+    SET_GLOBAL("\x95", -2624.5f); // SHIFT+V
+    SET_GLOBAL("\x96", 31455.5f); // SHIFT+W
+    SET_GLOBAL("\x97", 2); // SHIFT+X
+    SET_GLOBAL("\x98", 3855.5f); // SHIFT+Y
+    SET_GLOBAL("\x99", 21845.5f); // SHIFT+Z
 }
