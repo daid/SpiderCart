@@ -262,6 +262,7 @@ static int read_numeral (LexState *ls, SemInfo *seminfo) {
       else break;
     }
   } else {
+    if (first == '0') check_next2(ls, "bB");
     for (;;) {
       if (lisdigit(ls->current) || ls->current == '.')  /* '%x|%.' */
         save_and_next(ls);

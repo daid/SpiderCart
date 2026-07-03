@@ -39,7 +39,7 @@ void main(void)
     while(*ptr) {
         printStr(pos, ptr + 1);
         ptr += 32;
-        pos += 0x20;
+        pos += 0x100;
     }
     pos = 0;
     printStr(pos, ">");

@@ -31,7 +31,7 @@ int main(int argc, char** argv)
     runLuaTest("foreach del", "a = {1,2,3}\nforeach(a, function(n) del(a, n) end)\nassert(#a == 0, [[len]] .. #a)");
     runLuaTest("all", "n = 0 for a in all({1, 2, 3}) do n += 1 end assert(n == 3)");
     runLuaTest("all del", "a = {1,2,3}\nfor n in all(a) do del(a, n) end\nassert(#a == 0, [[len]] .. #a)");
-    runLuaTest("number parse oddness", "a = 0b=2\nassert(b == 2)");
+    runLuaTest("number parse oddness", "a = 1b=2\nassert(b == 2)");
     runLuaTest("number parse oddness2", "a = 0e=2\nassert(e == 2)");
     runLuaTest("if .. do .. end", "a = 0\nif a == 0 do a = 2 end\nassert(a==2)");
     runLuaTest("while (...) ...", "a = 0\nwhile (a < 2) a += 1");
@@ -41,6 +41,8 @@ int main(int argc, char** argv)
     runLuaTest("special chars", "assert(\x81 == 23130.5)");
     runLuaTest("special chars 2", "\x81\x82 = 3\nassert(\x81\x82 == 3)");
     runLuaTest("escape sequence", "a = \"\\0\"\na = \"\\*\"\na = \"\\#\\-\\|\\+\\^\\a\\b\\t\\n\\v\\f\\r\\014\\015\"");
+    runLuaTest("binary number int", "a = 0b100\nassert(a == 4)");
+    runLuaTest("binary number flt", "a = 0b100.1\nb = 0b1.001\nassert(a == 4.5)\nassert(b == 1.125)");
     if (total_fail_count)
         printf("\x1B[1;31mFAILED: %d\x1B[22;39m\n", total_fail_count);
     return total_fail_count ? 1 : 0;

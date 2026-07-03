@@ -207,6 +207,44 @@ static int isneg (const char **s) {
   return 0;
 }
 
+/*
+** convert a hexadecimal numeric string to a number, following
+** C99 specification for 'strtod'
+*/
+static lua_Number lua_strb2number (const char *s, char **endptr) {
+  int dot = lua_getlocaledecpoint();
+  lua_Number r = l_mathop(0.0);  /* result (accumulator) */
+  int sigdig = 0;  /* number of significant digits */
+  int nosigdig = 0;  /* number of non-significant digits */
+  int e = 0;  /* exponent correction */
+  int neg;  /* 1 if number is negative */
+  int hasdot = 0;  /* true after seen a dot */
+  *endptr = cast_charp(s);  /* nothing is valid yet */
+  while (lisspace(cast_uchar(*s))) s++;  /* skip initial spaces */
+  neg = isneg(&s);  /* check sign */
+  if (!(*s == '0' && (*(s + 1) == 'b' || *(s + 1) == 'B')))  /* check '0b' */
+    return l_mathop(0.0);  /* invalid format (no '0b') */
+  for (s += 2; ; s++) {  /* skip '0b' and read numeral */
+    if (*s == dot) {
+      if (hasdot) break;  /* second dot? stop loop */
+      else hasdot = 1;
+    }
+    else if (*s == '0' || *s == '1') {
+      if (sigdig == 0 && *s == '0')  /* non-significant digit (zero)? */
+        nosigdig++;
+      else if (++sigdig <= 32)  /* can read it without overflow? */
+          r = (r * l_mathop(2.0)) + ((*s == '1') ? 1.0f : 0.0f);
+      else e++;  /* too many digits; ignore, but still count for exponent */
+      if (hasdot) e--;  /* decimal digit? correct exponent */
+    }
+    else break;  /* neither a dot nor a digit */
+  }
+  if (nosigdig + sigdig == 0)  /* no digits? */
+    return l_mathop(0.0);  /* invalid format */
+  *endptr = cast_charp(s);  /* valid up to here */
+  if (neg) r = -r;
+  return l_mathop(ldexp)(r, e);
+}
 
 
 /*
@@ -290,7 +328,8 @@ static lua_Number lua_strx2number (const char *s, char **endptr) {
 */
 static const char *l_str2dloc (const char *s, lua_Number *result, int mode) {
   char *endptr;
-  *result = (mode == 'x') ? lua_strx2number(s, &endptr)  /* try to convert */
+  *result = (mode == 'b') ? lua_strb2number(s, &endptr)
+          : (mode == 'x') ? lua_strx2number(s, &endptr)  /* try to convert */
                           : lua_str2number(s, &endptr);
   if (endptr == s) return NULL;  /* nothing recognized? */
   while (lisspace(cast_uchar(*endptr))) endptr++;  /* skip trailing spaces */
@@ -313,7 +352,7 @@ static const char *l_str2dloc (const char *s, lua_Number *result, int mode) {
 */
 static const char *l_str2d (const char *s, lua_Number *result) {
   const char *endptr;
-  const char *pmode = strpbrk(s, ".xXnN");  /* look for special chars */
+  const char *pmode = strpbrk(s, ".xXnNbB");  /* look for special chars */
   int mode = pmode ? ltolower(cast_uchar(*pmode)) : 0;
   if (mode == 'n')  /* reject 'inf' and 'nan' */
     return NULL;
@@ -349,8 +388,14 @@ static const char *l_str2int (const char *s, lua_Integer *result) {
       a = a * 16 + luaO_hexavalue(*s);
       empty = 0;
     }
-  }
-  else {  /* decimal */
+  } else if (s[0] == '0' &&
+      (s[1] == 'b' || s[1] == 'B')) {  /* binary? */
+    s += 2;  /* skip '0b' */
+    for (; *s == '0' || *s == '1'; s++) {
+      a = a * 2 + (*s - '0');
+      empty = 0;
+    }
+  } else {  /* decimal */
     for (; lisdigit(cast_uchar(*s)); s++) {
       int d = *s - '0';
       if (a >= MAXBY10 && (a > MAXBY10 || d > MAXLASTD + neg))  /* overflow? */

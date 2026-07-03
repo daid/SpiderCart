@@ -1433,14 +1433,14 @@ int lua_p8_rnd(lua_State* L) {
 
     If you want an integer, use flr(rnd(x)). If x is an array-style table, return a random element between table[1] and table[#table].
     */
+    p8_rng_state = ((p8_rng_state * 1103515245) + 12345) & 0x7fffffff;
     if (lua_istable(L, 1)) {
         auto len = luaL_len(L, 1);
         if (len == 0) return 0;
-        //TODO
+        lua_geti(L, 1, (p8_rng_state % len) + 1);
         return 1;
     }
     auto n = luaL_optnumber(L, 1, 1.0);
-    p8_rng_state = ((p8_rng_state * 1103515245) + 12345) & 0x7fffffff;
     float res = 0.0f;
     auto ptr = (uint32_t*)&res;
     *ptr = 0x3f800000 | (p8_rng_state & 0x007FFFFF);
