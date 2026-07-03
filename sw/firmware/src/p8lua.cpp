@@ -17,7 +17,7 @@ int clip_y1 = 128;
 int current_color = 0;
 
 static uint8_t p8lua_pal[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-
+static uint8_t p8lua_trans_mask = 0;
 
 static void drawTile(int x, int y, int tile_nr)
 {
@@ -33,7 +33,7 @@ static void drawTile(int x, int y, int tile_nr)
             if (ppx >= clip_x0 && ppx < clip_x1 && ppy >= clip_y0 && ppy < clip_y1) {
                 auto c = ptr[px/2 + py*64];
                 if (px & 1) c >>= 4; else c &= 0x0F;
-                if (c) {
+                if (p8lua_trans_mask & (1 << c)) {
                     p8_state.screen[ppx + ppy * 128] = p8lua_pal[c];
                 }
             }
@@ -290,9 +290,12 @@ FOR Y=0,127 DO
     PSET(X, Y, X*Y/8)
   END
 END
-
-PGET(X, Y)
-
+*/
+int lua_p8_pget(int x, int y) {
+    if (x < 0 || x >= 128 || y < 0 || y >= 128) return 0;
+    return p8_state.screen[x + y * 128];
+}
+/*
 Returns the colour of a pixel on the screen at (X, Y).
 
 WHILE (TRUE) DO
@@ -576,10 +579,18 @@ PAL({1,1,5,5,5,6,7,13,6,7,7,6,13,6,7,1}, 1)
 
 Because table indexes start at 1, colour 0 is given at the end in this case.
 */
-int lua_p8_palt(lua_State* L)
+void lua_p8_palt(std::optional<int> c, std::optional<bool> transparent)
 {
-    //PALT(C, [T])
-    return 0; 
+    if (transparent.has_value()) {
+        if (transparent.value())
+            p8lua_trans_mask |= 1 << c.value();
+        else
+            p8lua_trans_mask &=~(1 << c.value());
+    } else if (c.has_value()) {
+        p8lua_trans_mask = c.value();
+    } else {
+        p8lua_trans_mask = 1;
+    }
 }
 /*
 Set transparency for colour index to T (boolean) Transparency is observed by SPR(), SSPR(), MAP() AND TLINE()
@@ -604,7 +615,7 @@ static void draw_sprite(int x, int y, int tile_nr, int flags)
             if (ppx >= clip_x0 && ppx < clip_x1 && ppy >= clip_y0 && ppy < clip_y1) {
                 auto c = ptr[px/2 + py*64];
                 if (px & 1) c >>= 4; else c &= 0x0F;
-                if (c) {
+                if (p8lua_trans_mask & (1 << c)) {
                     p8_state.screen[ppx + ppy * 128] = p8lua_pal[c];
                 }
             }
@@ -637,9 +648,12 @@ Colour 0 drawn as transparent by default (see PALT())
 When FLIP_X is TRUE, flip horizontally.
 
 When FLIP_Y is TRUE, flip vertically.
-
-SSPR(SX, SY, SW, SH, DX, DY, [DW, DH], [FLIP_X], [FLIP_Y]]
-
+*/
+void lua_p8_sspr(int sx, int sy, int sw, int sh, int dx, int dy, std::optional<int> dw, std::optional<int> dh, std::optional<bool> flip_x, std::optional<bool> flip_y) {
+    //SSPR(SX, SY, SW, SH, DX, DY, [DW, DH], [FLIP_X], [FLIP_Y]]
+    //TODO
+}
+/*
 Stretch a rectangle of the sprite sheet (sx, sy, sw, sh) to a destination rectangle on the screen (dx, dy, dw, dh). In both cases, the x and y values are coordinates (in pixels) of the rectangle's top left corner, with a width of w, h.
 
 Colour 0 drawn as transparent by default (see PALT())
@@ -1941,6 +1955,7 @@ void setupP8LuaEnv(lua_State* L)
     P8_BIND(t);
     P8_BIND(clip);
     P8_BIND(pset);
+    P8_BIND(pget);
     P8_BIND(fget);
     P8_BIND(cls);
     P8_BIND(camera);
