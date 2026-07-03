@@ -649,9 +649,26 @@ When FLIP_X is TRUE, flip horizontally.
 
 When FLIP_Y is TRUE, flip vertically.
 */
-void lua_p8_sspr(int sx, int sy, int sw, int sh, int dx, int dy, std::optional<int> dw, std::optional<int> dh, std::optional<bool> flip_x, std::optional<bool> flip_y) {
+void lua_p8_sspr(int sx, int sy, int sw, int sh, int dx, int dy, std::optional<int> dw_, std::optional<int> dh_, std::optional<bool> flip_x, std::optional<bool> flip_y) {
     //SSPR(SX, SY, SW, SH, DX, DY, [DW, DH], [FLIP_X], [FLIP_Y]]
-    //TODO
+    int dw = dw_.value_or(sw);
+    int dh = dh_.value_or(sh);
+    for(int y=dy; y<dy+dh; y++) {
+        int sheet_y = (y-dy) * sh / dh;
+        if (flip_y.value_or(false)) sheet_y = (dh - 1 - (y-dy)) * sh / dh;
+        for(int x=dx; x<dx+dw; x++) {
+            if (x >= clip_x0 && x < clip_x1 && y >= clip_y0 && y < clip_y1) {
+                int sheet_x = (x-dx) * sw / dw;
+                if (flip_x.value_or(false)) sheet_x = (dw - 1 - (x-dx)) * sw / dw;
+                int c = p8_state.card_data[(sheet_x >> 1) + (sheet_y * 64)];
+                if ((sheet_x & 1) == 0) c >>= 4;
+                c &= 0x0F;
+                if (p8lua_trans_mask & (1 << c)) {
+                    p8_state.screen[x + y * 128] = p8lua_pal[c];
+                }
+            }
+        }
+    }
 }
 /*
 Stretch a rectangle of the sprite sheet (sx, sy, sw, sh) to a destination rectangle on the screen (dx, dy, dw, dh). In both cases, the x and y values are coordinates (in pixels) of the rectangle's top left corner, with a width of w, h.
@@ -1969,6 +1986,7 @@ void setupP8LuaEnv(lua_State* L)
     P8_BIND(pal);
     P8_BIND(palt);
     P8_BIND(spr);
+    P8_BIND(sspr);
 
     P8_BIND(add);
     P8_BIND(del);
