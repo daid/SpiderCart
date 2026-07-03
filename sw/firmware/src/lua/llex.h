@@ -42,7 +42,7 @@ enum RESERVED {
   TK_FLT, TK_INT, TK_NAME, TK_STRING, 
   TK_PRINT, TK_EOL,
   TK_ADDE, TK_SUBE, TK_MULE, TK_DIVE, TK_MODE,
-  TK_BANDE, TK_BORE
+  TK_BANDE, TK_BORE, TK_CONCATE
 };
 
 /* number of reserved words */

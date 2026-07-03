@@ -52,7 +52,7 @@ static const char *const luaX_tokens [] = {
     "<number>", "<integer>", "<name>", "<string>",
     "?", "<eol>",
     "+=", "-=", "*=", "/=", "%=",
-    "&=", "|="
+    "&=", "|=", "..="
 };
 
 
@@ -501,6 +501,11 @@ static int llex (LexState *ls, SemInfo *seminfo) {
         ls->emiteol = 1;
         return TK_PRINT;
       }
+      case '+': {  /* '+' or '+=' */
+        next(ls);
+        if (check_next1(ls, '=')) return TK_ADDE;
+        return '+';
+      }
       case '-': {  /* '-' or '--' (comment) */
         next(ls);
         if (ls->current == '=') { next(ls); return TK_SUBE; }
@@ -548,14 +553,23 @@ static int llex (LexState *ls, SemInfo *seminfo) {
         else if (check_next1(ls, '>')) return TK_SHR;  /* '>>' */
         else return '>';
       }
+      case '*':
+        next(ls);
+        if (check_next1(ls, '=')) return TK_MULE;  /* '*=' */
+        return '*';
       case '\\':
         next(ls);
         return TK_IDIV;
       case '/': {
         next(ls);
         if (check_next1(ls, '/')) return TK_IDIV;  /* '//' */
+        else if (check_next1(ls, '=')) return TK_DIVE;  /* '/=' */
         else return '/';
       }
+      case '%':
+        next(ls);
+        if (check_next1(ls, '=')) return TK_MODE;  /* '%=' */
+        return '%';
       case '~': {
         next(ls);
         if (check_next1(ls, '=')) return TK_NE;  /* '~=' */
@@ -580,7 +594,10 @@ static int llex (LexState *ls, SemInfo *seminfo) {
         if (check_next1(ls, '.')) {
           if (check_next1(ls, '.'))
             return TK_DOTS;   /* '...' */
-          else return TK_CONCAT;   /* '..' */
+          else if (check_next1(ls, '='))
+            return TK_CONCATE;   /* '..=' */
+          else
+            return TK_CONCAT;   /* '..' */
         }
         else if (!lisdigit(ls->current)) return '.';
         else return read_numeral(ls, seminfo);
@@ -613,17 +630,6 @@ static int llex (LexState *ls, SemInfo *seminfo) {
           ls->braces += c == ')' ? -1 :  /* handle brace count for short if */
                         c == '(' ? ls->braces > 0 ? 1 : -1 : 0;
           next(ls);
-          if (ls->current == '=') {
-            switch(c) {
-            case '+': next(ls); return TK_ADDE;
-            case '-': next(ls); return TK_SUBE; // already handled with comments
-            case '*': next(ls); return TK_MULE;
-            case '/': next(ls); return TK_DIVE;
-            case '%': next(ls); return TK_MODE;
-            case '&': next(ls); return TK_BANDE;
-            case '|': next(ls); return TK_BORE;
-            }
-          }
           return c;
         }
       }

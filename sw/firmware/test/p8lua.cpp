@@ -21,6 +21,10 @@ int main(int argc, char** argv)
     runLuaTest("del nil", "a = {1,2,3}\ndel(a, nil)\nassert(#a == 3, [[len]] .. #a)\nassert(a[1] == 1, [[value]])\nassert(a[2] == 2, [[value]])\nassert(a[3] == 3, [[value]])");
     runLuaTest("+=", "a = 1\na += 1\nassert(a == 2)");
     runLuaTest("-=", "a = 1\na -= 1\nassert(a == 0)");
+    runLuaTest("*=", "a = 2\na *= 3\nassert(a == 6)");
+    runLuaTest("/=", "a = 6\na /= 2\nassert(a == 3)");
+    runLuaTest("%=", "a = 7\na %= 3\nassert(a == 1)");
+    runLuaTest("..=", "a = 'a'\na ..= 'b'\nassert(a == 'ab')");
     runLuaTest("short if", "a = 0\nif (true) a = 1\nassert(a == 1)");
     runLuaTest("short if else1", "a = 0\nif (true) a = 1 else a = 2\nassert(a == 1)");
     runLuaTest("short if else2", "a = 0\nif (false) a = 1 else a = 2\nassert(a == 2)");
