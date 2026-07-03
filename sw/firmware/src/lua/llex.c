@@ -428,13 +428,19 @@ static void read_string (LexState *ls, int del, SemInfo *seminfo) {
         int c;  /* final character to be saved */
         save_and_next(ls);  /* keep '\\' for error messages */
         switch (ls->current) {
+          case '*': c = '\x01'; goto read_save;
+          case '#': c = '\x02'; goto read_save;
+          case '-': c = '\x03'; goto read_save;
+          case '|': c = '\x04'; goto read_save;
+          case '+': c = '\x05'; goto read_save;
+          case '^': c = '\x06'; goto read_save;
           case 'a': c = '\a'; goto read_save;
           case 'b': c = '\b'; goto read_save;
-          case 'f': c = '\f'; goto read_save;
-          case 'n': c = '\n'; goto read_save;
-          case 'r': c = '\r'; goto read_save;
           case 't': c = '\t'; goto read_save;
+          case 'n': c = '\n'; goto read_save;
           case 'v': c = '\v'; goto read_save;
+          case 'f': c = '\f'; goto read_save;
+          case 'r': c = '\r'; goto read_save;
           case 'x': c = readhexaesc(ls); goto read_save;
           case 'u': utf8esc(ls);  goto no_save;
           case '\n': case '\r':

@@ -40,6 +40,7 @@ int main(int argc, char** argv)
     runLuaTest("?", "?\"1\"\n?1\n?1,2,3");
     runLuaTest("special chars", "assert(\x81 == 23130.5)");
     runLuaTest("special chars 2", "\x81\x82 = 3\nassert(\x81\x82 == 3)");
+    runLuaTest("escape sequence", "a = \"\\0\"\na = \"\\*\"\na = \"\\#\\-\\|\\+\\^\\a\\b\\t\\n\\v\\f\\r\\014\\015\"");
     if (total_fail_count)
         printf("\x1B[1;31mFAILED: %d\x1B[22;39m\n", total_fail_count);
     return total_fail_count ? 1 : 0;
