@@ -1536,6 +1536,8 @@ static void compound (LexState *ls, expdesc *v) {
               ls->t.token == TK_MULE ? OPR_MUL :
               ls->t.token == TK_DIVE ? OPR_DIV :
               ls->t.token == TK_MODE ? OPR_MOD :
+              ls->t.token == TK_SHLE ? OPR_SHL :
+              ls->t.token == TK_SHRE ? OPR_SHR :
               ls->t.token == TK_BANDE ? OPR_BAND :
               ls->t.token == TK_BORE ? OPR_BOR :
               ls->t.token == TK_CONCATE ? OPR_CONCAT :

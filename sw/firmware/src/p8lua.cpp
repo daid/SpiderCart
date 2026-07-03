@@ -1347,12 +1347,12 @@ Returns the maximum, minimum, or middle value of parameters
 
 > ?MID(7,5,10) -- 7
 */
-lua_Number lua_p8_flr(lua_Number f) { return std::floor(f); }
+lua_Number lua_p8_flr(std::optional<lua_Number> f) { return std::floor(f.value_or(0)); }
 /*
 > ?FLR ( 4.1) -->  4
 > ?FLR (-2.3) --> -3
 */
-lua_Number lua_p8_ceil(lua_Number f) { return std::ceil(f); }
+lua_Number lua_p8_ceil(std::optional<lua_Number> f) { return std::ceil(f.value_or(0)); }
 /*
 Returns the closest integer that is equal to or below x
 
