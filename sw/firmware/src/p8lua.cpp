@@ -2,6 +2,7 @@
 #include "luabind.h"
 #include "lua/llimits.h"
 #include <utility>
+#include <malloc.h>
 #include <cmath>
 #include <cstring>
 #include <algorithm>
@@ -179,9 +180,28 @@ This is not the real-world time, but is calculated by counting the number of tim
 _UPDATE or @_UPDATE60 is called. Multiple calls of TIME() from the same frame return
 
 the same result.
-
-STAT(X)
-
+*/
+int lua_p8_stat(lua_State* L) {
+    auto type = luaL_optinteger(L, 1, 1);
+    switch(type) {
+    case 0:{
+#ifdef _WIN32
+        auto used_space = 0; // No way to calculate
+#else
+        //Assume we have 256kb available for the heap.
+        auto info = mallinfo();
+        auto used_space = 2048 - info.uordblks * 2048 / (256 * 1024);
+#endif
+        lua_pushnumber(L, used_space);
+        }break;
+    default:
+        lua_pushnumber(L, 0.0f);
+        PLACEHOLDER();
+        break;
+    }
+    return 1;
+}
+/*
 Get system status where X is:
 
 0  Memory usage (0..2048)
@@ -545,6 +565,7 @@ When bits 0x1800.0000 are set in COL, and (PEEK(0x5F34) & 2) == 2, RRECTFILL is 
 int lua_p8_pal(lua_State* L) {
     if (lua_gettop(L) < 1) {
         for(int n=0; n<16; n++) p8lua_pal[n] = n;
+        p8lua_trans_mask = 0xFFFE;
     } else if (lua_gettop(L) < 2) {
         if (luaL_checkinteger(L, 1) == 0)
             for(int n=0; n<16; n++) p8lua_pal[n] = n;
@@ -693,8 +714,12 @@ When FLIP_X is TRUE, flip horizontally.
 
 When FLIP_Y is TRUE, flip vertically.
 
-FILLP(P)
-
+*/
+void lua_p8_fillp(std::optional<int> p)
+{
+    PLACEHOLDER();
+}
+/*
 The PICO-8 fill pattern is a 4x4 2-colour tiled pattern observed by: CIRC() CIRCFILL() RECT() RECTFILL() OVAL() OVALFILL() PSET() LINE()
 
 P is a bitfield in reading order starting from the highest bit. To calculate the value of P for a desired pattern, add the bit values together:
@@ -1146,11 +1171,16 @@ POKE(0x5f5a, NEWVAL)
 
 */
 void lua_p8_map(std::optional<int> tile_x, std::optional<int> tile_y, std::optional<int> sx, std::optional<int> sy, std::optional<int> tile_w, std::optional<int> tile_h, std::optional<int> layers) {
-    int rx = sx.value_or(0) + camera_offset_x;
-    int ry = sy.value_or(0) + camera_offset_y;
+    int rx = sx.value_or(0);
+    int ry = sy.value_or(0);
     int tx = tile_x.value_or(0);
     int ty = tile_y.value_or(0);
     int mask = layers.value_or(0xFF);
+
+    tx -= camera_offset_x >> 3;
+    ty -= camera_offset_y >> 3;
+    rx += camera_offset_x % 8;
+    ry += camera_offset_y % 8;
 
     for(int y=0; y<tile_h.value_or(16); y++) {
         for(int x=0; x<0+tile_w.value_or(16); x++) {
@@ -1589,12 +1619,20 @@ TOSTR(17,0x2)   -- "1114112"
 int lua_p8_tonum(lua_State* L)
 {
     //TONUM(VAL, [FORMAT_FLAGS])
-    luaL_checkany(L, 1);
-    if (lua_isstring(L, 1)) {
+    switch(lua_type(L, 1))
+    {
+    case LUA_TBOOLEAN:
+        lua_pushinteger(L, lua_toboolean(L, 1) ? 1 : 0);
+        break;
+    case LUA_TNUMBER:
+        lua_pushvalue(L, 1);
+        break;
+    case LUA_TSTRING:
         //TODO: Handle format flags
         lua_pushnumber(L, atof(lua_tostring(L, 1)));
-    } else {
-        lua_pushvalue(L, 1);
+        break;
+    default:
+        return 0;
     }
     return 1;
 }
@@ -1991,6 +2029,7 @@ void setupP8LuaEnv(lua_State* L)
     P8_BIND(printh);
     P8_BIND(time);
     P8_BIND(t);
+    P8_BIND(stat);
     P8_BIND(clip);
     P8_BIND(pset);
     P8_BIND(pget);
@@ -2008,6 +2047,7 @@ void setupP8LuaEnv(lua_State* L)
     P8_BIND(palt);
     P8_BIND(spr);
     P8_BIND(sspr);
+    P8_BIND(fillp);
 
     P8_BIND(add);
     P8_BIND(del);
