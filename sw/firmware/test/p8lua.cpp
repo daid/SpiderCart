@@ -47,6 +47,7 @@ int main(int argc, char** argv)
     runLuaTest("escape sequence", "a = \"\\0\"\na = \"\\*\"\na = \"\\#\\-\\|\\+\\^\\a\\b\\t\\n\\v\\f\\r\\014\\015\"");
     runLuaTest("binary number int", "a = 0b100\nassert(a == 4)");
     runLuaTest("binary number flt", "a = 0b100.1\nb = 0b1.001\nassert(a == 4.5)\nassert(b == 1.125)");
+    runLuaTest("string features", "a = 'abcd'\nassert(#a == 4)\nassert(a[1] == 'a')");
     if (total_fail_count)
         printf("\x1B[1;31mFAILED: %d\x1B[22;39m\n", total_fail_count);
     return total_fail_count ? 1 : 0;

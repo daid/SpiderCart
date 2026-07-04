@@ -2030,6 +2030,22 @@ static int lua_p8_unpack (lua_State *L) {
   return (int)n;
 }
 
+int lua_p8_type (lua_State *L) {
+  int t = lua_type(L, 1);
+  if (lua_gettop(L) < 1) return 0;
+  lua_pushstring(L, lua_typename(L, t));
+  return 1;
+}
+
+int lua_p8_string_index(lua_State* L) {
+    size_t slen = 0;
+    auto str = lua_tolstring(L, 1, &slen);
+    size_t index = lua_tointeger(L, 2);
+    if (index <= 0 || index > slen) return 0;
+    lua_pushlstring(L, str + index - 1, 1);
+    return 1;
+}
+
 float lua_p8_sgn(float f) { return f >= 0.0f ? 1.0f : -1.0f; }
 
 
@@ -2116,7 +2132,16 @@ void setupP8LuaEnv(lua_State* L)
 
     P8_BIND(pack);
     P8_BIND(unpack);
+    P8_BIND(type);
     P8_BIND(sgn);
+
+    if (luaL_newmetatable(L, "string")) {
+        lua_pushcfunction(L, lua_p8_string_index);
+        lua_setfield(L, -2, "__index");
+        lua_pop(L, 1);
+    }
+    lua_pushstring(L, "");
+    luaL_setmetatable(L, "string");
 
     SET_GLOBAL("\x80", 0.5f); // SHIFT+A
     SET_GLOBAL("\x81", 23130.5f); // SHIFT+B
