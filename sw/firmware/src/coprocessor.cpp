@@ -7,6 +7,7 @@
 
 #include "usb_msc.h"
 #include "fatfs/ff.h"
+#include <stdlib.h>
 #include <pico/multicore.h>
 #include <string.h>
 #include <stdio.h>
@@ -117,6 +118,12 @@ void processCoProcessor()
                         f_unmount("");
                     }
                     *ptr = 0;
+                    qsort(ram_data, (ptr - ram_data) / 32, 32, [](const void* a, const void* b) -> int {
+                        auto aa = (const char*)a;
+                        auto bb = (const char*)b;
+                        if (*aa != *bb) return *aa - *bb;
+                        return strcmp(aa+1, bb+1);
+                    });
                     ram_data[15 * 0x2000 + 0x1FFF] = 0;
                 }
                 break;
