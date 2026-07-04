@@ -1189,7 +1189,7 @@ void lua_p8_map(std::optional<int> tile_x, std::optional<int> tile_y, std::optio
                 tile_nr = p8_state.card_data[0x2000 + tx + x + (ty + y) * 128];
             else
                 tile_nr = p8_state.card_data[0x0000 + tx + x + (ty + y) * 128];
-            if (tile_nr && (!layers.has_value() || (p8_state.card_data[0x3000 + tile_nr] & mask)))
+            if ((tile_nr || p8_state.card_data[0x5F36] & 0x08) && (!layers.has_value() || (p8_state.card_data[0x3000 + tile_nr] & mask)))
                 drawTile(rx + x * 8, ry + y * 8, tile_nr);
         }
     }
@@ -1295,17 +1295,26 @@ GFX and SCREEN addresses can additionally be mapped to upper memory locations 0x
 ⓘ
 
 GFX and SCREEN memory mapping happens at a low level which also affects memory access functions (peek, poke, memcpy). The 8k memory blocks starting at 0x0 and 0x6000 can be thought of as pointers to a separate video ram, and setting the values at 0X5F54 and 0X5F56 alters those pointers.
-
-PEEK(ADDR, [N])
-
+*/
+int lua_p8_peek(lua_State* L) {
+    auto addr = luaL_optinteger(L, 1, 0);
+    auto amount = luaL_optinteger(L, 2, 1);
+    if (amount < 0) return 0;
+    for(int n=0; n<amount; n++) {
+        lua_pushinteger(L, p8_state.card_data[(addr + n) & 0xFFFF]);
+    }
+    return amount;
+}
+/*
 Read a byte from an address in base ram. If N is specified, PEEK() returns that number of results (max: 8192). For example, to read the first 2 bytes of video memory:
 
 A, B = PEEK(0x6000, 2)
 */
 int lua_p8_poke(lua_State* L) {
-    auto addr = luaL_checkinteger(L, 1);
-    PLACEHOLDER();
-    //POKE(ADDR, VAL1, VAL2, ...)
+    auto addr = luaL_optinteger(L, 1, 0);
+    auto data = luaL_optinteger(L, 2, 0);
+    if (addr >= 0 && addr < 0x10000)
+        p8_state.card_data[addr] = data;
     return 0;
 }
 /*
@@ -1331,7 +1340,7 @@ $ADDR  -- PEEK4(ADDR)
 */
 void lua_p8_memcpy(int dst_addr, int src_addr, int len) {
     while(len) {
-        if (dst_addr >= 0 && dst_addr < 0x4300 && src_addr >= 0 && src_addr < 0x4300) {
+        if (dst_addr >= 0 && dst_addr < 0x10000 && src_addr >= 0 && src_addr < 0x10000) {
             p8_state.card_data[dst_addr] = p8_state.card_data[src_addr];
         }
         dst_addr++;
@@ -2065,6 +2074,7 @@ void setupP8LuaEnv(lua_State* L)
     P8_BIND(mset);
     P8_BIND(map);
 
+    P8_BIND(peek);
     P8_BIND(poke);
     P8_BIND(memcpy);
 

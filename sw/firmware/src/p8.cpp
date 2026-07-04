@@ -193,6 +193,8 @@ int p8_load(const char* filename)
             return p8lua_error();
         }
     }
+    //Clear the upper memory area
+    memset(ram_data + 0x4300, 0, 0x10000 - 0x4300);
 
     if (lua_pcall(p8_lua_state, 0, 0, 0) != LUA_OK) {
         return p8lua_error();
