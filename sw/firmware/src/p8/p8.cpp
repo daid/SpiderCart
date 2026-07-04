@@ -1,6 +1,6 @@
 #include "p8.h"
 #include "p8lua.h"
-#include "fatfs/ff.h"
+#include "../fatfs/ff.h"
 #include "memchip.h"
 #include "coprocessor.h"
 

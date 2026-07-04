@@ -1,6 +1,6 @@
 #include "p8lua.h"
 #include "luabind.h"
-#include "lua/llimits.h"
+#include "../lua/llimits.h"
 #include <utility>
 #include <malloc.h>
 #include <cmath>
@@ -1355,8 +1355,11 @@ void lua_p8_memcpy(int dst_addr, int src_addr, int len) {
 Copy LEN bytes of base ram from source to dest. Sections can be overlapping
 
 */
-void lua_p8_reload(int dst_addr, int src_addr, int length, std::optional<const char*> filename)
+void lua_p8_reload(std::optional<int> dst_addr_, std::optional<int> src_addr_, std::optional<int> length_, std::optional<const char*> filename)
 {
+    int dst_addr = dst_addr_.value_or(0);
+    int src_addr = src_addr_.value_or(0);
+    int length = length_.value_or(0x4300);
     //RELOAD(DEST_ADDR, SOURCE_ADDR LEN, [FILENAME])
     if (filename.has_value()) { PLACEHOLDER(); return; }
     if (dst_addr < 0 || dst_addr + length > 0x4300) return;

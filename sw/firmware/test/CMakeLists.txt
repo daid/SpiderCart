@@ -4,7 +4,7 @@ project(firmwareTest)
 add_executable(p8luaTest
     p8lua.cpp
 
-    ../src/p8lua.cpp
+    ../src/p8/p8lua.cpp
     ../src/lua/lapi.c
     ../src/lua/lauxlib.c
     ../src/lua/ldebug.c

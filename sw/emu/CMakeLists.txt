@@ -16,8 +16,8 @@ set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/simu.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/../firmware/src/coprocessor.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../firmware/src/p8.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../firmware/src/p8lua.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../firmware/src/p8/p8.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../firmware/src/p8/p8lua.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../firmware/src/romload.cpp
     
     ${CMAKE_CURRENT_SOURCE_DIR}/../firmware/src/lua/lapi.c
