@@ -1319,8 +1319,11 @@ int lua_p8_poke(lua_State* L) {
 }
 /*
 Write one or more bytes to an address in base ram. If more than one parameter is provided, they are written sequentially (max: 8192).
-
-PEEK2(ADDR)
+*/
+int lua_p8_peek2(int addr) {
+    return p8_state.card_data[addr & 0xFFFF] | (p8_state.card_data[(addr + 1) & 0xFFFF] << 8);
+}
+/*
 POKE2(ADDR, VAL)
 PEEK4(ADDR)
 POKE4(ADDR, VAL)
@@ -1662,9 +1665,18 @@ FORMAT_FLAGS is a bitfield:
 TONUM("FF",       0x1)  -- 255
 TONUM("1114112",  0x2)  -- 17
 TONUM("1234abcd", 0x3)  -- 0x1234.abcd
-
-CHR(VAL0, VAL1, ...)
-
+*/
+int lua_p8_chr(lua_State* L) {
+    //CHR(VAL0, VAL1, ...)
+    int count = lua_gettop(L);
+    char buffer[16] = {0};
+    if (count > 15) count = 15;
+    for(int n=0; n<count; n++)
+        buffer[n] = lua_tointeger(L, n + 1);
+    lua_pushstring(L, buffer);
+    return 1;
+}
+/*
 Convert one or more ordinal character codes to a string.
 
 CHR(64)                    -- "@"
@@ -2076,6 +2088,7 @@ void setupP8LuaEnv(lua_State* L)
 
     P8_BIND(peek);
     P8_BIND(poke);
+    P8_BIND(peek2);
     P8_BIND(memcpy);
 
     P8_BIND(min);
@@ -2093,6 +2106,7 @@ void setupP8LuaEnv(lua_State* L)
     P8_BIND(menuitem);
     P8_BIND(tostr);
     P8_BIND(tonum);
+    P8_BIND(chr);
     P8_BIND(sub);
     P8_BIND(split);
 
