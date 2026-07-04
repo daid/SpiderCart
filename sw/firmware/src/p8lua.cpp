@@ -1354,8 +1354,16 @@ void lua_p8_memcpy(int dst_addr, int src_addr, int len) {
 /*
 Copy LEN bytes of base ram from source to dest. Sections can be overlapping
 
-RELOAD(DEST_ADDR, SOURCE_ADDR LEN, [FILENAME])
-
+*/
+void lua_p8_reload(int dst_addr, int src_addr, int length, std::optional<const char*> filename)
+{
+    //RELOAD(DEST_ADDR, SOURCE_ADDR LEN, [FILENAME])
+    if (filename.has_value()) { PLACEHOLDER(); return; }
+    if (dst_addr < 0 || dst_addr + length > 0x4300) return;
+    if (src_addr < 0 || src_addr + length > 0x4300) return;
+    memcpy(p8_state.card_data + dst_addr, p8_state.card_data + 0x10000 + src_addr, length);
+}
+/*
 Same as MEMCPY, but copies from cart rom.
 
 The code section ( >= 0x4300) is protected and can not be read.
@@ -1544,6 +1552,7 @@ int lua_p8_menuitem(lua_State* L) {
     auto index = luaL_checkinteger(L, 1);
     auto label = luaL_optstring(L, 2, nullptr);
     //3 == function
+    PLACEHOLDER();
     return 0;
 }
 /*
@@ -2106,6 +2115,7 @@ void setupP8LuaEnv(lua_State* L)
     P8_BIND(poke);
     P8_BIND(peek2);
     P8_BIND(memcpy);
+    P8_BIND(reload);
 
     P8_BIND(min);
     P8_BIND(max);

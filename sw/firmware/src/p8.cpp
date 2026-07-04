@@ -102,9 +102,9 @@ int p8_load(const char* filename)
     setupP8LuaEnv(p8_lua_state);
     if (memcmp(ram_data + 0x4300, ":c:", 4) == 0) { // old compression
         uint32_t decompressed_size = (ram_data[0x4304] << 8) | ram_data[0x4305];
-        auto write_ptr = ram_data + 0x11000;
+        auto write_ptr = ram_data + 0x10000;
         read_ptr = ram_data + 0x4308;
-        while(write_ptr < ram_data + 0x11000 + decompressed_size) {
+        while(write_ptr < ram_data + 0x10000 + decompressed_size) {
             if (*read_ptr == 0x00) {
                 read_ptr++;
                 *write_ptr++ = *read_ptr++;
@@ -121,7 +121,7 @@ int p8_load(const char* filename)
                 }
             }
         }
-        if (luaL_loadbufferx(p8_lua_state, (char*)ram_data + 0x11000, decompressed_size, "=", nullptr) != LUA_OK) {
+        if (luaL_loadbufferx(p8_lua_state, (char*)ram_data + 0x10000, decompressed_size, "=", nullptr) != LUA_OK) {
             return p8lua_error();
         }
     } else if (memcmp(ram_data + 0x4300, "\x00pxa", 4) == 0) { // new compression
@@ -131,7 +131,7 @@ int p8_load(const char* filename)
         //uint32_t compressed_size = (ram_data[0x4306] << 8) | ram_data[0x4307];
         auto read_ptr = &ram_data[0x4308];
         auto bit_mask = 0x01;
-        auto write_ptr = ram_data + 0x11000;
+        auto write_ptr = ram_data + 0x10000;
         auto get_bit = [&]() {
             bool res = (*read_ptr) & bit_mask;
             bit_mask <<= 1;
@@ -149,7 +149,7 @@ int p8_load(const char* filename)
             }
             return res;
         };
-        while(write_ptr < ram_data + 0x11000 + decompressed_size) {
+        while(write_ptr < ram_data + 0x10000 + decompressed_size) {
             if (get_bit()) {
                 int unary = 0;
                 while(get_bit()) unary += 1;
@@ -185,7 +185,7 @@ int p8_load(const char* filename)
                 }
             }
         }
-        if (luaL_loadbufferx(p8_lua_state, (char*)ram_data + 0x11000, decompressed_size, "=", nullptr) != LUA_OK) {
+        if (luaL_loadbufferx(p8_lua_state, (char*)ram_data + 0x10000, decompressed_size, "=", nullptr) != LUA_OK) {
             return p8lua_error();
         }
     } else {
@@ -195,6 +195,7 @@ int p8_load(const char* filename)
     }
     //Clear the upper memory area
     memset(ram_data + 0x4300, 0, 0x10000 - 0x4300);
+    memcpy(ram_data + 0x10000, ram_data, 0x4300); // Store a backup of the origonal cart data
 
     if (lua_pcall(p8_lua_state, 0, 0, 0) != LUA_OK) {
         return p8lua_error();
