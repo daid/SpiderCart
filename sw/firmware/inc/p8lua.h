@@ -19,6 +19,7 @@ public:
 
     uint8_t screen[128*128];
     uint8_t button_mask, button_pressed_mask;
+    uint8_t repeat_delay = 0;
 
     uint8_t* card_data;
     float time;

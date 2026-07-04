@@ -239,6 +239,16 @@ static int p8_update()
     if (ram_data[RAM_BUTTON_INPUT_IDX] & 0x10) p8_state.button_mask |= P8State::BTN_RIGHT;
     if (ram_data[RAM_BUTTON_INPUT_IDX] & 0x40) p8_state.button_mask |= P8State::BTN_UP;
     if (ram_data[RAM_BUTTON_INPUT_IDX] & 0x80) p8_state.button_mask |= P8State::BTN_DOWN;
+    if (p8_state.button_mask) {
+        if (p8_state.repeat_delay < 255)
+            p8_state.repeat_delay -= 1;
+        if (p8_state.repeat_delay == 0) {
+            prev_button_mask = 0;
+            p8_state.repeat_delay = p8_state.card_data[0x5F5D] ? p8_state.card_data[0x5F5D] : 4;
+        }
+    } else {
+        p8_state.repeat_delay = p8_state.card_data[0x5F5C] ? p8_state.card_data[0x5F5C] : 4;
+    }
     p8_state.button_pressed_mask = p8_state.button_mask & ~prev_button_mask;
 
     if (p8_lua_60fps)
