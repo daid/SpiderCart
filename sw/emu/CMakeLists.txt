@@ -14,6 +14,7 @@ set_property(TARGET binjgb-debugger PROPERTY CXX_STANDARD 17)
 set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/mbc.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/simu.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ff.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/../firmware/src/coprocessor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../firmware/src/p8/p8.cpp
