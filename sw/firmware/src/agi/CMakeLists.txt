@@ -3,6 +3,7 @@ project(AGI)
 
 add_executable(AGI
     main.cpp
+    agi.cpp
     logic.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/../filesystem.cpp

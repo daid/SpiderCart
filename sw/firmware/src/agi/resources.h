@@ -2,6 +2,8 @@
 #include "filesystem.h"
 #include <assert.h>
 #include <stdio.h>
+#include <stdint.h>
+
 
 namespace AGI {
 
@@ -11,7 +13,9 @@ public:
     Resource(uint8_t* data, size_t size) : data(data), size(size) {}
     ~Resource() { free(data); }
 
-protected:
+    int u16(size_t offset) { return data[offset] | (data[offset+1] << 8); }
+    int16_t s16(size_t offset) { return data[offset] | (data[offset+1] << 8); }
+
     uint8_t* data;
     size_t size;
 };
@@ -41,7 +45,7 @@ public:
         File f(filename);
         if (!f.isOpen()) return nullptr;
         f.seek(resource_info[index] & 0x0FFFFF);
-        char header[5];
+        uint8_t header[5];
         if (f.read(header, sizeof(header)) != 5)
             return nullptr;
         assert(header[0] == 0x12);
@@ -64,8 +68,12 @@ public:
         }
     }
 
-    T* res[256];
+    T* operator[](size_t idx) {
+        return res[idx];
+    }
+
 private:
+    T* res[256];
     uint32_t resource_info[256];
 };
 

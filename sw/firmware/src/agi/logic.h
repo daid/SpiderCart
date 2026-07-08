@@ -6,7 +6,7 @@
 
 namespace AGI {
 
-class LogicResource : Resource {
+class LogicResource : public Resource {
 public:
     LogicResource(uint8_t* data, size_t size);
 
