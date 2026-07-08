@@ -1,5 +1,6 @@
 #include "filesystem.h"
 #include <string.h>
+#include <stdint.h>
 
 static uint32_t fatfs_usage_counter = 0;
 static FATFS fatfs;

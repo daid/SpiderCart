@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string>
 #include <cstring>
+#include <stdint.h>
 
 
 FRESULT f_mount (FATFS* fs, const char* path, uint8_t opt)
