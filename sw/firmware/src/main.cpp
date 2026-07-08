@@ -8,7 +8,6 @@
 #include "command.h"
 #include "romload.h"
 #include "coprocessor.h"
-#include "fatfs/ff.h"
 
 
 #include "pico/stdlib.h"

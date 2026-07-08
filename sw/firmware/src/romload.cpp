@@ -1,4 +1,4 @@
-#include "fatfs/ff.h"
+#include "filesystem.h"
 #include "memchip.h"
 #include "romload.h"
 #include "coprocessor.h"
@@ -24,51 +24,30 @@ int load_rom(const char* filename)
     if (!sep) sep = sav_filename + strlen(sav_filename);
     strcpy(sep, ".sav");
 
-    FATFS fatfs;
-    memset(&fatfs, 0, sizeof(fatfs));
-    if (f_mount(&fatfs, "", 0) != FR_OK)
-        return co_error(1, "FS failure");
-    FIL fp;
-    if (f_open(&fp, filename, FA_READ) != FR_OK)
-        return co_error(2, "FS failure");
-    UINT br;
+    File f(filename);
+    if (!f.isOpen()) return co_error(1, "FS Failure");
+
+    size_t read_size;
     uint32_t addr = 0;
-    while(f_read(&fp, ram_data, 2048, &br) == FR_OK && br > 0) {
-        write_memchip(addr, ram_data, br);
-        addr += br;
+    while((read_size = f.read(ram_data, 2048)) > 0) {
+        write_memchip(addr, ram_data, read_size);
+        addr += read_size;
     }
-    f_close(&fp);
-    f_unmount("");
     return 0;
 }
 
 void load_sav()
 {
     if (!sav_filename[0]) return;
-    FATFS fatfs;
-    memset(&fatfs, 0, sizeof(fatfs));
-    if (f_mount(&fatfs, "", 0) != FR_OK)
-        return;
-    FIL fp;
-    if (f_open(&fp, sav_filename, FA_READ) != FR_OK)
-        return;
-    UINT br;
-    f_read(&fp, ram_data, sizeof(ram_data), &br);
-    f_close(&fp);
-    f_unmount("");
+    File f(sav_filename);
+    if (!f.isOpen()) return;
+    f.read(ram_data, sizeof(ram_data));
 }
 
 void save_sav(int ram_size)
 {
-    FATFS fatfs;
-    memset(&fatfs, 0, sizeof(fatfs));
-    if (f_mount(&fatfs, "", 0) != FR_OK)
-        return;
-    FIL fp;
-    if (f_open(&fp, sav_filename, FA_WRITE | FA_CREATE_ALWAYS) != FR_OK)
-        return;
-    UINT br;
-    f_write(&fp, ram_data, 0x2000 * ram_size, &br);
-    f_close(&fp);
-    f_unmount("");
+    if (!sav_filename[0]) return;
+    File f(sav_filename, true);
+    if (!f.isOpen()) return;
+    f.write(ram_data, 0x2000 * ram_size);
 }

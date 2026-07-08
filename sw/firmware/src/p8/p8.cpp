@@ -1,6 +1,6 @@
 #include "p8.h"
 #include "p8lua.h"
-#include "../fatfs/ff.h"
+#include "filesystem.h"
 #include "memchip.h"
 #include "coprocessor.h"
 
@@ -49,34 +49,26 @@ int p8_load(const char* filename)
         p8_lua_state = nullptr;
     }
 
-    FATFS fatfs;
-    memset(&fatfs, 0, sizeof(fatfs));
-    if (f_mount(&fatfs, "", 0) != FR_OK) {
-        return co_error(1, "mount failed");
-    }
-    FIL fp;
-    if (f_open(&fp, filename, FA_READ) != FR_OK)
-        return co_error(2, "read error");
-
+    File file(filename);
     stbi_io_callbacks callbacks = {
         [](void *user, char *data,int size) -> int {
             // fill 'data' with 'size' bytes.  return number of bytes actually read
-            unsigned int res = 0;
-            if (f_read((FIL*)user, data, size, &res) != FR_OK)
-                return 0;
-            return res;
+            auto f = reinterpret_cast<File*>(user);
+            return f->read(data, size);
         },
         [](void *user, int n) {
             // skip the next 'n' bytes, or 'unget' the last -n bytes if negative
-            f_lseek((FIL*)user, f_tell((FIL*)user) + n);
+            auto f = reinterpret_cast<File*>(user);
+            return f->seek(f->tell() + n);
         },
         [](void *user) -> int {
             // returns nonzero if we are at end of file/data
-            return f_eof((FIL*)user);
+            auto f = reinterpret_cast<File*>(user);
+            return f->eof();
         }
     };
     int x = 0, y = 0;
-    auto pixels = stbi_load_from_callbacks(&callbacks, &fp, &x, &y, nullptr, 4);
+    auto pixels = stbi_load_from_callbacks(&callbacks, &file, &x, &y, nullptr, 4);
     if (!pixels)
         return co_error(3, "image error");;
     if (x != 160 || y != 205)
@@ -93,8 +85,6 @@ int p8_load(const char* filename)
         }
     }
     stbi_image_free(pixels);
-    f_close(&fp);
-    f_unmount("");
 
     p8_state.card_data = ram_data;
 

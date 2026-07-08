@@ -6,7 +6,7 @@
 #include "p8.h"
 
 #include "usb_msc.h"
-#include "fatfs/ff.h"
+#include "filesystem.h"
 #include <stdlib.h>
 #include <pico/multicore.h>
 #include <string.h>
@@ -93,29 +93,20 @@ void processCoProcessor()
             case COMMAND_LIST_DIR:
                 {
                     auto* ptr = ram_data;
-                    FATFS fatfs;
-                    memset(&fatfs, 0, sizeof(fatfs));
-                    if (f_mount(&fatfs, "", 0) == FR_OK) {
-                        DIR dir;
-                        if (f_opendir(&dir, "/") == FR_OK) {
-                            FILINFO fno;
-                            while(f_readdir(&dir, &fno) == FR_OK && fno.fname[0]) {
-                                if (fno.fattrib & AM_DIR) {
-                                    *ptr++ = 0x02;
-                                    strcpy((char*)ptr, fno.fname);
-                                    ptr += 31;
-                                } else {
-                                    auto ext = strrchr(fno.fname, '.');
-                                    if (ext && valid_rom_ext(ext)) {
-                                        *ptr++ = 0x01;
-                                        strcpy((char*)ptr, fno.fname);
-                                        ptr += 31;
-                                    }
-                                }
+                    ReadDir dir("/");
+                    for(auto entry = dir.read(); entry.name; entry = dir.read()) {
+                        if (entry.directory) {
+                            *ptr++ = 0x02;
+                            strcpy((char*)ptr, entry.name);
+                            ptr += 31;
+                        } else {
+                            auto ext = strrchr(entry.name, '.');
+                            if (ext && valid_rom_ext(ext)) {
+                                *ptr++ = 0x01;
+                                strcpy((char*)ptr, entry.name);
+                                ptr += 31;
                             }
-                            f_closedir(&dir);
                         }
-                        f_unmount("");
                     }
                     *ptr = 0;
                     qsort(ram_data, (ptr - ram_data) / 32, 32, [](const void* a, const void* b) -> int {

@@ -19,6 +19,7 @@ set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../firmware/src/p8/p8.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../firmware/src/p8/p8lua.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../firmware/src/romload.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../firmware/src/filesystem.cpp
     
     ${CMAKE_CURRENT_SOURCE_DIR}/../firmware/src/lua/lapi.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../firmware/src/lua/lauxlib.c
