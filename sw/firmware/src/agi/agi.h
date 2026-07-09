@@ -2,7 +2,10 @@
 
 #include "logic.h"
 #include "resources.h"
+#include "view.h"
+#include "picture.h"
 #include "object.h"
+#include "screen.h"
 #include <bitset>
 
 namespace AGI {
@@ -16,6 +19,10 @@ public:
     int runLogic(LogicResource* logic);
 
     ResourceManager<LogicResource> res_logic{"LOGDIR"};
+    ResourceManager<ViewResource> res_view{"VIEWDIR"};
+    ResourceManager<PictureResource> res_picture{"PICDIR"};
+
+    Screen screen;
 
     uint8_t var[256] = {0};
     std::bitset<256> flag;
