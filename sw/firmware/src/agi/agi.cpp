@@ -55,6 +55,11 @@ void Engine::step()
 #define N(n) logic->data[pc+(n)]
 #define V(n) var[N(n)]
 
+int random(int a, int b)
+{
+    return 4;//TODO
+}
+
 int Engine::runLogic(LogicResource* logic)
 {
     size_t pc = 2;
@@ -83,8 +88,8 @@ int Engine::runLogic(LogicResource* logic)
         case 0x13: new_room_nr = V(0); LOGIC_TRACE("new.room.v", VAR_ARG(0)); pc += 1; return 1;
         case 0x14: res_logic.load(N(0)); LOGIC_TRACE("load.logics", NUM_ARG(0)); pc += 1; break;
         case 0x15: res_logic.load(V(0)); LOGIC_TRACE("load.logics.v", VAR_ARG(0)); pc += 1; break;
-        case 0x16: if (runLogic(res_logic.load(N(0)))) return 1; LOGIC_TRACE("call", NUM_ARG(0)); pc += 1; break;
-        case 0x17: if (runLogic(res_logic.load(V(0)))) return 1; LOGIC_TRACE("call.v", VAR_ARG(0)); pc += 1; break;
+        case 0x16: LOGIC_TRACE("call", NUM_ARG(0)); if (runLogic(res_logic.load(N(0)))) return 1; pc += 1; break;
+        case 0x17: LOGIC_TRACE("call.v", VAR_ARG(0)); if (runLogic(res_logic.load(V(0)))) return 1; pc += 1; break;
         case 0x18: res_picture.load(V(0)); LOGIC_TRACE("load.pic", VAR_ARG(0)); pc += 1; break;
         case 0x19: screen.clear(); res_picture[V(0)]->draw(screen); LOGIC_TRACE("draw.pic", VAR_ARG(0)); pc += 1; break;
         case 0x1A: /* TODO: this should update the screen (why is this decoupled?) */ LOGIC_TRACE("show.pic"); pc += 0; break;
@@ -164,11 +169,11 @@ int Engine::runLogic(LogicResource* logic)
         case 0x64: /* TODO: sound */ LOGIC_TRACE("stop.sound"); pc += 0; break;
         case 0x65: LOGIC_TRACE("print", MSG_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
         case 0x66: LOGIC_TRACE("print.v", VAR_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
-        case 0x67: LOGIC_TRACE("display", NUM_ARG(0), NUM_ARG(1), MSG_ARG(2)); pc += 3; UNIMPLEMENTED(); break;
-        case 0x68: LOGIC_TRACE("display.v", VAR_ARG(0), VAR_ARG(1), VAR_ARG(2)); pc += 3; UNIMPLEMENTED(); break;
+        case 0x67: /*TODO: Text mode */ LOGIC_TRACE("display", NUM_ARG(0), NUM_ARG(1), MSG_ARG(2)); pc += 3; break;
+        case 0x68: /*TODO: Text mode */ LOGIC_TRACE("display.v", VAR_ARG(0), VAR_ARG(1), VAR_ARG(2)); pc += 3; break;
         case 0x69: /*TODO: Text mode */ LOGIC_TRACE("clear.lines", NUM_ARG(0), NUM_ARG(1), MSG_ARG(2)); pc += 3; break;
-        case 0x6A: /*TODO: Text mode */ LOGIC_TRACE("text.screen"); pc += 0; UNIMPLEMENTED(); break;
-        case 0x6B: /*TODO: Text mode */ LOGIC_TRACE("graphics"); pc += 0; UNIMPLEMENTED(); break;
+        case 0x6A: /*TODO: Text mode */ LOGIC_TRACE("text.screen"); pc += 0; break;
+        case 0x6B: /*TODO: Text mode */ LOGIC_TRACE("graphics"); pc += 0; break;
         case 0x6C: LOGIC_TRACE("set.cursor.char", MSG_ARG(0)); pc += 1; break;
         case 0x6D: LOGIC_TRACE("set.text.attribute", NUM_ARG(0), NUM_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
         case 0x6E: LOGIC_TRACE("shake.screen", NUM_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
@@ -176,9 +181,9 @@ int Engine::runLogic(LogicResource* logic)
         case 0x70: LOGIC_TRACE("status.line.on"); pc += 0; UNIMPLEMENTED(); break;
         case 0x71: LOGIC_TRACE("status.line.off"); pc += 0; UNIMPLEMENTED(); break;
         case 0x72: if (N(0) < 12) str[N(0)] = logic->str(N(1)); LOGIC_TRACE("set.string", STR_ARG(0), MSG_ARG(1)); pc += 2; break;
-        case 0x73: LOGIC_TRACE("get.string", STR_ARG(0), MSG_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
+        case 0x73: /*TODO: Text input mode */ str[N(0)] = "get.string result"; LOGIC_TRACE("get.string", STR_ARG(0), MSG_ARG(1), NUM_ARG(2), NUM_ARG(3), NUM_ARG(4)); pc += 5; break;
         case 0x74: LOGIC_TRACE("word.to.string", WORD_ARG(0), STR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
-        case 0x75: LOGIC_TRACE("parse", STR_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
+        case 0x75: /*TODO: Text input mode */ LOGIC_TRACE("parse", STR_ARG(0)); pc += 1; break;
         case 0x76: LOGIC_TRACE("get.num", STR_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
         case 0x77: input_enabled = false; LOGIC_TRACE("prevent.input"); pc += 0; break;
         case 0x78: input_enabled = true; LOGIC_TRACE("accept.input"); pc += 0; UNIMPLEMENTED(); break;
@@ -191,7 +196,7 @@ int Engine::runLogic(LogicResource* logic)
         case 0x7F: LOGIC_TRACE("init.disk"); pc += 0; UNIMPLEMENTED(); break;
         case 0x80: LOGIC_TRACE("restart.game"); pc += 0; UNIMPLEMENTED(); break;
         case 0x81: LOGIC_TRACE("show.obj", NUM_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
-        case 0x82: LOGIC_TRACE("random", NUM_ARG(0), NUM_ARG(1), VAR_ARG(2)); pc += 3; UNIMPLEMENTED(); break;
+        case 0x82: V(2) = random(N(1), N(2)); LOGIC_TRACE("random", NUM_ARG(0), NUM_ARG(1), VAR_ARG(2)); pc += 3; break;
         case 0x83: LOGIC_TRACE("program.control"); pc += 0; UNIMPLEMENTED(); break;
         case 0x84: LOGIC_TRACE("player.control"); pc += 0; UNIMPLEMENTED(); break;
         case 0x85: LOGIC_TRACE("obj.status.v", VAR_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
@@ -224,8 +229,8 @@ int Engine::runLogic(LogicResource* logic)
         case 0xA0: LOGIC_TRACE("disable.item", CTR_ARG(0)); pc += 1; break;
         case 0xA1: LOGIC_TRACE("menu.input"); pc += 0; UNIMPLEMENTED(); break;
         case 0xA2: LOGIC_TRACE("show.obj.v", VAR_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
-        case 0xA3: LOGIC_TRACE("open.dialogue"); pc += 0; UNIMPLEMENTED(); break;
-        case 0xA4: LOGIC_TRACE("close.dialogue"); pc += 0; UNIMPLEMENTED(); break;
+        case 0xA3: /*TODO: Text input mode */ LOGIC_TRACE("open.dialogue"); pc += 0; break;
+        case 0xA4: /*TODO: Text input mode */ LOGIC_TRACE("close.dialogue"); pc += 0; break;
         case 0xA5: V(0) *= N(1); LOGIC_TRACE("mul.n", VAR_ARG(0), NUM_ARG(1)); pc += 2; break;
         case 0xA6: V(0) *= V(1); LOGIC_TRACE("mul.v", VAR_ARG(0), VAR_ARG(1)); pc += 2; break;
         case 0xA7: V(0) /= N(1); LOGIC_TRACE("div.n", VAR_ARG(0), NUM_ARG(1)); pc += 2; break;
