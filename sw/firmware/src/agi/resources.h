@@ -34,6 +34,7 @@ public:
         int idx = 0;
         while (f.read(buffer, 3) == 3 && idx < 256) {
             resource_info[idx++] = (buffer[0] << 16) | (buffer[1] << 8) | (buffer[2] << 0);
+            // printf("%s: %d: %x\n", dirfile, idx-1, resource_info[idx-1]);
         }
     }
 

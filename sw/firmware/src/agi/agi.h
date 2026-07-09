@@ -31,6 +31,9 @@ public:
     uint8_t item_room[256] = {0};
     int new_room_nr = -1;
 
+    bool input_enabled = true;
+    int horizon = 36;
+
     static constexpr int FLAG_ROOM_FIRST_TIME = 5;
     static constexpr int FLAG_LOGIC0_FIRST_TIME = 11;
 };

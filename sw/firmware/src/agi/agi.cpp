@@ -27,6 +27,7 @@ void Engine::step()
     //TODO: Update objects on screen
     if (new_room_nr >= 0) {
         //TODO: More stuff needs to be done here.
+        horizon = 36;
         var[1] = var[0];
         var[0] = new_room_nr;
         new_room_nr = -1;
@@ -48,6 +49,7 @@ void Engine::step()
 #define WORD_ARG(n) printf(" w%d", logic->data[pc+n])
 #define CTR_ARG(n) printf(" c%d", logic->data[pc+n])
 #define LOGIC_TRACE(name, ...) do { printf("%s", name);  __VA_ARGS__; printf("\n"); } while(0)
+#define CONDITION_TRACE(name, ...) do { printf("%s", name);  __VA_ARGS__; } while(0)
 #define UNIMPLEMENTED(); printf("Unimplemented.\n"); return -1;
 
 #define N(n) logic->data[pc+(n)]
@@ -85,7 +87,7 @@ int Engine::runLogic(LogicResource* logic)
         case 0x17: if (runLogic(res_logic.load(V(0)))) return 1; LOGIC_TRACE("call.v", VAR_ARG(0)); pc += 1; break;
         case 0x18: res_picture.load(V(0)); LOGIC_TRACE("load.pic", VAR_ARG(0)); pc += 1; break;
         case 0x19: screen.clear(); res_picture[V(0)]->draw(screen); LOGIC_TRACE("draw.pic", VAR_ARG(0)); pc += 1; break;
-        case 0x1A: res_picture[V(0)]->draw(screen); LOGIC_TRACE("show.pic"); pc += 0; UNIMPLEMENTED(); break;
+        case 0x1A: /* TODO: this should update the screen (why is this decoupled?) */ LOGIC_TRACE("show.pic"); pc += 0; break;
         case 0x1B: res_picture.unload(V(0)); LOGIC_TRACE("discard.pic", VAR_ARG(0)); pc += 1; break;
         case 0x1C: LOGIC_TRACE("overlay.pic", VAR_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
         case 0x1D: LOGIC_TRACE("show.pri.screen"); pc += 0; UNIMPLEMENTED(); break;
@@ -102,19 +104,19 @@ int Engine::runLogic(LogicResource* logic)
         case 0x28: LOGIC_TRACE("reposition", OBJ_ARG(0), VAR_ARG(1), VAR_ARG(2)); pc += 3; UNIMPLEMENTED(); break;
         case 0x29: object[N(0)].view = N(1); LOGIC_TRACE("set.view", OBJ_ARG(0), NUM_ARG(1)); pc += 2; break;
         case 0x2A: object[N(0)].view = V(1); LOGIC_TRACE("set.view.v", OBJ_ARG(0), VAR_ARG(1)); pc += 2; break;
-        case 0x2B: LOGIC_TRACE("set.loop", OBJ_ARG(0), NUM_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
-        case 0x2C: LOGIC_TRACE("set.loop.v", OBJ_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
+        case 0x2B: object[N(0)].loop = N(1); LOGIC_TRACE("set.loop", OBJ_ARG(0), NUM_ARG(1)); pc += 2; break;
+        case 0x2C: object[N(0)].loop = V(1); LOGIC_TRACE("set.loop.v", OBJ_ARG(0), VAR_ARG(1)); pc += 2; break;
         case 0x2D: LOGIC_TRACE("fix.loop", OBJ_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
         case 0x2E: LOGIC_TRACE("release.loop", OBJ_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
-        case 0x2F: LOGIC_TRACE("set.cel", OBJ_ARG(0), NUM_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
-        case 0x30: LOGIC_TRACE("set.cel.v", OBJ_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
+        case 0x2F: object[N(0)].cel = N(1); LOGIC_TRACE("set.cel", OBJ_ARG(0), NUM_ARG(1)); pc += 2; break;
+        case 0x30: object[N(0)].cel = V(1); LOGIC_TRACE("set.cel.v", OBJ_ARG(0), VAR_ARG(1)); pc += 2; break;
         case 0x31: LOGIC_TRACE("last.cel", OBJ_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
         case 0x32: LOGIC_TRACE("current.cel", OBJ_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
         case 0x33: LOGIC_TRACE("current.loop", OBJ_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
         case 0x34: LOGIC_TRACE("current.view", OBJ_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
         case 0x35: LOGIC_TRACE("number.of.loops", OBJ_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
-        case 0x36: LOGIC_TRACE("set.priority", OBJ_ARG(0), NUM_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
-        case 0x37: LOGIC_TRACE("set.priority.v", OBJ_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
+        case 0x36: object[N(0)].priority = N(1); LOGIC_TRACE("set.priority", OBJ_ARG(0), NUM_ARG(1)); pc += 2; break;
+        case 0x37: object[N(0)].priority = V(1); LOGIC_TRACE("set.priority.v", OBJ_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
         case 0x38: LOGIC_TRACE("release.priority", OBJ_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
         case 0x39: LOGIC_TRACE("get.priority", OBJ_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
         case 0x3A: LOGIC_TRACE("stop.update", OBJ_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
@@ -122,7 +124,7 @@ int Engine::runLogic(LogicResource* logic)
         case 0x3C: LOGIC_TRACE("force.update", OBJ_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
         case 0x3D: LOGIC_TRACE("ignore.horizon", OBJ_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
         case 0x3E: LOGIC_TRACE("observe.horizon", OBJ_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
-        case 0x3F: LOGIC_TRACE("set.horizon", NUM_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
+        case 0x3F: horizon = N(0); LOGIC_TRACE("set.horizon", NUM_ARG(0)); pc += 1; break;
         case 0x40: LOGIC_TRACE("object.on.water", OBJ_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
         case 0x41: LOGIC_TRACE("object.on.land", OBJ_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
         case 0x42: LOGIC_TRACE("object.on.anything", OBJ_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
@@ -157,9 +159,9 @@ int Engine::runLogic(LogicResource* logic)
         case 0x5F: LOGIC_TRACE("put", ITEM_ARG(0)); pc += 2; UNIMPLEMENTED(); break;
         case 0x60: LOGIC_TRACE("put.v", VAR_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
         case 0x61: LOGIC_TRACE("get.room.v", VAR_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
-        case 0x62: LOGIC_TRACE("load.sound", NUM_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
-        case 0x63: LOGIC_TRACE("sound", NUM_ARG(0), FLAG_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
-        case 0x64: LOGIC_TRACE("stop.sound"); pc += 0; UNIMPLEMENTED(); break;
+        case 0x62: /* TODO: sound */ LOGIC_TRACE("load.sound", NUM_ARG(0)); pc += 1; break;
+        case 0x63: /* TODO: sound */ LOGIC_TRACE("sound", NUM_ARG(0), FLAG_ARG(1)); pc += 2; break;
+        case 0x64: /* TODO: sound */ LOGIC_TRACE("stop.sound"); pc += 0; break;
         case 0x65: LOGIC_TRACE("print", MSG_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
         case 0x66: LOGIC_TRACE("print.v", VAR_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
         case 0x67: LOGIC_TRACE("display", NUM_ARG(0), NUM_ARG(1), MSG_ARG(2)); pc += 3; UNIMPLEMENTED(); break;
@@ -178,8 +180,8 @@ int Engine::runLogic(LogicResource* logic)
         case 0x74: LOGIC_TRACE("word.to.string", WORD_ARG(0), STR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
         case 0x75: LOGIC_TRACE("parse", STR_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
         case 0x76: LOGIC_TRACE("get.num", STR_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
-        case 0x77: LOGIC_TRACE("prevent.input"); pc += 0; UNIMPLEMENTED(); break;
-        case 0x78: LOGIC_TRACE("accept.input"); pc += 0; UNIMPLEMENTED(); break;
+        case 0x77: input_enabled = false; LOGIC_TRACE("prevent.input"); pc += 0; break;
+        case 0x78: input_enabled = true; LOGIC_TRACE("accept.input"); pc += 0; UNIMPLEMENTED(); break;
         case 0x79: /* TODO? */ LOGIC_TRACE("set.key", NUM_ARG(0), NUM_ARG(1), NUM_ARG(2)); pc += 3; break;
         case 0x7A: LOGIC_TRACE("add.to.pic", NUM_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3), NUM_ARG(4), NUM_ARG(5), NUM_ARG(6)); pc += 7; UNIMPLEMENTED(); break;
         case 0x7B: LOGIC_TRACE("add.to.pic.v", VAR_ARG(0), VAR_ARG(1), VAR_ARG(2), VAR_ARG(3), VAR_ARG(4), VAR_ARG(5), VAR_ARG(6)); pc += 7; UNIMPLEMENTED(); break;
@@ -224,10 +226,10 @@ int Engine::runLogic(LogicResource* logic)
         case 0xA2: LOGIC_TRACE("show.obj.v", VAR_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
         case 0xA3: LOGIC_TRACE("open.dialogue"); pc += 0; UNIMPLEMENTED(); break;
         case 0xA4: LOGIC_TRACE("close.dialogue"); pc += 0; UNIMPLEMENTED(); break;
-        case 0xA5: LOGIC_TRACE("mul.n", VAR_ARG(0), NUM_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
-        case 0xA6: LOGIC_TRACE("mul.v", VAR_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
-        case 0xA7: LOGIC_TRACE("div.n", VAR_ARG(0), NUM_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
-        case 0xA8: LOGIC_TRACE("div.v", VAR_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
+        case 0xA5: V(0) *= N(1); LOGIC_TRACE("mul.n", VAR_ARG(0), NUM_ARG(1)); pc += 2; break;
+        case 0xA6: V(0) *= V(1); LOGIC_TRACE("mul.v", VAR_ARG(0), VAR_ARG(1)); pc += 2; break;
+        case 0xA7: V(0) /= N(1); LOGIC_TRACE("div.n", VAR_ARG(0), NUM_ARG(1)); pc += 2; break;
+        case 0xA8: V(0) /= V(1); LOGIC_TRACE("div.v", VAR_ARG(0), VAR_ARG(1)); pc += 2; break;
         case 0xA9: LOGIC_TRACE("close.window"); pc += 0; UNIMPLEMENTED(); break;
         case 0xAA: LOGIC_TRACE("set.simple"); pc += 1; UNIMPLEMENTED(); break;
         case 0xAB: LOGIC_TRACE("push.script"); pc += 0; UNIMPLEMENTED(); break;
@@ -249,6 +251,7 @@ int Engine::runLogic(LogicResource* logic)
             break;
         case 0xFF: // IF
             {
+                CONDITION_TRACE("IF");
                 bool result = true;
                 bool invert = false;
                 bool in_or = false;
@@ -256,22 +259,23 @@ int Engine::runLogic(LogicResource* logic)
                 while(logic->data[pc] != 0xFF) {
                     bool value = false;
                     switch(logic->data[pc++]) {
-                    case 0x01: value = V(0) == N(1); pc += 2; break;
-                    case 0x02: value = V(0) == V(1); pc += 2; break;
-                    case 0x03: value = V(0) < N(1); pc += 2; break;
-                    case 0x04: value = V(0) < V(1); pc += 2; break;
-                    case 0x05: value = V(0) > N(1); pc += 2; break;
-                    case 0x06: value = V(0) > V(1); pc += 2; break;
-                    case 0x07: value = flag[N(0)]; pc += 1; break;
-                    case 0x08: value = flag[V(0)]; pc += 1; break;
-                    case 0x09: value = item_room[N(0)] == 255; pc += 1; break;
-                    case 0x0C: value = false; pc += 1; /* TODO: Key pressed/menu item selection */ break;
-                    case 0x0E: value = false; pc += N(0) * 2 + 1; /* TODO: said ... */ break;
-                    case 0xFC: in_or = !in_or; if (in_or) or_result = false; value = or_result; break;
-                    case 0xFD: invert = true; break;
+                    case 0x01: value = V(0) == N(1); CONDITION_TRACE(" EQ", VAR_ARG(0), NUM_ARG(1)); pc += 2; break;
+                    case 0x02: value = V(0) == V(1); CONDITION_TRACE(" EQ", VAR_ARG(0), VAR_ARG(1)); pc += 2; break;
+                    case 0x03: value = V(0) < N(1); CONDITION_TRACE(" LT", VAR_ARG(0), NUM_ARG(1)); pc += 2; break;
+                    case 0x04: value = V(0) < V(1); CONDITION_TRACE(" LT", VAR_ARG(0), VAR_ARG(1)); pc += 2; break;
+                    case 0x05: value = V(0) > N(1); CONDITION_TRACE(" GT", VAR_ARG(0), NUM_ARG(1)); pc += 2; break;
+                    case 0x06: value = V(0) > V(1); CONDITION_TRACE(" GT", VAR_ARG(0), VAR_ARG(1)); pc += 2; break;
+                    case 0x07: value = flag[N(0)]; CONDITION_TRACE(" FLAG", FLAG_ARG(0)); pc += 1; break;
+                    case 0x08: value = flag[V(0)]; CONDITION_TRACE(" FLAG", VAR_ARG(0)); pc += 1; break;
+                    case 0x09: value = item_room[N(0)] == 255; CONDITION_TRACE(" ITEM", ITEM_ARG(0)); pc += 1; break;
+                    case 0x0C: value = false; /* TODO: Key pressed/menu item selection */ CONDITION_TRACE(" CONTROLLER", CTR_ARG(0)); pc += 1; break;
+                    case 0x0D: value = false; /* TODO: Any key pressed */ CONDITION_TRACE(" HAVE.KEY"); break;
+                    case 0x0E: value = false; CONDITION_TRACE(" SAID ..."); pc += N(0) * 2 + 1; /* TODO: said ... */ break;
+                    case 0xFC: in_or = !in_or; if (in_or) or_result = false; value = or_result; CONDITION_TRACE(" OR"); break;
+                    case 0xFD: invert = true; CONDITION_TRACE(" NOT"); break;
                     default:
                         printf("Unknown logic condition: %02X\n", logic->data[pc-1]);
-                        return 0;
+                        return 1;
                     }
                     if (invert) { value = !value; invert = false; }
                     if (in_or) {
@@ -281,14 +285,18 @@ int Engine::runLogic(LogicResource* logic)
                     }
                 }
                 pc++; // Skip the FF
-                if (!result)
+                if (!result) {
+                    CONDITION_TRACE(": FALSE\n");
                     pc += logic->u16(pc);
+                } else {
+                    CONDITION_TRACE(": TRUE\n");
+                }
                 pc += 2;
             }
             break;
         default:
             printf("Unknown logic opcode: %02X\n", logic->data[pc-1]);
-            return 0;
+            return 1;
         }
     }
 }
