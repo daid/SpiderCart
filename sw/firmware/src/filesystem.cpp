@@ -67,6 +67,11 @@ size_t File::tell()
     return f_tell(&file);
 }
 
+size_t File::size()
+{
+    return f_size(&file);
+}
+
 bool File::eof()
 {
     return f_eof(&file);

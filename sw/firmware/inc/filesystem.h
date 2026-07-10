@@ -14,6 +14,7 @@ public:
     size_t write(const void* ptr, size_t size);
     void seek(size_t position);
     size_t tell();
+    size_t size();
     bool eof();
 
 private:
