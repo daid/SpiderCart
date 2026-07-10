@@ -41,6 +41,8 @@ public:
     /* input */
     bool any_key_pressed = false;
 
+    static constexpr int VAR_PLAYER_DIRECTION = 6;
+
     static constexpr int FLAG_ROOM_FIRST_TIME = 5;
     static constexpr int FLAG_LOGIC0_FIRST_TIME = 11;
 };

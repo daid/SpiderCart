@@ -42,6 +42,10 @@ int main(int argc, char** argv)
             auto res = engine.step();
             printf("################## STEP: %d ##################\n", res);
             if (res < 0) stepping = false;
+            if (engine.res_view[engine.object[0].view]) {
+                auto info = engine.res_view[engine.object[0].view]->info(engine.object[0].loop, engine.object[0].cel);
+                printf("%d %d %d %d\n", engine.object[0].loop, engine.object[0].cel, info.width, info.height);
+            }
         }
 
         SDL_Event e;
@@ -52,6 +56,11 @@ int main(int argc, char** argv)
                 break;
             case SDL_KEYDOWN:
                 if (e.key.keysym.sym == SDLK_ESCAPE) running = false;
+                if (e.key.keysym.sym == SDLK_LEFT) engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] = 7;
+                if (e.key.keysym.sym == SDLK_RIGHT) engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] = 3;
+                if (e.key.keysym.sym == SDLK_UP) engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] = 1;
+                if (e.key.keysym.sym == SDLK_DOWN) engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] = 5;
+                if (e.key.keysym.sym == 's') stepping = true;
                 engine.any_key_pressed = true;
                 break;
             }

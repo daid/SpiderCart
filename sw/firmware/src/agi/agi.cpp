@@ -15,49 +15,17 @@ int Engine::step()
     flag[2] = false;
     flag[4] = false;
     if (player_control)
-        object[0].direction = var[6];
+        object[0].direction = var[VAR_PLAYER_DIRECTION];
     else
-        var[6] = object[0].direction;
-    //TODO: For all objects for which command animate.obj, start_update and draw were carried out, the recalculation of the direction of movement is performed.
+        var[VAR_PLAYER_DIRECTION] = object[0].direction;
     for(auto& obj : object) {
-        if (obj.flags & Object::flag_fix_loop) {
-            auto loop_count = res_view[obj.view]->loopCount();
-            if (loop_count >= 8) {
-                obj.loop = obj.direction;
-            } else if (loop_count >= 4) {
-                switch(obj.direction) {
-                case 1: obj.setLoop(3); break;
-                case 2: obj.setLoop(0); break;
-                case 3: obj.setLoop(0); break;
-                case 4: obj.setLoop(0); break;
-                case 5: obj.setLoop(2); break;
-                case 6: obj.setLoop(1); break;
-                case 7: obj.setLoop(1); break;
-                case 8: obj.setLoop(1); break;
-                }
-            } else if (loop_count >= 2) {
-                switch(obj.direction) {
-                case 2: obj.setLoop(0); break;
-                case 3: obj.setLoop(0); break;
-                case 4: obj.setLoop(0); break;
-                case 6: obj.setLoop(1); break;
-                case 7: obj.setLoop(1); break;
-                case 8: obj.setLoop(1); break;
-                }
-            }
-        }
-        if (obj.flags && Object::flag_cycling) {
-            obj.cycle_counter += 1;
-            if (obj.cycle_counter >= obj.cycle_time) {
-                obj.cel = (obj.cel + 1) % res_view[obj.view]->celCount(obj.loop);
-                obj.cycle_counter = 0;
-            }
-        }
+        if (obj.flags & Object::flag_anim)
+            obj.update(*this);
     }
     int res = runLogic(res_logic[0]);
     var[4] = 0;
     var[5] = 0;
-    var[6] = object[0].direction;
+    var[VAR_PLAYER_DIRECTION] = object[0].direction;
     flag[FLAG_ROOM_FIRST_TIME] = false;
     flag[FLAG_LOGIC0_FIRST_TIME] = false; // Not in documentation, but, I think we should?
     flag[6] = false;
@@ -67,6 +35,7 @@ int Engine::step()
         //TODO: More stuff needs to be done here.
         for(auto& obj : object) {
             obj.flags &=~(Object::flag_anim | Object::flag_draw);
+            obj.motion = Object::Motion::None;
         }
         //TODO: More stuff needs to be done here.
         horizon = 36;
