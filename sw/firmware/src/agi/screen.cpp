@@ -70,4 +70,37 @@ void Screen::clear()
     priority.clear(4);
 }
 
+void Screen::fill(int x, int y, uint8_t from_color, uint8_t display_color, uint8_t priority_color)
+{
+    auto line_ptr = display.buffer + y * display.WIDTH;
+    int x0 = x;
+    int x1 = x;
+    while(x0 >= 0 && line_ptr[x0] == from_color) x0--;
+    while(x1 < display.WIDTH && line_ptr[x1] == from_color) x1++;
+    x0 += 1;
+    for(x=x0; x<x1; x++)
+        line_ptr[x] = display_color;
+    for(x=x0; x<x1; x++)
+        priority.buffer[x + y * priority.WIDTH] = priority_color;
+    line_ptr -= display.WIDTH;
+    if (y > 0) {
+        for(x=x0; x<x1; x++)
+            if (line_ptr[x] == from_color)
+                fill(x, y-1, from_color, display_color, priority_color);
+    }
+    line_ptr += display.WIDTH * 2;
+    if (y < display.HEIGHT - 1) {
+        for(x=x0; x<x1; x++)
+            if (line_ptr[x] == from_color)
+                fill(x, y+1, from_color, display_color, priority_color);
+    }
+}
+
+int Screen::getPrioValue(int x, int y)
+{
+    while(y < 167 && priority.buffer[x + y * 160] < 4)
+        y++;
+    return priority.buffer[x + y * 160];
+}
+
 }

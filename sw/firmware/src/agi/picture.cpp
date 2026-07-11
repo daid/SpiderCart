@@ -94,9 +94,9 @@ void PictureResource::draw(Screen& screen)
             while(data[idx] < 0xF0) {
                 auto x = data[idx++];
                 auto y = data[idx++];
-                //TODO: If both draw and prio are specified, the draw boundary should apply to prio as well...
-                if (draw_color >= 0 && draw_color != 15) screen.display.fill(x, y, 15, draw_color);
-                if (prio_color >= 0 && prio_color != 4) screen.priority.fill(x, y, 4, prio_color);
+                if (draw_color >= 0 && prio_color >= 0) screen.fill(x, y, 15, draw_color, prio_color);
+                else if (prio_color >= 0 && prio_color != 4) screen.priority.fill(x, y, 4, prio_color);
+                else if (draw_color >= 0 && draw_color != 15) screen.display.fill(x, y, 15, draw_color);
             }
             break;
         case 0xF9:
