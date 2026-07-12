@@ -24,6 +24,7 @@ public:
     void clear();
     void fill(int x, int y, uint8_t from_color, uint8_t display_color, uint8_t priority_color);
     int getPrioValue(int x, int y);
+    uint32_t getPrioBits(int x, int y, int width);
 
     ScreenBuffer display;
     ScreenBuffer priority;

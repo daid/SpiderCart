@@ -3,7 +3,7 @@
 
 namespace AGI {
 
-void Object::update(Engine& engine)
+void Object::update()
 {
     switch(motion)
     {
@@ -12,7 +12,7 @@ void Object::update(Engine& engine)
             auto dx = target_x - x;
             auto dy = target_y - y;
             if (dx == 0 && dy == 0) {
-                engine.flag[move_finished_flag] = true;
+                Engine::instance->flag[move_finished_flag] = true;
                 direction = 0;
                 motion = Motion::Normal;
             } else if (dx == 0) {
@@ -36,6 +36,8 @@ void Object::update(Engine& engine)
         }
         break;
     }
+    auto oldx = x;
+    auto oldy = y;
     switch(direction) {
     case 1: y -= 1; break;
     case 2: x += 1; y -= 1; break;
@@ -46,8 +48,31 @@ void Object::update(Engine& engine)
     case 7: x -= 1; break;
     case 8: x -= 1; y -= 1; break;
     }
-    if (!(flags & Object::flag_fix_loop)) {
-        auto loop_count = engine.res_view[view]->loopCount();
+    auto view_data = Engine::instance->res_view[view];
+    auto view_info = view_data->info(loop, cel);
+    //Ensure object is within screen bounds
+    int border = 0;
+    if (x < 0) { x = 0; border = 4; }
+    if (y < view_info.height - 1) { y = view_info.height - 1; border = 1; }
+    if (x > 159 - view_info.width) { x = 159 - view_info.width; border = 2; }
+    if (y > 167) { y = 167; border = 3; }
+    if (!(flags & flag_ignore_horizon)) {
+        if (y <= Engine::instance->horizon) { y = Engine::instance->horizon + 1; border = 1; }
+    }
+    if (checkObjCollision() || checkPrioCollision()) {
+        x = oldx; y = oldy;
+        border = 0;
+    }
+    if (isPlayer()) {
+        Engine::instance->var[Engine::VAR_PLAYER_BORDER_TOUCH] = border;
+    } else if (border) {
+        Engine::instance->var[Engine::VAR_OTHER_BORDER_TOUCH_OBJ] = (this - Engine::instance->object) / sizeof(Object);
+        Engine::instance->var[Engine::VAR_OTHER_BORDER_TOUCH] = border;
+    }
+    fixPosition();
+
+    if (!(flags & Object::flag_fix_loop) && view_data) {
+        auto loop_count = view_data->loopCount();
         if (loop_count >= 8) {
             loop = direction;
         } else if (loop_count >= 4) {
@@ -78,22 +103,22 @@ void Object::update(Engine& engine)
             cycle_counter = 0;
             switch(cycle_mode) {
             case CycleMode::Normal:
-                cel = (cel + 1) % engine.res_view[view]->celCount(loop);
+                cel = (cel + 1) % view_data->celCount(loop);
                 break;
             case CycleMode::NormalOnce:
-                if (cel < engine.res_view[view]->celCount(loop) - 1) {
+                if (cel < view_data->celCount(loop) - 1) {
                     cel += 1;
                 }
-                if (cel == engine.res_view[view]->celCount(loop) - 1) {
+                if (cel == view_data->celCount(loop) - 1) {
                     flags &=~Object::flag_cycling;
                     direction = 0;
                     cycle_mode = CycleMode::Normal;
-                    engine.flag[cycle_finished_flag] = true;
+                    Engine::instance->flag[cycle_finished_flag] = true;
                 }
                 break;
             case CycleMode::Reverse:
                 if (cel == 0)
-                    cel = engine.res_view[view]->celCount(loop) - 1;
+                    cel = view_data->celCount(loop) - 1;
                 else
                     cel -= 1;
                 break;
@@ -104,12 +129,24 @@ void Object::update(Engine& engine)
                     flags &=~Object::flag_cycling;
                     direction = 0;
                     cycle_mode = CycleMode::Normal;
-                    engine.flag[cycle_finished_flag] = true;
+                    Engine::instance->flag[cycle_finished_flag] = true;
                 }
                 break;
             }
         }
     }
+}
+
+bool Object::checkObjCollision()
+{
+    if (flags & flag_ignore_objs) return false;
+    //TODO
+    return false;
+}
+
+bool Object::checkPrioCollision()
+{
+    /* Before we check we need to update our priority. But, sometimes drawing depends on we having done this here as well */
     if (!(flags & Object::flag_fixed_priority)) {
         if (y < 48) priority = 4;
         else if (y < 60) priority = 5;
@@ -124,6 +161,29 @@ void Object::update(Engine& engine)
         else if (y < 168) priority = 14;
         else priority = 15;
     }
+
+    auto view_data = Engine::instance->res_view[view];
+    if (!view_data) return false;
+    auto view_info = view_data->info(loop, cel);
+    //TODO: "priority" collision
+    auto bits = Engine::instance->screen.getPrioBits(x, y, view_info.width);
+    if (priority != 0x0F) {
+        if (isPlayer()) {
+            Engine::instance->flag[Engine::FLAG_PLAYER_TOUCHED_TRIGGER] = (bits & 0x0004) == 0x0004;
+            Engine::instance->flag[Engine::FLAG_PLAYER_ON_WATER] = bits == 0x0008;
+        }
+
+        if (flags & flag_on_water) {
+            return bits != 0x0008;
+        }
+        if (flags & flag_on_land) {
+            if (bits == 0x0008) return true;
+        }
+
+        if (bits & 0x0001) return true;
+        if (!(flags & flag_ignore_blocks) && (bits & 0x0002)) return true;
+    }
+    return false;
 }
 
 void Object::setView(int new_view)
@@ -143,9 +203,23 @@ void Object::setLoop(int new_loop)
     cycle_counter = 0;
 }
 
-void Object::fixPosition(Engine& engine)
+void Object::fixPosition()
 {
-    //TODO: Ensure object is within screen bounds, and move out of other objects and "priority" collision
+    auto view_data = Engine::instance->res_view[view];
+    if (!view_data) return;
+    auto view_info = view_data->info(loop, cel);
+    //Ensure object is within screen bounds
+    if (x < 0) x = 0;
+    if (y < view_info.height - 1) y = view_info.height - 1;
+    if (x > 159 - view_info.width) x = 159 - view_info.width;
+    if (y > 167) y = 167;
+    if (!(flags & flag_ignore_horizon)) {
+        if (y <= Engine::instance->horizon) y = Engine::instance->horizon + 1;
+    }
+    checkPrioCollision();
+    // while(checkObjCollision() || checkPrioCollision()) {
+    //     TODO
+    // }
 }
 
 void Object::animate()
@@ -169,13 +243,46 @@ void Object::move_to(uint8_t target_x, uint8_t target_y, uint8_t step_size, uint
     motion = Motion::MoveTo;
 }
 
-void Object::stop_motion()
+void Object::stopMotion()
 {
+    direction = 0;
+    motion = Motion::Normal;
 }
 
 bool Object::inBox(uint8_t x0, uint8_t x1, uint8_t y0, uint8_t y1)
 {
-    return false;
+    auto view_data = Engine::instance->res_view[view];
+    if (!view_data) return false;
+    auto view_info = view_data->info(loop, cel);
+    if (x + view_info.width <= x0) return false;
+    if (x > x1) return false;
+    if (y < y0) return false;
+    if (y + view_info.height >= y1) return false;
+    return true;
+}
+
+bool Object::inArea(uint8_t x0, uint8_t x1, uint8_t y0, uint8_t y1, AreaCheckType type)
+{
+    int tx = x;
+    switch(type) {
+    case AreaCheckType::Middle: tx += Engine::instance->res_view[view]->info(loop, cel).width / 2; break;
+    case AreaCheckType::Right: tx += Engine::instance->res_view[view]->info(loop, cel).width - 1; break;
+    }
+    return x0 <= tx && tx <= x1 && y0 <= y && y <= y1;
+}
+
+int Object::distance(Object& other)
+{
+    if (!(flags & flag_draw)) return 255;
+    if (!(other.flags & flag_draw)) return 255;
+    auto dist = abs(x - other.x) + abs(y + other.y);
+    if (dist >= 255) dist = 254;
+    return dist;
+}
+
+bool Object::isPlayer()
+{
+    return this == &Engine::instance->object[0];
 }
 
 }

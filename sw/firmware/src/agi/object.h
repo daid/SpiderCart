@@ -52,18 +52,26 @@ public:
     static constexpr uint16_t flag_on_water = 0x0400;
     static constexpr uint16_t flag_dont_update = 0x0800;
 
-    void update(Engine& engine);
+    void update();
+    bool checkObjCollision();
+    bool checkPrioCollision();
 
     void setView(int view);
     void setLoop(int loop);
-    void fixPosition(Engine& engine);
+    void fixPosition();
 
     void animate();
 
     void move_to(uint8_t target_x, uint8_t target_y, uint8_t step_size, uint8_t finished_flag);
-    void stop_motion();
+    void stopMotion();
 
+    enum class AreaCheckType {
+        Left, Middle, Right
+    };
     bool inBox(uint8_t x0, uint8_t x1, uint8_t y0, uint8_t y1);
+    bool inArea(uint8_t x0, uint8_t x1, uint8_t y0, uint8_t y1, AreaCheckType type);
+    int  distance(Object& other);
+    bool isPlayer();
 };
 
 }

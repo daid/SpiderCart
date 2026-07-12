@@ -84,7 +84,7 @@ int main(int argc, char** argv)
                             if ((chunk >> 4) != info.transparent) {
                                 auto px = obj.x+x;
                                 auto py = obj.y+y-info.height+1;
-                                if (px >= 0 && py < 160 && py >= 0 && py < 168) {
+                                if (px >= 0 && px < 160 && py >= 0 && py < 168) {
                                     if (obj.priority >= engine.screen.getPrioValue(px, py))
                                         pixels[px + py * WIDTH] = COLORS[chunk >> 4];
                                     pixels[px + 160 + py * WIDTH] = COLORS[chunk >> 4];

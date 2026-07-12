@@ -15,6 +15,7 @@ class Engine
 {
 public:
     Engine();
+    static Engine* instance;
     
     int step();
     int runLogic(LogicResource* logic);
@@ -41,9 +42,19 @@ public:
     /* input */
     bool any_key_pressed = false;
 
+    static constexpr int VAR_CURRENT_ROOM = 0;
+    static constexpr int VAR_PREV_ROOM = 1;
+    static constexpr int VAR_PLAYER_BORDER_TOUCH = 2;
+    static constexpr int VAR_SCORE = 3;
+    static constexpr int VAR_OTHER_BORDER_TOUCH_OBJ = 4;
+    static constexpr int VAR_OTHER_BORDER_TOUCH = 5;
     static constexpr int VAR_PLAYER_DIRECTION = 6;
+    static constexpr int VAR_PLAYER_VIEW = 16;
 
+    static constexpr int FLAG_PLAYER_ON_WATER = 0;
+    static constexpr int FLAG_PLAYER_TOUCHED_TRIGGER = 3;
     static constexpr int FLAG_ROOM_FIRST_TIME = 5;
+    static constexpr int FLAG_RESTART_GAME = 6;
     static constexpr int FLAG_LOGIC0_FIRST_TIME = 11;
 };
 

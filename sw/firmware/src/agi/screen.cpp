@@ -72,6 +72,7 @@ void Screen::clear()
 
 void Screen::fill(int x, int y, uint8_t from_color, uint8_t display_color, uint8_t priority_color)
 {
+    if (display_color == from_color) return;
     auto line_ptr = display.buffer + y * display.WIDTH;
     int x0 = x;
     int x1 = x;
@@ -98,9 +99,18 @@ void Screen::fill(int x, int y, uint8_t from_color, uint8_t display_color, uint8
 
 int Screen::getPrioValue(int x, int y)
 {
-    while(y < 167 && priority.buffer[x + y * 160] < 4)
+    while(y < 168 && priority.buffer[x + y * 160] < 3)
         y++;
+    if (y == 168) return 4;
     return priority.buffer[x + y * 160];
+}
+
+uint32_t Screen::getPrioBits(int x, int y, int width)
+{
+    uint32_t res = 0;
+    for(int n=0; n<width; n++)
+        res |= 1 << priority.buffer[(x+n) + y * 160];
+    return res;
 }
 
 }
