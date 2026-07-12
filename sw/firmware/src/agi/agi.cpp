@@ -16,8 +16,8 @@ Engine::Engine()
 
 int Engine::step()
 {
-    flag[2] = false;
-    flag[4] = false;
+    said_options_size = 0;
+
     if (player_control)
         object[0].direction = var[VAR_PLAYER_DIRECTION];
     else
@@ -31,12 +31,14 @@ int Engine::step()
             obj.update();
     }
     int res = runLogic(res_logic[0]);
-    var[4] = 0;
-    var[5] = 0;
+    var[VAR_OTHER_BORDER_TOUCH_OBJ] = 0;
+    var[VAR_OTHER_BORDER_TOUCH] = 0;
     var[VAR_PLAYER_DIRECTION] = object[0].direction;
     flag[FLAG_ROOM_FIRST_TIME] = false;
     flag[FLAG_LOGIC0_FIRST_TIME] = false; // Not in documentation, but, I think we should?
     flag[FLAG_RESTART_GAME] = false;
+    flag[FLAG_TEXT_INPUT_DONE] = false;
+    flag[FLAG_SAID_ACCEPTED_INPUT] = false;
     flag[12] = false;
     any_key_pressed = false;
 
@@ -77,6 +79,7 @@ int Engine::step()
     return res;
 }
 
+#define TRACE_ENABLED 1
 #define VAR_ARG(n) trace_stream << " v" << int(logic->data[pc+n]) << "=" << int(var[logic->data[pc+n]])
 #define NUM_ARG(n) trace_stream << " " << int(logic->data[pc+n])
 #define FLAG_ARG(n) trace_stream << " f" << int(logic->data[pc+n]) << "=" << int(flag[logic->data[pc+n]])
@@ -87,10 +90,10 @@ int Engine::step()
 #define WORD_ARG(n) trace_stream << " w" << int(logic->data[pc+n])
 #define CTR_ARG(n) trace_stream << " c" << int(logic->data[pc+n])
 #define SAID_ARG() do { char said_word_buffer[64]; for(int n=0; n<logic->data[pc]; n++) { words.getWord(logic->data[pc+1+n*2] | (logic->data[pc+2+n*2] << 8), said_word_buffer, sizeof(said_word_buffer)); trace_stream << " " << said_word_buffer; } } while(0)
-#define LOGIC_TRACE(name, ...) do { std::ostringstream trace_stream; trace_stream << name;  __VA_ARGS__; if (true) printf("%s\n", trace_stream.str().c_str()); } while(0)
+#define LOGIC_TRACE(name, ...) do { std::ostringstream trace_stream; trace_stream << name;  __VA_ARGS__; if (TRACE_ENABLED) printf("%s\n", trace_stream.str().c_str()); } while(0)
 #define CONDITION_TRACE_START(name, ...) std::ostringstream trace_stream; trace_stream << name; __VA_ARGS__;
 #define CONDITION_TRACE(name, ...) do { trace_stream << name;  __VA_ARGS__; } while(0)
-#define CONDITION_TRACE_END(name, ...) do { trace_stream << name; __VA_ARGS__; if (true) printf("%s\n", trace_stream.str().c_str()); } while(0)
+#define CONDITION_TRACE_END(name, ...) do { trace_stream << name; __VA_ARGS__; if (TRACE_ENABLED) printf("%s\n", trace_stream.str().c_str()); } while(0)
 #define UNIMPLEMENTED(); printf("Unimplemented.\n"); return -1;
 
 #define N(n) logic->data[pc+(n)]
@@ -167,7 +170,7 @@ int Engine::runLogic(LogicResource* logic)
         case 0x39: V(1) = object[N(0)].priority; LOGIC_TRACE("get.priority", OBJ_ARG(0), VAR_ARG(1)); pc += 2; break;
         case 0x3A: object[N(0)].flags &=~Object::flag_update; LOGIC_TRACE("stop.update", OBJ_ARG(0)); pc += 1; break;
         case 0x3B: object[N(0)].flags |= Object::flag_update; LOGIC_TRACE("start.update", OBJ_ARG(0)); pc += 1; break;
-        case 0x3C: LOGIC_TRACE("force.update", OBJ_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
+        case 0x3C: /* Not sure what to do here... */ LOGIC_TRACE("force.update", OBJ_ARG(0)); pc += 1; break;
         case 0x3D: object[N(0)].flags |= Object::flag_ignore_horizon; LOGIC_TRACE("ignore.horizon", OBJ_ARG(0)); pc += 1; break;
         case 0x3E: object[N(0)].flags &=~Object::flag_ignore_horizon; LOGIC_TRACE("observe.horizon", OBJ_ARG(0)); pc += 1; break;
         case 0x3F: horizon = N(0); LOGIC_TRACE("set.horizon", NUM_ARG(0)); pc += 1; break;
@@ -187,7 +190,7 @@ int Engine::runLogic(LogicResource* logic)
         case 0x4D: if (N(0) == 0) player_control = false; object[N(0)].stopMotion(); LOGIC_TRACE("stop.motion", OBJ_ARG(0)); pc += 1; break;
         case 0x4E: if (N(0) == 0) { player_control = true; object[N(0)].direction = 0; } object[N(0)].motion = Object::Motion::Normal; LOGIC_TRACE("start.motion", OBJ_ARG(0)); pc += 1; break;
         case 0x4F: object[N(0)].step_size = V(1); LOGIC_TRACE("step.size", OBJ_ARG(0), VAR_ARG(1)); pc += 2; break;
-        case 0x50: LOGIC_TRACE("step.time", OBJ_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
+        case 0x50: object[N(0)].step_time = object[N(0)].step_counter = V(1); LOGIC_TRACE("step.time", OBJ_ARG(0), VAR_ARG(1)); pc += 2; break;
         case 0x51: if (N(0) == 0) player_control = false; object[N(0)].move_to(N(1), N(2), N(3), N(4)); LOGIC_TRACE("move.obj", OBJ_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3), FLAG_ARG(4)); pc += 5; break;
         case 0x52: if (N(0) == 0) player_control = false; object[N(0)].move_to(V(1), V(2), V(3), N(4)); LOGIC_TRACE("move.obj.v", OBJ_ARG(0), VAR_ARG(1), VAR_ARG(2), VAR_ARG(3), FLAG_ARG(4)); pc += 5; break;
         case 0x53: object[N(0)].flags |= Object::flag_update; object[N(0)].motion = Object::Motion::FollowPlayer; flag[N(1)] = false; object[N(2)].step_size = N(1); object[N(2)].move_finished_flag = N(2); LOGIC_TRACE("follow.ego", OBJ_ARG(0), NUM_ARG(1), FLAG_ARG(2)); pc += 3; break;
@@ -254,12 +257,12 @@ int Engine::runLogic(LogicResource* logic)
         case 0x90: LOGIC_TRACE("log", MSG_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
         case 0x91: LOGIC_TRACE("set.scan.start"); UNIMPLEMENTED(); break;
         case 0x92: LOGIC_TRACE("reset.scan.start"); UNIMPLEMENTED(); break;
-        case 0x93: LOGIC_TRACE("reposition.to", OBJ_ARG(0), NUM_ARG(1), NUM_ARG(2)); pc += 3; UNIMPLEMENTED(); break;
-        case 0x94: LOGIC_TRACE("reposition.to.v", OBJ_ARG(0), VAR_ARG(1), VAR_ARG(2)); pc += 3; UNIMPLEMENTED(); break;
+        case 0x93: object[N(0)].x = N(1); object[N(0)].y = N(2); object[N(0)].fixPosition(); LOGIC_TRACE("reposition.to", OBJ_ARG(0), NUM_ARG(1), NUM_ARG(2)); pc += 3; break;
+        case 0x94: object[N(0)].x = V(1); object[N(0)].y = V(2); object[N(0)].fixPosition(); LOGIC_TRACE("reposition.to.v", OBJ_ARG(0), VAR_ARG(1), VAR_ARG(2)); pc += 3; break;
         case 0x95: LOGIC_TRACE("trace.on"); UNIMPLEMENTED(); break;
         case 0x96: /* TODO? */ LOGIC_TRACE("trace.info", NUM_ARG(0), NUM_ARG(1), NUM_ARG(2)); pc += 3; break;
-        case 0x97: LOGIC_TRACE("print.at", MSG_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3)); pc += 4; UNIMPLEMENTED(); break;
-        case 0x98: LOGIC_TRACE("print.at.v", VAR_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3)); pc += 4; UNIMPLEMENTED(); break;
+        case 0x97: message_logic = logic; message_str_index = N(0); LOGIC_TRACE("print.at", MSG_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3)); pc += 4; break;
+        case 0x98: message_logic = logic; message_str_index = V(0); LOGIC_TRACE("print.at.v", VAR_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3)); pc += 4; break;
         case 0x99: res_view.unload(V(0)); LOGIC_TRACE("discard.view.v", VAR_ARG(0)); pc += 1; break;
         case 0x9A: LOGIC_TRACE("clear.text.rect", NUM_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3), NUM_ARG(4)); pc += 5; UNIMPLEMENTED(); break;
         case 0x9B: LOGIC_TRACE("set.upper.left", NUM_ARG(0), NUM_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
@@ -317,7 +320,7 @@ int Engine::runLogic(LogicResource* logic)
                     case 0x0B: value = object[N(0)].inArea(N(1), N(3), N(2), N(4), Object::AreaCheckType::Left); CONDITION_TRACE(" POSN", OBJ_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3), NUM_ARG(4)); pc += 5; break;
                     case 0x0C: value = false; /* TODO: Key pressed/menu item selection */ CONDITION_TRACE(" CONTROLLER", CTR_ARG(0)); pc += 1; break;
                     case 0x0D: value = any_key_pressed; CONDITION_TRACE(" HAVE.KEY"); break;
-                    case 0x0E: value = false; CONDITION_TRACE(" SAID", SAID_ARG()); pc += N(0) * 2 + 1; /* TODO: said ... */ break;
+                    case 0x0E: value = checkSaid(N(0), &logic->data[pc+1]); CONDITION_TRACE(" SAID", SAID_ARG()); pc += N(0) * 2 + 1; /* TODO: said ... */ break;
                     case 0x10: value = object[N(0)].inBox(N(1), N(3), N(2), N(4)); CONDITION_TRACE(" OBJ.IN.BOX", OBJ_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3), NUM_ARG(4)); pc += 5; break;
                     case 0x11: value = object[N(0)].inArea(N(1), N(3), N(2), N(4), Object::AreaCheckType::Middle); CONDITION_TRACE(" POSN", OBJ_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3), NUM_ARG(4)); pc += 5; break;
                     case 0x12: value = object[N(0)].inArea(N(1), N(3), N(2), N(4), Object::AreaCheckType::Right); CONDITION_TRACE(" POSN", OBJ_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3), NUM_ARG(4)); pc += 5; break;
@@ -350,6 +353,42 @@ int Engine::runLogic(LogicResource* logic)
             return -1;
         }
     }
+}
+
+bool Engine::checkSaid(int amount, uint8_t* data)
+{
+    if (flag[FLAG_TEXT_INPUT_DONE]) {
+        if (flag[FLAG_SAID_ACCEPTED_INPUT]) return false;
+        // Check if the entered text matches the said command
+        for(int n=0; n<amount && n<said_list_size; n++) {
+            int id = data[n*2] | (data[n*2+1] << 8);
+            if (id != 1 && id != said_list[n]) {
+                if (id == 9999)
+                    return true;
+                return false;
+            }
+        }
+        if (amount != said_list_size) return false;
+        flag[FLAG_SAID_ACCEPTED_INPUT] = true;
+        return true;
+    }
+
+    //See if we need to append an option to the current list of word options.
+    if (amount <= said_list_size) return false;
+    //First, check if the part entered so far matches this said command.
+    for(int n=0; n<amount && n<said_list_size; n++) {
+        int id = data[n*2] | (data[n*2+1] << 8);
+        if (id != 1 && id != said_list[n])
+            return false;
+    }
+
+    if (said_options_size >= 64) return false;
+    int new_id = data[said_list_size*2] | (data[said_list_size*2+1] << 8);
+    for(int n=0; n<said_options_size; n++)
+        if (said_options[n] == new_id)
+            return false;
+    said_options[said_options_size++] = new_id;
+    return false;
 }
 
 }

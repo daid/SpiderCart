@@ -21,6 +21,8 @@ public:
     uint8_t wander_delay = 0;
     uint8_t target_x = 0, target_y = 0;
     uint8_t step_size = 0;
+    uint8_t step_time = 0;
+    uint8_t step_counter = 0;
     uint8_t move_finished_flag = 255;
     
     uint8_t view = 0;

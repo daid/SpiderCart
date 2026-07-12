@@ -19,6 +19,7 @@ public:
     
     int step();
     int runLogic(LogicResource* logic);
+    bool checkSaid(int amount, uint8_t* data);
 
     Words words;
     ResourceManager<LogicResource> res_logic{"LOGDIR"};
@@ -41,11 +42,15 @@ public:
     bool block_active = false;
     int block_x0, block_y0, block_x1, block_y1;
 
-    LogicResource* message_logic;
-    int message_str_index;
+    LogicResource* message_logic = nullptr;
+    int message_str_index = 0;
 
     /* input */
     bool any_key_pressed = false;
+    uint16_t said_list[16] = {0};
+    size_t said_list_size = 0;
+    uint16_t said_options[64] = {0};
+    size_t said_options_size = 0;
 
     static constexpr int VAR_CURRENT_ROOM = 0;
     static constexpr int VAR_PREV_ROOM = 1;
@@ -57,7 +62,9 @@ public:
     static constexpr int VAR_PLAYER_VIEW = 16;
 
     static constexpr int FLAG_PLAYER_ON_WATER = 0;
+    static constexpr int FLAG_TEXT_INPUT_DONE = 2;
     static constexpr int FLAG_PLAYER_TOUCHED_TRIGGER = 3;
+    static constexpr int FLAG_SAID_ACCEPTED_INPUT = 4;
     static constexpr int FLAG_ROOM_FIRST_TIME = 5;
     static constexpr int FLAG_RESTART_GAME = 6;
     static constexpr int FLAG_LOGIC0_FIRST_TIME = 11;

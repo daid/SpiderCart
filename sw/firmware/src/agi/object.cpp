@@ -56,41 +56,46 @@ void Object::update()
         }
         break;
     }
-    auto oldx = x;
-    auto oldy = y;
-    switch(direction) {
-    case 1: y -= 1; break;
-    case 2: x += 1; y -= 1; break;
-    case 3: x += 1; break;
-    case 4: x += 1; y += 1; break;
-    case 5: y += 1; break;
-    case 6: x -= 1; y += 1; break;
-    case 7: x -= 1; break;
-    case 8: x -= 1; y -= 1; break;
-    }
     auto view_data = Engine::instance->res_view[view];
     auto view_info = view_data->info(loop, cel);
-    //Ensure object is within screen bounds
-    int border = 0;
-    if (x < 0) { x = 0; border = 4; }
-    if (y < view_info.height - 1) { y = view_info.height - 1; border = 1; }
-    if (x > 159 - view_info.width) { x = 159 - view_info.width; border = 2; }
-    if (y > 167) { y = 167; border = 3; }
-    if (!(flags & flag_ignore_horizon)) {
-        if (y <= Engine::instance->horizon) { y = Engine::instance->horizon + 1; border = 1; }
+    if (step_counter > 0)
+        step_counter--;
+    if (step_counter == 0) {
+        step_counter = step_time;
+        auto oldx = x;
+        auto oldy = y;
+        switch(direction) {
+        case 1: y -= 1; break;
+        case 2: x += 1; y -= 1; break;
+        case 3: x += 1; break;
+        case 4: x += 1; y += 1; break;
+        case 5: y += 1; break;
+        case 6: x -= 1; y += 1; break;
+        case 7: x -= 1; break;
+        case 8: x -= 1; y -= 1; break;
+        }
+        //Ensure object is within screen bounds
+        int border = 0;
+        if (x < 0) { x = 0; border = 4; }
+        if (y < view_info.height - 1) { y = view_info.height - 1; border = 1; }
+        if (x > 159 - view_info.width) { x = 159 - view_info.width; border = 2; }
+        if (y > 167) { y = 167; border = 3; }
+        if (!(flags & flag_ignore_horizon)) {
+            if (y <= Engine::instance->horizon) { y = Engine::instance->horizon + 1; border = 1; }
+        }
+        if (checkBlockCollision() || checkObjCollision() || checkPrioCollision()) {
+            x = oldx; y = oldy;
+            border = 0;
+            wander_delay = 0;
+        }
+        if (isPlayer()) {
+            Engine::instance->var[Engine::VAR_PLAYER_BORDER_TOUCH] = border;
+        } else if (border) {
+            Engine::instance->var[Engine::VAR_OTHER_BORDER_TOUCH_OBJ] = (this - Engine::instance->object) / sizeof(Object);
+            Engine::instance->var[Engine::VAR_OTHER_BORDER_TOUCH] = border;
+        }
+        fixPosition();
     }
-    if (checkBlockCollision() || checkObjCollision() || checkPrioCollision()) {
-        x = oldx; y = oldy;
-        border = 0;
-        wander_delay = 0;
-    }
-    if (isPlayer()) {
-        Engine::instance->var[Engine::VAR_PLAYER_BORDER_TOUCH] = border;
-    } else if (border) {
-        Engine::instance->var[Engine::VAR_OTHER_BORDER_TOUCH_OBJ] = (this - Engine::instance->object) / sizeof(Object);
-        Engine::instance->var[Engine::VAR_OTHER_BORDER_TOUCH] = border;
-    }
-    fixPosition();
 
     if (!(flags & Object::flag_fix_loop) && view_data) {
         auto loop_count = view_data->loopCount();

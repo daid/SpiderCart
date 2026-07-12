@@ -134,30 +134,25 @@ void Screen::drawView(const ViewResource::Info& info, int vx, int vy, int prio, 
     }
 }
 
+extern const uint8_t fontData[];
 const uint8_t fontData[] = {
-    #include "p8font.inc"
+    #include "font.inc"
 };
 
 void Screen::drawText(int x, int y, const char* str)
 {
     while(*str) {
         if (y > 160) return;
-        display.buffer[x+y*160] = 0;
         const uint8_t* ptr = fontData;
         if (*str >= 32 && *str < 128) {
-            ptr = fontData + (*str - 32) * 3;
-            if (*str >= 'A' && *str <= 'Z') ptr += ('a' - 'A') * 3;
-            if (*str >= 'a' && *str <= 'z') ptr += ('A' - 'a') * 3;
+            ptr = fontData + (*str - 32) * 4;
         }
-        for(int px=0; px<3; px++) {
+        for(int px=0; px<4; px++) {
             for(int py=0; py<8; py++)
                 display.buffer[x + (y+py) * 160] = (*ptr) & (1 << py) ? 15 : 0;
             x++;
             ptr++;
         }
-        for(int py=0; py<8; py++)
-            display.buffer[x + (y+py) * 160] = 0;
-        x++;
         str++;
     }
 }

@@ -27,6 +27,10 @@ static const uint32_t COLORS[] = {
     RGB32(0x3F, 0x3F, 0x3F),
 };
 
+namespace AGI {
+extern const uint8_t fontData[];
+}
+
 int main(int argc, char** argv)
 {
     if (SDL_Init(SDL_INIT_EVERYTHING) < 0) { printf("SDL_Init failure: %s\n", SDL_GetError()); return 1; }
@@ -40,9 +44,9 @@ int main(int argc, char** argv)
     bool running = true;
     bool stepping = true;
     while(running) {
-        if (stepping) {
+        if (!engine.message_logic && stepping) {
             auto res = engine.step();
-            printf("################## STEP: %d ##################\n", res);
+            //printf("################## STEP: %d ##################\n", res);
             if (res < 0) stepping = false;
         }
 
@@ -59,7 +63,46 @@ int main(int argc, char** argv)
                 if (e.key.keysym.sym == SDLK_UP) engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] = engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] == 1 ? 0 : 1;
                 if (e.key.keysym.sym == SDLK_DOWN) engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] = engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] == 5 ? 0 : 5;
                 if (e.key.keysym.sym == 's') stepping = true;
-                engine.any_key_pressed = true;
+                if (engine.message_logic)
+                    engine.message_logic = nullptr;
+                else
+                    engine.any_key_pressed = true;
+                if (e.key.keysym.sym == SDLK_RETURN) {
+                    qsort(engine.said_options, engine.said_options_size, sizeof(uint16_t), [](const void* a, const void* b) -> int {
+                        char buffer_a[32];
+                        char buffer_b[32];
+                        AGI::Engine::instance->words.getWord(*reinterpret_cast<const uint16_t*>(a), buffer_a, sizeof(buffer_a));
+                        AGI::Engine::instance->words.getWord(*reinterpret_cast<const uint16_t*>(b), buffer_b, sizeof(buffer_b));
+                        return strcmp(buffer_a, buffer_b);
+                    });
+                    printf("SAY: ");
+                    for(int n=0; n<engine.said_list_size; n++) {
+                        char buffer[32];
+                        engine.words.getWord(engine.said_list[n], buffer, sizeof(buffer));
+                        printf("%s ", buffer);
+                    }
+                    printf("\n");
+                    for(int n=0; n<engine.said_options_size; n++) {
+                        char buffer[32];
+                        engine.words.getWord(engine.said_options[n], buffer, sizeof(buffer));
+                        printf(" %c:%s\n", 'a' + n, buffer);
+                    }
+
+                    if (engine.said_options_size == 0) {
+                        engine.flag[AGI::Engine::FLAG_TEXT_INPUT_DONE] = true;
+                    }
+                }
+                if (e.key.keysym.sym >= 'a' && e.key.keysym.sym < 'a' + engine.said_options_size) {
+                    qsort(engine.said_options, engine.said_options_size, sizeof(uint16_t), [](const void* a, const void* b) -> int {
+                        char buffer_a[32];
+                        char buffer_b[32];
+                        AGI::Engine::instance->words.getWord(*reinterpret_cast<const uint16_t*>(a), buffer_a, sizeof(buffer_a));
+                        AGI::Engine::instance->words.getWord(*reinterpret_cast<const uint16_t*>(b), buffer_b, sizeof(buffer_b));
+                        return strcmp(buffer_a, buffer_b);
+                    });
+
+                    engine.said_list[engine.said_list_size++] = engine.said_options[e.key.keysym.sym - 'a'];
+                }
                 break;
             }
         }
@@ -107,6 +150,27 @@ int main(int argc, char** argv)
                 }
             }
         }
+
+        if (engine.message_logic) {
+            auto str = engine.message_logic->str(engine.message_str_index);
+            int x = 0;
+            int y = 0;
+            while(*str) {
+                const uint8_t* ptr = AGI::fontData;
+                if (*str >= 32 && *str < 128) {
+                    ptr = AGI::fontData + (*str - 32) * 4;
+                }
+                for(int px=0; px<4; px++) {
+                    for(int py=0; py<8; py++)
+                        pixels[x + (y+py) * WIDTH] = (*ptr) & (1 << py) ? COLORS[0] : COLORS[15];
+                    x++;
+                    ptr++;
+                }
+                if (x == 160) { x = 0; y += 8; }
+                str++;
+            }
+        }
+
         SDL_UnlockSurface(surface);
 
         SDL_BlitScaled(surface, nullptr, winSurface, nullptr);
