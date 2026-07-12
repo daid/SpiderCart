@@ -79,7 +79,7 @@ void Object::update()
     if (!(flags & flag_ignore_horizon)) {
         if (y <= Engine::instance->horizon) { y = Engine::instance->horizon + 1; border = 1; }
     }
-    if (checkObjCollision() || checkPrioCollision()) {
+    if (checkBlockCollision() || checkObjCollision() || checkPrioCollision()) {
         x = oldx; y = oldy;
         border = 0;
         wander_delay = 0;
@@ -158,7 +158,7 @@ void Object::update()
     }
 }
 
-bool Object::checkBounds()
+bool Object::checkBoundsCollision()
 {
     auto view_data = Engine::instance->res_view[view];
     if (!view_data) return false;
@@ -173,9 +173,21 @@ bool Object::checkBounds()
     return false;
 }
 
+bool Object::checkBlockCollision()
+{
+    if (flags & flag_ignore_blocks) return false;
+    if (!Engine::instance->block_active) return false;
+    if (x > Engine::instance->block_x1) return true;
+    if (x < Engine::instance->block_x0) return true;
+    if (y > Engine::instance->block_y1) return true;
+    if (y < Engine::instance->block_y0) return true;
+    return false;
+}
+
 bool Object::checkObjCollision()
 {
     if (flags & flag_ignore_objs) return false;
+
     //TODO
     return false;
 }
@@ -260,7 +272,7 @@ void Object::fixPosition()
     int dir = 0;
     int count = 1;
     int size = 1;
-    while(checkBounds() || checkObjCollision() || checkPrioCollision()) {
+    while(checkBoundsCollision() || checkObjCollision() || checkPrioCollision()) {
         switch(dir) {
         case 0: x--; if (--count) continue; dir++; break;
         case 1: y++; if (--count) continue; dir++; size++; break;

@@ -38,6 +38,11 @@ public:
     bool input_enabled = true;
     bool show_status = true;
     int horizon = 36;
+    bool block_active = false;
+    int block_x0, block_y0, block_x1, block_y1;
+
+    LogicResource* message_logic;
+    int message_str_index;
 
     /* input */
     bool any_key_pressed = false;

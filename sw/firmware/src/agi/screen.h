@@ -25,6 +25,7 @@ public:
     void clear();
     void fill(int x, int y, uint8_t from_color, uint8_t display_color, uint8_t priority_color);
     void drawView(const ViewResource::Info& view, int x, int y, int prio, int margin);
+    void drawText(int x, int y, const char* str);
     int getPrioValue(int x, int y);
     uint32_t getPrioBits(int x, int y, int width);
 

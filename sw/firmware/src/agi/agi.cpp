@@ -60,6 +60,7 @@ int Engine::step()
         case 4: object[0].x = 159 - res_view[object[0].view]->info(object[0].loop, object[0].cel).width; break;
         }
         //TODO: More stuff needs to be done here.
+        block_active = false;
         horizon = 36;
         var[VAR_PREV_ROOM] = var[VAR_CURRENT_ROOM];
         var[VAR_CURRENT_ROOM] = new_room_nr;
@@ -196,8 +197,8 @@ int Engine::runLogic(LogicResource* logic)
         case 0x57: LOGIC_TRACE("get.dir", OBJ_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
         case 0x58: object[N(0)].flags |= Object::flag_ignore_blocks; LOGIC_TRACE("ignore.blocks", OBJ_ARG(0)); pc += 1; break;
         case 0x59: object[N(0)].flags &=~Object::flag_ignore_blocks; LOGIC_TRACE("observe.blocks", OBJ_ARG(0)); pc += 1; break;
-        case 0x5A: LOGIC_TRACE("block", NUM_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3)); pc += 4; UNIMPLEMENTED(); break;
-        case 0x5B: LOGIC_TRACE("unblock"); UNIMPLEMENTED(); break;
+        case 0x5A: block_active = true; block_x0 = N(0); block_y0 = N(1); block_x1 = N(2); block_y1 = N(3); LOGIC_TRACE("block", NUM_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3)); pc += 4; break;
+        case 0x5B: block_active = false; LOGIC_TRACE("unblock"); break;
         case 0x5C: LOGIC_TRACE("get", ITEM_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
         case 0x5D: LOGIC_TRACE("get.v", VAR_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
         case 0x5E: LOGIC_TRACE("drop", ITEM_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
@@ -207,10 +208,10 @@ int Engine::runLogic(LogicResource* logic)
         case 0x62: /* TODO: sound */ LOGIC_TRACE("load.sound", NUM_ARG(0)); pc += 1; break;
         case 0x63: /* TODO: sound */ LOGIC_TRACE("sound", NUM_ARG(0), FLAG_ARG(1)); pc += 2; break;
         case 0x64: /* TODO: sound */ LOGIC_TRACE("stop.sound"); break;
-        case 0x65: printf("## %s\n", logic->str(N(0))); LOGIC_TRACE("print", MSG_ARG(0)); pc += 1; break;
-        case 0x66: LOGIC_TRACE("print.v", VAR_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
-        case 0x67: /*TODO: Text mode */ LOGIC_TRACE("display", NUM_ARG(0), NUM_ARG(1), MSG_ARG(2)); pc += 3; break;
-        case 0x68: /*TODO: Text mode */ LOGIC_TRACE("display.v", VAR_ARG(0), VAR_ARG(1), VAR_ARG(2)); pc += 3; break;
+        case 0x65: message_logic = logic; message_str_index = N(0); LOGIC_TRACE("print", MSG_ARG(0)); pc += 1; break;
+        case 0x66: message_logic = logic; message_str_index = V(0); LOGIC_TRACE("print.v", VAR_ARG(0)); pc += 1; break;
+        case 0x67: screen.drawText(N(1) * 4, N(0) * 8, logic->str(N(0))); LOGIC_TRACE("display", NUM_ARG(0), NUM_ARG(1), MSG_ARG(2)); pc += 3; break;
+        case 0x68: screen.drawText(V(1) * 4, V(0) * 8, logic->str(V(0))); LOGIC_TRACE("display.v", VAR_ARG(0), VAR_ARG(1), VAR_ARG(2)); pc += 3; break;
         case 0x69: /*TODO: Text mode */ LOGIC_TRACE("clear.lines", NUM_ARG(0), NUM_ARG(1), NUM_ARG(2)); pc += 3; break;
         case 0x6A: /*TODO: Text mode */ LOGIC_TRACE("text.screen"); break;
         case 0x6B: /*TODO: Text mode */ LOGIC_TRACE("graphics"); break;
