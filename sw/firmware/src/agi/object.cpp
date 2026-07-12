@@ -158,6 +158,21 @@ void Object::update()
     }
 }
 
+bool Object::checkBounds()
+{
+    auto view_data = Engine::instance->res_view[view];
+    if (!view_data) return false;
+    auto view_info = view_data->info(loop, cel);
+    if (x < 0) return true;
+    if (y < view_info.height - 1) return true;
+    if (x > 159 - view_info.width) return true;
+    if (y > 167) return true;
+    if (!(flags & flag_ignore_horizon)) {
+        if (y <= Engine::instance->horizon) return true;
+    }
+    return false;
+}
+
 bool Object::checkObjCollision()
 {
     if (flags & flag_ignore_objs) return false;
@@ -242,10 +257,18 @@ void Object::fixPosition()
     if (!(flags & flag_ignore_horizon)) {
         if (y <= Engine::instance->horizon) y = Engine::instance->horizon + 1;
     }
-    checkPrioCollision();/*TMP, need to update prio value*/
-    // while(checkObjCollision() || checkPrioCollision()) {
-    //     TODO
-    // }
+    int dir = 0;
+    int count = 1;
+    int size = 1;
+    while(checkBounds() || checkObjCollision() || checkPrioCollision()) {
+        switch(dir) {
+        case 0: x--; if (--count) continue; dir++; break;
+        case 1: y++; if (--count) continue; dir++; size++; break;
+        case 2: x++; if (--count) continue; dir++; break;
+        case 3: y--; if (--count) continue; dir=0; size++; break;
+        }
+        count = size;
+    }
 }
 
 void Object::animate()

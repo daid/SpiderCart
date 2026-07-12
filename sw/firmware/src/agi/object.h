@@ -53,6 +53,7 @@ public:
     static constexpr uint16_t flag_dont_update = 0x0800;
 
     void update();
+    bool checkBounds();
     bool checkObjCollision();
     bool checkPrioCollision();
 
