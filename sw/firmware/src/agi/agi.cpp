@@ -209,7 +209,7 @@ int Engine::runLogic(LogicResource* logic)
         case 0x60: LOGIC_TRACE("put.v", VAR_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
         case 0x61: LOGIC_TRACE("get.room.v", VAR_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
         case 0x62: /* TODO: sound */ LOGIC_TRACE("load.sound", NUM_ARG(0)); pc += 1; break;
-        case 0x63: /* TODO: sound */ LOGIC_TRACE("sound", NUM_ARG(0), FLAG_ARG(1)); pc += 2; break;
+        case 0x63: /* TODO: sound */ flag[N(1)] = true; LOGIC_TRACE("sound", NUM_ARG(0), FLAG_ARG(1)); pc += 2; break;
         case 0x64: /* TODO: sound */ LOGIC_TRACE("stop.sound"); break;
         case 0x65: message_logic = logic; message_str_index = N(0); LOGIC_TRACE("print", MSG_ARG(0)); pc += 1; break;
         case 0x66: message_logic = logic; message_str_index = V(0); LOGIC_TRACE("print.v", VAR_ARG(0)); pc += 1; break;
