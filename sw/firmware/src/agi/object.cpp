@@ -57,6 +57,7 @@ void Object::update()
         break;
     }
     auto view_data = Engine::instance->res_view[view];
+    if (!view_data) return;
     auto view_info = view_data->info(loop, cel);
     if (step_counter > 0)
         step_counter--;

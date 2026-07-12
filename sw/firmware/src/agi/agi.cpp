@@ -218,8 +218,8 @@ int Engine::runLogic(LogicResource* logic)
         case 0x69: /*TODO: Text mode */ LOGIC_TRACE("clear.lines", NUM_ARG(0), NUM_ARG(1), NUM_ARG(2)); pc += 3; break;
         case 0x6A: /*TODO: Text mode */ LOGIC_TRACE("text.screen"); break;
         case 0x6B: /*TODO: Text mode */ LOGIC_TRACE("graphics"); break;
-        case 0x6C: LOGIC_TRACE("set.cursor.char", MSG_ARG(0)); pc += 1; break;
-        case 0x6D: LOGIC_TRACE("set.text.attribute", NUM_ARG(0), NUM_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
+        case 0x6C: /*TODO: Text mode */ LOGIC_TRACE("set.cursor.char", MSG_ARG(0)); pc += 1; break;
+        case 0x6D: /*TODO: Text mode */ LOGIC_TRACE("set.text.attribute", NUM_ARG(0), NUM_ARG(1)); pc += 2; break;
         case 0x6E: /*TODO: screen shake */ LOGIC_TRACE("shake.screen", NUM_ARG(0)); pc += 1; break;
         case 0x6F: LOGIC_TRACE("configure.screen", NUM_ARG(0), NUM_ARG(1), NUM_ARG(2)); pc += 3; break;
         case 0x70: show_status = true; LOGIC_TRACE("status.line.on"); break;
