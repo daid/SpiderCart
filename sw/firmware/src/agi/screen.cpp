@@ -97,6 +97,43 @@ void Screen::fill(int x, int y, uint8_t from_color, uint8_t display_color, uint8
     }
 }
 
+void Screen::drawView(const ViewResource::Info& info, int vx, int vy, int prio, int margin)
+{
+    //TODO: if prio == 0, prio = autoprio
+
+    auto ptr = info.data;
+    for(int y=0; y<info.height; y++) {
+        for(int x=info.mirror?info.width-1:0;;) {
+            auto chunk = *ptr++;
+            if (!chunk) break;
+            for(int n=0; n<(chunk&0x0F); n++) {
+                if ((chunk >> 4) != info.transparent) {
+                    auto px = vx+x;
+                    auto py = vy+y-info.height+1;
+                    if (px >= 0 && px < 160 && py >= 0 && py < 168) {
+                        display.buffer[px + py * 160] = chunk >> 4;
+                        if (priority.buffer[px + py * 160] >= 4)
+                            priority.buffer[px + py * 160] = prio;
+                    }
+                }
+                if (info.mirror) x--; else x++;
+            }
+        }
+    }
+    if (margin < 3) {
+        auto y0 = vy/12*12+1;
+        auto y1 = vy;
+        for(int n=y0; n<=y1; n++) {
+            if (priority.buffer[vx + n * 160] >= 4) priority.buffer[vx + n * 160] = margin;
+            if (priority.buffer[vx + info.width-1 + n * 160] >= 4) priority.buffer[vx + info.width-1 + n * 160] = margin;
+        }
+        for(int n=0; n<info.width; n++) {
+            if (priority.buffer[vx + n + y0 * 160] >= 4) priority.buffer[vx + n + y0 * 160] = margin;
+            if (priority.buffer[vx + n + y1 * 160] >= 4) priority.buffer[vx + n + y1 * 160] = margin;
+        }
+    }
+}
+
 int Screen::getPrioValue(int x, int y)
 {
     while(y < 168 && priority.buffer[x + y * 160] < 3)

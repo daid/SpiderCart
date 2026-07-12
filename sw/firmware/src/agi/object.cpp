@@ -3,6 +3,21 @@
 
 namespace AGI {
 
+static int directionOf(int dx, int dy) {
+    if (dx == 0 && dy == 0) {
+        return 0;
+    } else if (dx == 0) {
+        if (dy < 0) return 1; return 5;
+    } else if (dy == 0) {
+        if (dx < 0) return 7; else return 3;
+    } else {
+        if (dx < 0 && dy < 0) return 8;
+        else if (dx < 0) return 6;
+        else if (dy < 0) return 2;
+        else return 4;
+    }
+}
+
 void Object::update()
 {
     switch(motion)
@@ -11,28 +26,33 @@ void Object::update()
         {
             auto dx = target_x - x;
             auto dy = target_y - y;
-            if (dx == 0 && dy == 0) {
+            direction = directionOf(dx, dy);
+            if (direction == 0) {
                 Engine::instance->flag[move_finished_flag] = true;
-                direction = 0;
                 motion = Motion::Normal;
-            } else if (dx == 0) {
-                if (dy < 0) direction = 1; else direction = 5;
-            } else if (dy == 0) {
-                if (dx < 0) direction = 7; else direction = 3;
-            } else {
-                if (dx < 0 && dy < 0) direction = 8;
-                else if (dx < 0) direction = 6;
-                else if (dy < 0) direction = 2;
-                else direction = 4;
+                if (isPlayer())
+                    Engine::instance->player_control = true;
             }
         }
         break;
     case Motion::Wander:
         if (wander_delay == 0) {
-            wander_delay = 255;
+            wander_delay = (rand() % 54) + 6;
             direction = rand() % 9;
         } else {
             wander_delay--;
+        }
+        break;
+    case Motion::FollowPlayer:
+        auto dx = Engine::instance->object[0].x - x;
+        auto dy = Engine::instance->object[0].y - y;
+        direction = directionOf(dx, dy);
+        //TODO: This needs more logic to handle the "getting stuck" case
+        if (direction == 0) {
+            Engine::instance->flag[move_finished_flag] = true;
+            motion = Motion::Normal;
+            if (isPlayer())
+                Engine::instance->player_control = true;
         }
         break;
     }
@@ -62,6 +82,7 @@ void Object::update()
     if (checkObjCollision() || checkPrioCollision()) {
         x = oldx; y = oldy;
         border = 0;
+        wander_delay = 0;
     }
     if (isPlayer()) {
         Engine::instance->var[Engine::VAR_PLAYER_BORDER_TOUCH] = border;
@@ -165,7 +186,7 @@ bool Object::checkPrioCollision()
     auto view_data = Engine::instance->res_view[view];
     if (!view_data) return false;
     auto view_info = view_data->info(loop, cel);
-    //TODO: "priority" collision
+
     auto bits = Engine::instance->screen.getPrioBits(x, y, view_info.width);
     if (priority != 0x0F) {
         if (isPlayer()) {
@@ -190,17 +211,22 @@ void Object::setView(int new_view)
 {
     if (view == new_view) return;
     view = new_view;
-    loop = 0;
-    cel = 0;
-    cycle_counter = 0;
+    if (loop >= Engine::instance->res_view[view]->loopCount())
+        loop = 0;
+    if (cel >= Engine::instance->res_view[view]->celCount(loop)) {
+        cel = 0;
+        cycle_counter = 0;
+    }
 }
 
 void Object::setLoop(int new_loop)
 {
     if (loop == new_loop) return;
     loop = new_loop;
-    cel = 0;
-    cycle_counter = 0;
+    if (cel >= Engine::instance->res_view[view]->celCount(loop)) {
+        cel = 0;
+        cycle_counter = 0;
+    }
 }
 
 void Object::fixPosition()
@@ -216,7 +242,7 @@ void Object::fixPosition()
     if (!(flags & flag_ignore_horizon)) {
         if (y <= Engine::instance->horizon) y = Engine::instance->horizon + 1;
     }
-    checkPrioCollision();
+    checkPrioCollision();/*TMP, need to update prio value*/
     // while(checkObjCollision() || checkPrioCollision()) {
     //     TODO
     // }
@@ -257,7 +283,7 @@ bool Object::inBox(uint8_t x0, uint8_t x1, uint8_t y0, uint8_t y1)
     if (x + view_info.width <= x0) return false;
     if (x > x1) return false;
     if (y < y0) return false;
-    if (y + view_info.height >= y1) return false;
+    if (y > y1) return false;
     return true;
 }
 

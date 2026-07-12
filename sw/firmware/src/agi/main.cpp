@@ -1,6 +1,8 @@
 #include "agi.h"
 #include <stdio.h>
 #include <SDL.h>
+#include <vector>
+#include <algorithm>
 
 static constexpr int WIDTH = 160*2;
 static constexpr int HEIGHT = 168;
@@ -72,20 +74,29 @@ int main(int argc, char** argv)
                 pixels[x + 160 + y * WIDTH] = COLORS[c];
             }
         }
+        std::vector<AGI::Object*> draw_list;
         for(auto& obj : engine.object) {
             if (!(obj.flags & AGI::Object::flag_anim)) continue;
-            if (obj.flags & AGI::Object::flag_draw) {
-                auto info = engine.res_view[obj.view]->info(obj.loop, obj.cel);
+            if (!(obj.flags & AGI::Object::flag_draw)) continue;
+            draw_list.push_back(&obj);
+        }
+        std::sort(draw_list.begin(), draw_list.end(), [](const auto a, const auto b) -> bool {
+            return a->y < b->y;
+        });
+        for(auto obj : draw_list) {
+            if (!(obj->flags & AGI::Object::flag_anim)) continue;
+            if (obj->flags & AGI::Object::flag_draw) {
+                auto info = engine.res_view[obj->view]->info(obj->loop, obj->cel);
                 for(int y=0; y<info.height; y++) {
                     for(int x=info.mirror?info.width-1:0;;) {
                         auto chunk = *info.data++;
                         if (!chunk) break;
                         for(int n=0; n<(chunk&0x0F); n++) {
                             if ((chunk >> 4) != info.transparent) {
-                                auto px = obj.x+x;
-                                auto py = obj.y+y-info.height+1;
+                                auto px = obj->x+x;
+                                auto py = obj->y+y-info.height+1;
                                 if (px >= 0 && px < 160 && py >= 0 && py < 168) {
-                                    if (obj.priority >= engine.screen.getPrioValue(px, py))
+                                    if (obj->priority >= engine.screen.getPrioValue(px, py))
                                         pixels[px + py * WIDTH] = COLORS[chunk >> 4];
                                     pixels[px + 160 + py * WIDTH] = COLORS[chunk >> 4];
                                 }
