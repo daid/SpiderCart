@@ -31,6 +31,48 @@ namespace AGI {
 extern const uint8_t fontData[];
 }
 
+void drawBox(uint32_t* pixels, int x, int y, int w, int h, uint32_t c)
+{
+    for(int y0=0; y0<h; y0++)
+        for(int x0=0; x0<w; x0++)
+            pixels[(x+x0)+(y+y0)*WIDTH] = c;
+}
+
+void drawString(uint32_t* pixels, int x, int y, const char* str, size_t length, uint32_t c)
+{
+    while(*str && length) {
+        const uint8_t* ptr = AGI::fontData;
+        if (*str >= 32 && *str < 128) {
+            ptr = AGI::fontData + (*str - 32) * 4;
+        }
+        for(int px=0; px<4; px++) {
+            for(int py=0; py<8; py++)
+                if ((*ptr) & (1 << py))
+                    pixels[x + (y+py) * WIDTH] = c;
+            x++;
+            ptr++;
+        }
+        if (x >= 160 - 3) { x = 0; y += 8; }
+        str++;
+        length--;
+    }
+}
+
+void drawMessage(uint32_t* pixels, const char* str)
+{
+    int line_count = (strlen(str) + 39) / 40;
+    drawBox(pixels, 0, 84 - line_count * 4 - 2, 160, line_count * 8 + 4, COLORS[15]);
+    drawString(pixels, 0, 84 - line_count * 4, str, strlen(str), COLORS[0]);
+}
+
+enum class TextInputState
+{
+    None,
+    GatherSaidList,
+    InputWords,
+    Execute
+} text_input_state = TextInputState::None;
+
 int main(int argc, char** argv)
 {
     if (SDL_Init(SDL_INIT_EVERYTHING) < 0) { printf("SDL_Init failure: %s\n", SDL_GetError()); return 1; }
@@ -153,22 +195,7 @@ int main(int argc, char** argv)
 
         if (engine.message_logic) {
             auto str = engine.message_logic->str(engine.message_str_index);
-            int x = 0;
-            int y = 0;
-            while(*str) {
-                const uint8_t* ptr = AGI::fontData;
-                if (*str >= 32 && *str < 128) {
-                    ptr = AGI::fontData + (*str - 32) * 4;
-                }
-                for(int px=0; px<4; px++) {
-                    for(int py=0; py<8; py++)
-                        pixels[x + (y+py) * WIDTH] = (*ptr) & (1 << py) ? COLORS[0] : COLORS[15];
-                    x++;
-                    ptr++;
-                }
-                if (x == 160) { x = 0; y += 8; }
-                str++;
-            }
+            drawMessage(pixels, str);
         }
 
         SDL_UnlockSurface(surface);

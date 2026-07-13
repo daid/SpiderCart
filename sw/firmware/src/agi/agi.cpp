@@ -12,6 +12,13 @@ Engine::Engine()
     flag[FLAG_LOGIC0_FIRST_TIME] = true;
     flag[FLAG_ROOM_FIRST_TIME] = true;
     new_room_nr = -1;
+
+    for(int n=0; n<255; n++) {
+        if (n < items.count())
+            item_room[n] = items.startRoom(n);
+        else
+            item_room[n] = 254;
+    }
 }
 
 int Engine::step()
@@ -84,7 +91,7 @@ int Engine::step()
 #define NUM_ARG(n) trace_stream << " " << int(logic->data[pc+n])
 #define FLAG_ARG(n) trace_stream << " f" << int(logic->data[pc+n]) << "=" << int(flag[logic->data[pc+n]])
 #define OBJ_ARG(n) trace_stream << " o" << int(logic->data[pc+n])
-#define ITEM_ARG(n) trace_stream << " o" << int(logic->data[pc+n])
+#define ITEM_ARG(n) trace_stream << " i(" << int(logic->data[pc+n]) << ")" << items.name(logic->data[pc+n])
 #define MSG_ARG(n) trace_stream << " (" << int(logic->data[pc+n]) << ")\"" << logic->str(logic->data[pc+n]) << "\""
 #define STR_ARG(n) trace_stream << " s" << int(logic->data[pc+n])
 #define WORD_ARG(n) trace_stream << " w" << int(logic->data[pc+n])
@@ -202,12 +209,12 @@ int Engine::runLogic(LogicResource* logic)
         case 0x59: object[N(0)].flags &=~Object::flag_ignore_blocks; LOGIC_TRACE("observe.blocks", OBJ_ARG(0)); pc += 1; break;
         case 0x5A: block_active = true; block_x0 = N(0); block_y0 = N(1); block_x1 = N(2); block_y1 = N(3); LOGIC_TRACE("block", NUM_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3)); pc += 4; break;
         case 0x5B: block_active = false; LOGIC_TRACE("unblock"); break;
-        case 0x5C: LOGIC_TRACE("get", ITEM_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
-        case 0x5D: LOGIC_TRACE("get.v", VAR_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
-        case 0x5E: LOGIC_TRACE("drop", ITEM_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
-        case 0x5F: LOGIC_TRACE("put", ITEM_ARG(0)); pc += 2; UNIMPLEMENTED(); break;
-        case 0x60: LOGIC_TRACE("put.v", VAR_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
-        case 0x61: LOGIC_TRACE("get.room.v", VAR_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
+        case 0x5C: item_room[N(0)] = 255; LOGIC_TRACE("get", ITEM_ARG(0)); pc += 1; break;
+        case 0x5D: item_room[V(0)] = 255; LOGIC_TRACE("get.v", VAR_ARG(0)); pc += 1; break;
+        case 0x5E: item_room[N(0)] = 0; LOGIC_TRACE("drop", ITEM_ARG(0)); pc += 1; break;
+        case 0x5F: item_room[N(0)] = V(1); LOGIC_TRACE("put", ITEM_ARG(0), NUM_ARG(1)); pc += 2; break;
+        case 0x60: item_room[V(0)] = V(1); LOGIC_TRACE("put.v", VAR_ARG(0), VAR_ARG(1)); pc += 2; break;
+        case 0x61: V(0) = item_room[V(1)]; LOGIC_TRACE("get.room.v", VAR_ARG(0), VAR_ARG(1)); pc += 2; break;
         case 0x62: /* TODO: sound */ LOGIC_TRACE("load.sound", NUM_ARG(0)); pc += 1; break;
         case 0x63: /* TODO: sound */ flag[N(1)] = true; LOGIC_TRACE("sound", NUM_ARG(0), FLAG_ARG(1)); pc += 2; break;
         case 0x64: /* TODO: sound */ LOGIC_TRACE("stop.sound"); break;

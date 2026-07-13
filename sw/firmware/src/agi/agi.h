@@ -1,6 +1,7 @@
 #pragma once
 
 #include "words.h"
+#include "items.h"
 #include "logic.h"
 #include "resources.h"
 #include "view.h"
@@ -22,6 +23,7 @@ public:
     bool checkSaid(int amount, uint8_t* data);
 
     Words words;
+    Items items;
     ResourceManager<LogicResource> res_logic{"LOGDIR"};
     ResourceManager<ViewResource> res_view{"VIEWDIR"};
     ResourceManager<PictureResource> res_picture{"PICDIR"};

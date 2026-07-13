@@ -7,6 +7,7 @@ add_executable(AGI
     main.cpp
     agi.cpp
     words.cpp
+    items.cpp
     logic.cpp
     picture.cpp
     screen.cpp
