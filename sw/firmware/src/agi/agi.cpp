@@ -145,7 +145,7 @@ int Engine::runLogic(LogicResource* logic)
         case 0x19: screen.clear(); res_picture[V(0)]->draw(screen); LOGIC_TRACE("draw.pic", VAR_ARG(0)); pc += 1; break;
         case 0x1A: /* TODO: this should update the screen (why is this decoupled?) */ LOGIC_TRACE("show.pic"); break;
         case 0x1B: res_picture.unload(V(0)); LOGIC_TRACE("discard.pic", VAR_ARG(0)); pc += 1; break;
-        case 0x1C: LOGIC_TRACE("overlay.pic", VAR_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
+        case 0x1C: res_picture[V(0)]->draw(screen); LOGIC_TRACE("overlay.pic", VAR_ARG(0)); pc += 1; break;
         case 0x1D: LOGIC_TRACE("show.pri.screen"); UNIMPLEMENTED(); break;
         case 0x1E: res_view.load(N(0)); LOGIC_TRACE("load.view", NUM_ARG(0)); pc += 1; break;
         case 0x1F: res_view.load(V(0)); LOGIC_TRACE("load.view.v", VAR_ARG(0)); pc += 1; break;
@@ -186,7 +186,7 @@ int Engine::runLogic(LogicResource* logic)
         case 0x42: object[N(0)].flags &=~(Object::flag_on_water | Object::flag_on_land); LOGIC_TRACE("object.on.anything", OBJ_ARG(0)); pc += 1; break;
         case 0x43: object[N(0)].flags |= Object::flag_ignore_objs; LOGIC_TRACE("ignore.objs", OBJ_ARG(0)); pc += 1; break;
         case 0x44: object[N(0)].flags &=~Object::flag_ignore_objs; LOGIC_TRACE("observe.objs", OBJ_ARG(0)); pc += 1; break;
-        case 0x45: V(1) = object[N(0)].distance(object[N(1)]); LOGIC_TRACE("distance", OBJ_ARG(0), OBJ_ARG(1), VAR_ARG(2)); pc += 3; break;
+        case 0x45: V(2) = object[N(0)].distance(object[N(1)]); LOGIC_TRACE("distance", OBJ_ARG(0), OBJ_ARG(1), VAR_ARG(2)); pc += 3; break;
         case 0x46: object[N(0)].flags &=~Object::flag_cycling; LOGIC_TRACE("stop.cycling", OBJ_ARG(0)); pc += 1; break;
         case 0x47: object[N(0)].flags |= Object::flag_cycling; LOGIC_TRACE("start.cycling", OBJ_ARG(0)); pc += 1; break;
         case 0x48: object[N(0)].cycle_mode = Object::CycleMode::Normal; object[N(0)].flags |= Object::flag_cycling; LOGIC_TRACE("normal.cycle", OBJ_ARG(0)); pc += 1; break;
@@ -203,8 +203,8 @@ int Engine::runLogic(LogicResource* logic)
         case 0x53: object[N(0)].flags |= Object::flag_update; object[N(0)].motion = Object::Motion::FollowPlayer; flag[N(1)] = false; object[N(2)].step_size = N(1); object[N(2)].move_finished_flag = N(2); LOGIC_TRACE("follow.ego", OBJ_ARG(0), NUM_ARG(1), FLAG_ARG(2)); pc += 3; break;
         case 0x54: if (N(0) == 0) player_control = false; object[N(0)].motion = Object::Motion::Wander; object[N(0)].flags |= Object::flag_update; LOGIC_TRACE("wander", OBJ_ARG(0)); pc += 1; break;
         case 0x55: object[N(0)].motion = Object::Motion::Normal; LOGIC_TRACE("normal.motion", OBJ_ARG(0)); pc += 1; break;
-        case 0x56: LOGIC_TRACE("set.dir", OBJ_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
-        case 0x57: LOGIC_TRACE("get.dir", OBJ_ARG(0), VAR_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
+        case 0x56: object[N(0)].direction = V(1); LOGIC_TRACE("set.dir", OBJ_ARG(0), VAR_ARG(1)); pc += 2; break;
+        case 0x57: V(1) = object[N(0)].direction; LOGIC_TRACE("get.dir", OBJ_ARG(0), VAR_ARG(1)); pc += 2; break;
         case 0x58: object[N(0)].flags |= Object::flag_ignore_blocks; LOGIC_TRACE("ignore.blocks", OBJ_ARG(0)); pc += 1; break;
         case 0x59: object[N(0)].flags &=~Object::flag_ignore_blocks; LOGIC_TRACE("observe.blocks", OBJ_ARG(0)); pc += 1; break;
         case 0x5A: block_active = true; block_x0 = N(0); block_y0 = N(1); block_x1 = N(2); block_y1 = N(3); LOGIC_TRACE("block", NUM_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3)); pc += 4; break;
@@ -218,8 +218,8 @@ int Engine::runLogic(LogicResource* logic)
         case 0x62: /* TODO: sound */ LOGIC_TRACE("load.sound", NUM_ARG(0)); pc += 1; break;
         case 0x63: /* TODO: sound */ flag[N(1)] = true; LOGIC_TRACE("sound", NUM_ARG(0), FLAG_ARG(1)); pc += 2; break;
         case 0x64: /* TODO: sound */ LOGIC_TRACE("stop.sound"); break;
-        case 0x65: message_logic = logic; message_str_index = N(0); LOGIC_TRACE("print", MSG_ARG(0)); pc += 1; break;
-        case 0x66: message_logic = logic; message_str_index = V(0); LOGIC_TRACE("print.v", VAR_ARG(0)); pc += 1; break;
+        case 0x65: if (message_list_size < message_list.size()) message_list[message_list_size++] = {logic, N(0)}; LOGIC_TRACE("print", MSG_ARG(0)); pc += 1; break;
+        case 0x66: if (message_list_size < message_list.size()) message_list[message_list_size++] = {logic, V(0)}; LOGIC_TRACE("print.v", VAR_ARG(0)); pc += 1; break;
         case 0x67: screen.drawText(N(1) * 4, N(0) * 8, logic->str(N(0))); LOGIC_TRACE("display", NUM_ARG(0), NUM_ARG(1), MSG_ARG(2)); pc += 3; break;
         case 0x68: screen.drawText(V(1) * 4, V(0) * 8, logic->str(V(0))); LOGIC_TRACE("display.v", VAR_ARG(0), VAR_ARG(1), VAR_ARG(2)); pc += 3; break;
         case 0x69: /*TODO: Text mode */ LOGIC_TRACE("clear.lines", NUM_ARG(0), NUM_ARG(1), NUM_ARG(2)); pc += 3; break;
@@ -268,8 +268,8 @@ int Engine::runLogic(LogicResource* logic)
         case 0x94: object[N(0)].x = V(1); object[N(0)].y = V(2); object[N(0)].fixPosition(); LOGIC_TRACE("reposition.to.v", OBJ_ARG(0), VAR_ARG(1), VAR_ARG(2)); pc += 3; break;
         case 0x95: LOGIC_TRACE("trace.on"); UNIMPLEMENTED(); break;
         case 0x96: /* TODO? */ LOGIC_TRACE("trace.info", NUM_ARG(0), NUM_ARG(1), NUM_ARG(2)); pc += 3; break;
-        case 0x97: message_logic = logic; message_str_index = N(0); LOGIC_TRACE("print.at", MSG_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3)); pc += 4; break;
-        case 0x98: message_logic = logic; message_str_index = V(0); LOGIC_TRACE("print.at.v", VAR_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3)); pc += 4; break;
+        case 0x97: if (message_list_size < message_list.size()) message_list[message_list_size++] = {logic, N(0)}; LOGIC_TRACE("print.at", MSG_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3)); pc += 4; break;
+        case 0x98: if (message_list_size < message_list.size()) message_list[message_list_size++] = {logic, V(0)}; LOGIC_TRACE("print.at.v", VAR_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3)); pc += 4; break;
         case 0x99: res_view.unload(V(0)); LOGIC_TRACE("discard.view.v", VAR_ARG(0)); pc += 1; break;
         case 0x9A: LOGIC_TRACE("clear.text.rect", NUM_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3), NUM_ARG(4)); pc += 5; UNIMPLEMENTED(); break;
         case 0x9B: LOGIC_TRACE("set.upper.left", NUM_ARG(0), NUM_ARG(1)); pc += 2; UNIMPLEMENTED(); break;
@@ -279,7 +279,7 @@ int Engine::runLogic(LogicResource* logic)
         case 0x9F: LOGIC_TRACE("enable.item", CTR_ARG(0)); pc += 1; break;
         case 0xA0: LOGIC_TRACE("disable.item", CTR_ARG(0)); pc += 1; break;
         case 0xA1: LOGIC_TRACE("menu.input"); UNIMPLEMENTED(); break;
-        case 0xA2: LOGIC_TRACE("show.obj.v", VAR_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
+        case 0xA2: /* Used for showing an inventory item*/ LOGIC_TRACE("show.obj.v", VAR_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
         case 0xA3: /*TODO: Text input mode */ LOGIC_TRACE("open.dialogue"); break;
         case 0xA4: /*TODO: Text input mode */ LOGIC_TRACE("close.dialogue"); break;
         case 0xA5: V(0) *= N(1); LOGIC_TRACE("mul.n", VAR_ARG(0), NUM_ARG(1)); pc += 2; break;

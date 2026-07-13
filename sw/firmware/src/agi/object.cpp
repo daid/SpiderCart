@@ -342,7 +342,7 @@ int Object::distance(Object& other)
 {
     if (!(flags & flag_draw)) return 255;
     if (!(other.flags & flag_draw)) return 255;
-    auto dist = abs(x - other.x) + abs(y + other.y);
+    auto dist = abs(x - other.x) + abs(y - other.y);
     if (dist >= 255) dist = 254;
     return dist;
 }

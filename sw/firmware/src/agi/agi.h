@@ -9,6 +9,7 @@
 #include "object.h"
 #include "screen.h"
 #include <bitset>
+#include <array>
 
 namespace AGI {
 
@@ -44,8 +45,12 @@ public:
     bool block_active = false;
     int block_x0, block_y0, block_x1, block_y1;
 
-    LogicResource* message_logic = nullptr;
-    int message_str_index = 0;
+    struct Message {
+        LogicResource* logic;
+        int index;
+    };
+    std::array<Message, 16> message_list;
+    int message_list_size = 0;
 
     /* input */
     bool any_key_pressed = false;

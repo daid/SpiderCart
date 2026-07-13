@@ -86,7 +86,7 @@ int main(int argc, char** argv)
     bool running = true;
     bool stepping = true;
     while(running) {
-        if (!engine.message_logic && stepping) {
+        if (engine.message_list_size == 0 && stepping) {
             auto res = engine.step();
             //printf("################## STEP: %d ##################\n", res);
             if (res < 0) stepping = false;
@@ -105,34 +105,37 @@ int main(int argc, char** argv)
                 if (e.key.keysym.sym == SDLK_UP) engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] = engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] == 1 ? 0 : 1;
                 if (e.key.keysym.sym == SDLK_DOWN) engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] = engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] == 5 ? 0 : 5;
                 if (e.key.keysym.sym == 's') stepping = true;
-                if (engine.message_logic)
-                    engine.message_logic = nullptr;
-                else
+                if (engine.message_list_size > 0) {
+                    engine.message_list_size -= 1;
+                    for(int n=0; n<engine.message_list_size; n++)
+                        engine.message_list[n] = engine.message_list[n+1];
+                } else {
                     engine.any_key_pressed = true;
+                }
                 if (e.key.keysym.sym == SDLK_RETURN) {
-                    qsort(engine.said_options, engine.said_options_size, sizeof(uint16_t), [](const void* a, const void* b) -> int {
-                        char buffer_a[32];
-                        char buffer_b[32];
-                        AGI::Engine::instance->words.getWord(*reinterpret_cast<const uint16_t*>(a), buffer_a, sizeof(buffer_a));
-                        AGI::Engine::instance->words.getWord(*reinterpret_cast<const uint16_t*>(b), buffer_b, sizeof(buffer_b));
-                        return strcmp(buffer_a, buffer_b);
-                    });
-                    printf("SAY: ");
-                    for(int n=0; n<engine.said_list_size; n++) {
-                        char buffer[32];
-                        engine.words.getWord(engine.said_list[n], buffer, sizeof(buffer));
-                        printf("%s ", buffer);
-                    }
-                    printf("\n");
-                    for(int n=0; n<engine.said_options_size; n++) {
-                        char buffer[32];
-                        engine.words.getWord(engine.said_options[n], buffer, sizeof(buffer));
-                        printf(" %c:%s\n", 'a' + n, buffer);
-                    }
+                    // qsort(engine.said_options, engine.said_options_size, sizeof(uint16_t), [](const void* a, const void* b) -> int {
+                    //     char buffer_a[32];
+                    //     char buffer_b[32];
+                    //     AGI::Engine::instance->words.getWord(*reinterpret_cast<const uint16_t*>(a), buffer_a, sizeof(buffer_a));
+                    //     AGI::Engine::instance->words.getWord(*reinterpret_cast<const uint16_t*>(b), buffer_b, sizeof(buffer_b));
+                    //     return strcmp(buffer_a, buffer_b);
+                    // });
+                    // printf("SAY: ");
+                    // for(int n=0; n<engine.said_list_size; n++) {
+                    //     char buffer[32];
+                    //     engine.words.getWord(engine.said_list[n], buffer, sizeof(buffer));
+                    //     printf("%s ", buffer);
+                    // }
+                    // printf("\n");
+                    // for(int n=0; n<engine.said_options_size; n++) {
+                    //     char buffer[32];
+                    //     engine.words.getWord(engine.said_options[n], buffer, sizeof(buffer));
+                    //     printf(" %c:%s\n", 'a' + n, buffer);
+                    // }
 
-                    if (engine.said_options_size == 0) {
+                    // if (engine.said_options_size == 0) {
                         engine.flag[AGI::Engine::FLAG_TEXT_INPUT_DONE] = true;
-                    }
+                    // }
                 }
                 if (e.key.keysym.sym >= 'a' && e.key.keysym.sym < 'a' + engine.said_options_size) {
                     qsort(engine.said_options, engine.said_options_size, sizeof(uint16_t), [](const void* a, const void* b) -> int {
@@ -184,17 +187,21 @@ int main(int argc, char** argv)
                                     if (obj->priority >= engine.screen.getPrioValue(px, py))
                                         pixels[px + py * WIDTH] = COLORS[chunk >> 4];
                                     pixels[px + 160 + py * WIDTH] = COLORS[chunk >> 4];
+
                                 }
                             }
                             if (info.mirror) x--; else x++;
                         }
                     }
                 }
+                char buf[32];
+                sprintf(buf, "o%x", int((obj - engine.object)));
+                drawString(pixels + 160, obj->x, obj->y - info.height + 1, buf, strlen(buf), COLORS[15]);
             }
         }
 
-        if (engine.message_logic) {
-            auto str = engine.message_logic->str(engine.message_str_index);
+        if (engine.message_list_size > 0) {
+            auto str = engine.message_list[0].logic->str(engine.message_list[0].index);
             drawMessage(pixels, str);
         }
 
