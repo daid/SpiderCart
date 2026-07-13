@@ -85,11 +85,13 @@ int main(int argc, char** argv)
     auto logic0 = engine.res_logic.load(0);
     bool running = true;
     bool stepping = true;
+    bool single_step = false;
     while(running) {
         if (engine.message_list_size == 0 && stepping) {
             auto res = engine.step();
             //printf("################## STEP: %d ##################\n", res);
             if (res < 0) stepping = false;
+            if (single_step) stepping = false;
         }
 
         SDL_Event e;
@@ -104,7 +106,8 @@ int main(int argc, char** argv)
                 if (e.key.keysym.sym == SDLK_RIGHT) engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] = engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] == 3 ? 0 : 3;
                 if (e.key.keysym.sym == SDLK_UP) engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] = engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] == 1 ? 0 : 1;
                 if (e.key.keysym.sym == SDLK_DOWN) engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] = engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] == 5 ? 0 : 5;
-                if (e.key.keysym.sym == 's') stepping = true;
+                if (e.key.keysym.sym == 'r') stepping = true;
+                if (e.key.keysym.sym == SDLK_TAB) single_step = !single_step;
                 if (engine.message_list_size > 0) {
                     engine.message_list_size -= 1;
                     for(int n=0; n<engine.message_list_size; n++)
@@ -197,6 +200,8 @@ int main(int argc, char** argv)
                 char buf[32];
                 sprintf(buf, "o%d", obj->objIndex());
                 drawString(pixels + 160, obj->x, obj->y - info.height + 1, buf, strlen(buf), COLORS[15]);
+                sprintf(buf, "p%d", obj->priority);
+                drawString(pixels + 160, obj->x, obj->y - info.height + 9, buf, strlen(buf), COLORS[15]);
             }
         }
 

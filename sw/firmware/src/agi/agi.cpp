@@ -56,8 +56,8 @@ int Engine::step()
             obj.flags &=~(Object::flag_anim | Object::flag_draw);
             obj.flags |= Object::flag_update;
             obj.motion = Object::Motion::Normal;
-            //TODO: obj.step_time = 1;
-            //TODO: obj.step_counter = 1;
+            obj.step_time = 1;
+            obj.step_counter = 1;
             obj.cycle_time = 1;
             obj.cycle_counter = 1;
             obj.step_size = 1;

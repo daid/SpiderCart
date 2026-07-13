@@ -20,12 +20,15 @@ static int directionOf(int dx, int dy) {
 
 void Object::update()
 {
+    int current_step_size = step_size ? step_size : 1;
     switch(motion)
     {
     case Motion::MoveTo:
         {
             auto dx = target_x - x;
             auto dy = target_y - y;
+            if (dx && abs(dx) < current_step_size) current_step_size = abs(dx);
+            if (dy && abs(dy) < current_step_size) current_step_size = abs(dy);
             direction = directionOf(dx, dy);
             if (direction == 0) {
                 Engine::instance->flag[move_finished_flag] = true;
@@ -46,6 +49,8 @@ void Object::update()
     case Motion::FollowPlayer:
         auto dx = Engine::instance->object[0].x - x;
         auto dy = Engine::instance->object[0].y - y;
+        if (dx && abs(dx) < current_step_size) current_step_size = abs(dx);
+        if (dy && abs(dy) < current_step_size) current_step_size = abs(dy);
         direction = directionOf(dx, dy);
         //TODO: This needs more logic to handle the "getting stuck" case
         if (direction == 0) {
@@ -66,14 +71,14 @@ void Object::update()
         auto oldx = x;
         auto oldy = y;
         switch(direction) {
-        case 1: y -= 1; break;
-        case 2: x += 1; y -= 1; break;
-        case 3: x += 1; break;
-        case 4: x += 1; y += 1; break;
-        case 5: y += 1; break;
-        case 6: x -= 1; y += 1; break;
-        case 7: x -= 1; break;
-        case 8: x -= 1; y -= 1; break;
+        case 1: y -= current_step_size; break;
+        case 2: x += current_step_size; y -= current_step_size; break;
+        case 3: x += current_step_size; break;
+        case 4: x += current_step_size; y += current_step_size; break;
+        case 5: y += current_step_size; break;
+        case 6: x -= current_step_size; y += current_step_size; break;
+        case 7: x -= current_step_size; break;
+        case 8: x -= current_step_size; y -= current_step_size; break;
         }
         //Ensure object is within screen bounds
         int border = 0;
@@ -292,9 +297,7 @@ void Object::fixPosition()
 void Object::animate()
 {
     if (flags & Object::flag_anim) return;
-    flags |= Object::flag_anim;
-    flags |= Object::flag_update;
-    flags |= Object::flag_cycling;
+    flags = Object::flag_anim | Object::flag_update | Object::flag_cycling;
     motion = Motion::Normal;
     cycle_mode = CycleMode::Normal;
     direction = 0;
