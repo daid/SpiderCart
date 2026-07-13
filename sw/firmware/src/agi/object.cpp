@@ -92,7 +92,7 @@ void Object::update()
         if (isPlayer()) {
             Engine::instance->var[Engine::VAR_PLAYER_BORDER_TOUCH] = border;
         } else if (border) {
-            Engine::instance->var[Engine::VAR_OTHER_BORDER_TOUCH_OBJ] = (this - Engine::instance->object) / sizeof(Object);
+            Engine::instance->var[Engine::VAR_OTHER_BORDER_TOUCH_OBJ] = objIndex();
             Engine::instance->var[Engine::VAR_OTHER_BORDER_TOUCH] = border;
         }
         fixPosition();
@@ -350,6 +350,11 @@ int Object::distance(Object& other)
 bool Object::isPlayer()
 {
     return this == &Engine::instance->object[0];
+}
+
+int Object::objIndex()
+{
+    return this - Engine::instance->object;
 }
 
 }

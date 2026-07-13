@@ -195,7 +195,7 @@ int main(int argc, char** argv)
                     }
                 }
                 char buf[32];
-                sprintf(buf, "o%x", int((obj - engine.object)));
+                sprintf(buf, "o%d", obj->objIndex());
                 drawString(pixels + 160, obj->x, obj->y - info.height + 1, buf, strlen(buf), COLORS[15]);
             }
         }

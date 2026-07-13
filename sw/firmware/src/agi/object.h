@@ -76,6 +76,7 @@ public:
     bool inArea(uint8_t x0, uint8_t x1, uint8_t y0, uint8_t y1, AreaCheckType type);
     int  distance(Object& other);
     bool isPlayer();
+    int  objIndex();
 };
 
 }
