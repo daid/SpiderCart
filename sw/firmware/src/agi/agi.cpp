@@ -247,7 +247,7 @@ int Engine::runLogic(LogicResource* logic)
         case 0x7F: LOGIC_TRACE("init.disk"); UNIMPLEMENTED(); break;
         case 0x80: LOGIC_TRACE("restart.game"); UNIMPLEMENTED(); break;
         case 0x81: LOGIC_TRACE("show.obj", NUM_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
-        case 0x82: V(2) = random(N(1), N(2)); LOGIC_TRACE("random", NUM_ARG(0), NUM_ARG(1), VAR_ARG(2)); pc += 3; break;
+        case 0x82: V(2) = random(N(0), N(1)); LOGIC_TRACE("random", NUM_ARG(0), NUM_ARG(1), VAR_ARG(2)); pc += 3; break;
         case 0x83: player_control = false; LOGIC_TRACE("program.control"); break;
         case 0x84: player_control = true; object[0].motion = Object::Motion::Normal; LOGIC_TRACE("player.control"); break;
         case 0x85: LOGIC_TRACE("obj.status.v", VAR_ARG(0)); pc += 1; UNIMPLEMENTED(); break;
