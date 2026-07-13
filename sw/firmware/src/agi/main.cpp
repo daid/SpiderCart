@@ -41,6 +41,7 @@ void drawBox(uint32_t* pixels, int x, int y, int w, int h, uint32_t c)
 void drawString(uint32_t* pixels, int x, int y, const char* str, size_t length, uint32_t c)
 {
     while(*str && length) {
+        if (y > 160) return;
         const uint8_t* ptr = AGI::fontData;
         if (*str >= 32 && *str < 128) {
             ptr = AGI::fontData + (*str - 32) * 4;
@@ -56,6 +57,16 @@ void drawString(uint32_t* pixels, int x, int y, const char* str, size_t length, 
         str++;
         length--;
     }
+}
+
+int wordLength(const char* str)
+{
+    int len = 0;
+    while(*str && *str > ' ') {
+        str++;
+        len++;
+    }
+    return len;
 }
 
 void drawMessage(uint32_t* pixels, const char* str)
@@ -137,7 +148,7 @@ int main(int argc, char** argv)
                     // }
 
                     // if (engine.said_options_size == 0) {
-                        engine.flag[AGI::Engine::FLAG_TEXT_INPUT_DONE] = true;
+                    //    engine.flag[AGI::Engine::FLAG_TEXT_INPUT_DONE] = true;
                     // }
                 }
                 if (e.key.keysym.sym >= 'a' && e.key.keysym.sym < 'a' + engine.said_options_size) {
