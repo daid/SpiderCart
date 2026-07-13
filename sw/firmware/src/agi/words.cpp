@@ -1,6 +1,7 @@
 #include "words.h"
 #include "filesystem.h"
 #include <stdio.h>
+#include <string.h>
 
 
 namespace AGI {
