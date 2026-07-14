@@ -66,7 +66,8 @@ int Engine::step()
         case 3: object[0].y = horizon + 1; break;
         case 4: object[0].x = 159 - res_view[object[0].view]->info(object[0].loop, object[0].cel).width; break;
         }
-        //TODO: More stuff needs to be done here.
+        
+        player_control = true;
         block_active = false;
         horizon = 36;
         var[VAR_PREV_ROOM] = var[VAR_CURRENT_ROOM];

@@ -48,6 +48,7 @@ public:
     bool block_active = false;
     int block_x0, block_y0, block_x1, block_y1;
 
+    /* Current messages to display */
     struct Message {
         LogicResource* logic;
         int index;
