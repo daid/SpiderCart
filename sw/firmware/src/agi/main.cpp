@@ -76,13 +76,8 @@ void drawMessage(uint32_t* pixels, const char* str)
     drawString(pixels, 0, 84 - line_count * 4, str, strlen(str), COLORS[0]);
 }
 
-enum class TextInputState
-{
-    None,
-    GatherSaidList,
-    InputWords,
-    Execute
-} text_input_state = TextInputState::None;
+bool text_input_active = false;
+int text_input_cursor = 0;
 
 int main(int argc, char** argv)
 {
@@ -98,7 +93,7 @@ int main(int argc, char** argv)
     bool stepping = true;
     bool single_step = false;
     while(running) {
-        if (engine.message_list_size == 0 && stepping) {
+        if (engine.message_list_size == 0 && !text_input_active && stepping) {
             auto res = engine.step();
             //printf("################## STEP: %d ##################\n", res);
             if (res < 0) stepping = false;
@@ -113,10 +108,15 @@ int main(int argc, char** argv)
                 break;
             case SDL_KEYDOWN:
                 if (e.key.keysym.sym == SDLK_ESCAPE) running = false;
-                if (e.key.keysym.sym == SDLK_LEFT) engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] = engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] == 7 ? 0 : 7;
-                if (e.key.keysym.sym == SDLK_RIGHT) engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] = engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] == 3 ? 0 : 3;
-                if (e.key.keysym.sym == SDLK_UP) engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] = engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] == 1 ? 0 : 1;
-                if (e.key.keysym.sym == SDLK_DOWN) engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] = engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] == 5 ? 0 : 5;
+                if (text_input_active) {
+                    if (e.key.keysym.sym == SDLK_LEFT) { text_input_cursor -= 1; if (text_input_cursor < 0) text_input_cursor = engine.said_options_size - 1; }
+                    if (e.key.keysym.sym == SDLK_RIGHT) { text_input_cursor += 1; if (text_input_cursor >= engine.said_options_size) text_input_cursor = 0; }
+                } else {
+                    if (e.key.keysym.sym == SDLK_LEFT) engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] = engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] == 7 ? 0 : 7;
+                    if (e.key.keysym.sym == SDLK_RIGHT) engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] = engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] == 3 ? 0 : 3;
+                    if (e.key.keysym.sym == SDLK_UP) engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] = engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] == 1 ? 0 : 1;
+                    if (e.key.keysym.sym == SDLK_DOWN) engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] = engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] == 5 ? 0 : 5;
+                }
                 if (e.key.keysym.sym == 'r') stepping = true;
                 if (e.key.keysym.sym == SDLK_TAB) single_step = !single_step;
                 if (engine.message_list_size > 0) {
@@ -126,41 +126,42 @@ int main(int argc, char** argv)
                 } else {
                     engine.any_key_pressed = true;
                 }
-                if (e.key.keysym.sym == SDLK_RETURN) {
-                    // qsort(engine.said_options, engine.said_options_size, sizeof(uint16_t), [](const void* a, const void* b) -> int {
-                    //     char buffer_a[32];
-                    //     char buffer_b[32];
-                    //     AGI::Engine::instance->words.getWord(*reinterpret_cast<const uint16_t*>(a), buffer_a, sizeof(buffer_a));
-                    //     AGI::Engine::instance->words.getWord(*reinterpret_cast<const uint16_t*>(b), buffer_b, sizeof(buffer_b));
-                    //     return strcmp(buffer_a, buffer_b);
-                    // });
-                    // printf("SAY: ");
-                    // for(int n=0; n<engine.said_list_size; n++) {
-                    //     char buffer[32];
-                    //     engine.words.getWord(engine.said_list[n], buffer, sizeof(buffer));
-                    //     printf("%s ", buffer);
-                    // }
-                    // printf("\n");
-                    // for(int n=0; n<engine.said_options_size; n++) {
-                    //     char buffer[32];
-                    //     engine.words.getWord(engine.said_options[n], buffer, sizeof(buffer));
-                    //     printf(" %c:%s\n", 'a' + n, buffer);
-                    // }
-
-                    // if (engine.said_options_size == 0) {
-                    //    engine.flag[AGI::Engine::FLAG_TEXT_INPUT_DONE] = true;
-                    // }
+                if (e.key.keysym.sym == SDLK_SPACE && text_input_active) {
+                    if (text_input_cursor >= 0 && text_input_cursor < engine.said_options_size) {
+                        engine.said_list[engine.said_list_size++] = engine.said_options[text_input_cursor];
+                        engine.fillSaidOptions();
+                        text_input_cursor = 0;
+                        printf("SAY: ");
+                        for(int n=0; n<engine.said_list_size; n++) {
+                            char buffer[32];
+                            engine.words.getWord(engine.said_list[n], buffer, sizeof(buffer));
+                            printf("%s ", buffer);
+                        }
+                    }
                 }
-                if (e.key.keysym.sym >= 'a' && e.key.keysym.sym < 'a' + engine.said_options_size) {
-                    qsort(engine.said_options, engine.said_options_size, sizeof(uint16_t), [](const void* a, const void* b) -> int {
-                        char buffer_a[32];
-                        char buffer_b[32];
-                        AGI::Engine::instance->words.getWord(*reinterpret_cast<const uint16_t*>(a), buffer_a, sizeof(buffer_a));
-                        AGI::Engine::instance->words.getWord(*reinterpret_cast<const uint16_t*>(b), buffer_b, sizeof(buffer_b));
-                        return strcmp(buffer_a, buffer_b);
-                    });
+                if (e.key.keysym.sym == SDLK_RETURN && engine.message_list_size == 0) {
+                    if (text_input_active) {
+                        engine.flag[AGI::Engine::FLAG_TEXT_INPUT_DONE] = true;
+                        text_input_active = false;
+                    } else if (engine.input_enabled) {
+                        text_input_active = true;
+                        text_input_cursor = 0;
+                        engine.said_list_size = 0;
 
-                    engine.said_list[engine.said_list_size++] = engine.said_options[e.key.keysym.sym - 'a'];
+                        engine.fillSaidOptions();
+                        printf("SAY: ");
+                        for(int n=0; n<engine.said_list_size; n++) {
+                            char buffer[32];
+                            engine.words.getWord(engine.said_list[n], buffer, sizeof(buffer));
+                            printf("%s ", buffer);
+                        }
+                        printf("\n");
+                        for(int n=0; n<engine.said_options_size; n++) {
+                            char buffer[32];
+                            engine.words.getWord(engine.said_options[n], buffer, sizeof(buffer));
+                            printf(" %c:%s\n", 'a' + n, buffer);
+                        }
+                    }
                 }
                 break;
             }
@@ -219,6 +220,21 @@ int main(int argc, char** argv)
         if (engine.message_list_size > 0) {
             auto str = engine.message_list[0].logic->str(engine.message_list[0].index);
             drawMessage(pixels, str);
+        }
+        if (text_input_active) {
+            int x=0;
+            int y=0;
+            for(int n=0; n<engine.said_options_size; n++) {
+                char buffer[32];
+                engine.words.getWord(engine.said_options[n], buffer, sizeof(buffer));
+                while(auto c=strchr(buffer, ' ')) *c = '_';
+                if (x + 4 + strlen(buffer) * 4 > 160) { x = 0; y += 8; }
+                drawBox(pixels, x, y, strlen(buffer) * 4 + 4, 8, COLORS[15]);
+                if (text_input_cursor == n)
+                    drawString(pixels, x, y, ">", 1, COLORS[0]);
+                drawString(pixels, x + 4, y, buffer, strlen(buffer), COLORS[0]);
+                x += strlen(buffer) * 4 + 4;
+            }
         }
 
         SDL_UnlockSurface(surface);

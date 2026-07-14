@@ -23,8 +23,6 @@ Engine::Engine()
 
 int Engine::step()
 {
-    said_options_size = 0;
-
     if (player_control)
         object[0].direction = var[VAR_PLAYER_DIRECTION];
     else
@@ -291,7 +289,7 @@ int Engine::runLogic(LogicResource* logic)
         case 0xA6: V(0) *= V(1); LOGIC_TRACE("mul.v", VAR_ARG(0), VAR_ARG(1)); break;
         case 0xA7: V(0) /= N(1); LOGIC_TRACE("div.n", VAR_ARG(0), NUM_ARG(1)); break;
         case 0xA8: V(0) /= V(1); LOGIC_TRACE("div.v", VAR_ARG(0), VAR_ARG(1)); break;
-        case 0xA9: LOGIC_TRACE("close.window"); UNIMPLEMENTED(); break;
+        case 0xA9: /*TODO: Text input mode? */ LOGIC_TRACE("close.window"); break;
         case 0xAA: LOGIC_TRACE("set.simple"); UNIMPLEMENTED(); break;
         case 0xAB: LOGIC_TRACE("push.script"); UNIMPLEMENTED(); break;
         case 0xAC: LOGIC_TRACE("pop.script"); UNIMPLEMENTED(); break;
@@ -332,7 +330,7 @@ int Engine::runLogic(LogicResource* logic)
                     case 0x0B: value = object[N(0)].inArea(N(1), N(3), N(2), N(4), Object::AreaCheckType::Left); CONDITION_TRACE(" POSN", OBJ_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3), NUM_ARG(4)); pc += 5; break;
                     case 0x0C: value = false; /* TODO: Key pressed/menu item selection */ CONDITION_TRACE(" CONTROLLER", CTR_ARG(0)); pc += 1; break;
                     case 0x0D: value = any_key_pressed; CONDITION_TRACE(" HAVE.KEY"); break;
-                    case 0x0E: value = checkSaid(N(0), &logic->data[pc+1]); CONDITION_TRACE(" SAID", SAID_ARG()); pc += N(0) * 2 + 1; /* TODO: said ... */ break;
+                    case 0x0E: value = checkSaid(N(0), &logic->data[pc+1]); CONDITION_TRACE(" SAID", SAID_ARG()); pc += N(0) * 2 + 1; break;
                     case 0x10: value = object[N(0)].inBox(N(1), N(3), N(2), N(4)); CONDITION_TRACE(" OBJ.IN.BOX", OBJ_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3), NUM_ARG(4)); pc += 5; break;
                     case 0x11: value = object[N(0)].inArea(N(1), N(3), N(2), N(4), Object::AreaCheckType::Middle); CONDITION_TRACE(" POSN", OBJ_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3), NUM_ARG(4)); pc += 5; break;
                     case 0x12: value = object[N(0)].inArea(N(1), N(3), N(2), N(4), Object::AreaCheckType::Right); CONDITION_TRACE(" POSN", OBJ_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3), NUM_ARG(4)); pc += 5; break;
@@ -370,38 +368,93 @@ int Engine::runLogic(LogicResource* logic)
 
 bool Engine::checkSaid(int amount, uint8_t* data)
 {
-    if (flag[FLAG_TEXT_INPUT_DONE]) {
-        if (flag[FLAG_SAID_ACCEPTED_INPUT]) return false;
-        // Check if the entered text matches the said command
-        for(int n=0; n<amount && n<said_list_size; n++) {
-            int id = data[n*2] | (data[n*2+1] << 8);
-            if (id != 1 && id != said_list[n]) {
-                if (id == 9999)
-                    return true;
-                return false;
-            }
-        }
-        if (amount != said_list_size) return false;
-        flag[FLAG_SAID_ACCEPTED_INPUT] = true;
-        return true;
-    }
+    if (!flag[FLAG_TEXT_INPUT_DONE]) return false;
+    if (flag[FLAG_SAID_ACCEPTED_INPUT]) return false;
 
+    // Check if the entered text matches the said command
+    for(int n=0; n<amount && n<said_list_size; n++) {
+        int id = data[n*2] | (data[n*2+1] << 8);
+        if (id != 1 && id != said_list[n]) {
+            if (id == 9999)
+                return true;
+            return false;
+        }
+    }
+    if (amount != said_list_size) return false;
+    flag[FLAG_SAID_ACCEPTED_INPUT] = true;
+    return true;
+}
+
+void Engine::fillSaidOptions()
+{
+    said_options_size = 0;
+    fillSaidOptions(res_logic[0]);
+    qsort(said_options, said_options_size, sizeof(uint16_t), [](const void* a, const void* b) -> int {
+        char buffer_a[32];
+        char buffer_b[32];
+        AGI::Engine::instance->words.getWord(*reinterpret_cast<const uint16_t*>(a), buffer_a, sizeof(buffer_a));
+        AGI::Engine::instance->words.getWord(*reinterpret_cast<const uint16_t*>(b), buffer_b, sizeof(buffer_b));
+        return strcmp(buffer_a, buffer_b);
+    });
+}
+
+void Engine::fillSaidOptions(LogicResource* logic)
+{
+    int pc = 2;
+    while(pc < logic->logicSize()) {
+        auto cmd = logic->data[pc++];
+        switch(cmd) {
+        case 0x00: break;
+        case 0x16: if (res_logic[N(0)]) fillSaidOptions(res_logic[N(0)]); break;
+        case 0x17: if (res_logic[V(0)]) fillSaidOptions(res_logic[V(0)]); break;
+        case 0xFE: pc += 2; break;
+        case 0xFF: // IF
+            while(logic->data[pc] != 0xFF) {
+                switch(logic->data[pc++]) {
+                case 0x01: pc += 2; break;
+                case 0x02: pc += 2; break;
+                case 0x03: pc += 2; break;
+                case 0x04: pc += 2; break;
+                case 0x05: pc += 2; break;
+                case 0x06: pc += 2; break;
+                case 0x07: pc += 1; break;
+                case 0x08: pc += 1; break;
+                case 0x09: pc += 1; break;
+                case 0x0B: pc += 5; break;
+                case 0x0C: pc += 1; break;
+                case 0x0D: break;
+                case 0x0E: fillSaidOptions(N(0), &logic->data[pc+1]); pc += N(0) * 2 + 1; break;
+                case 0x10: pc += 5; break;
+                case 0x11: pc += 5; break;
+                case 0x12: pc += 5; break;
+                case 0xFC: break;
+                case 0xFD: break;
+                }
+            }
+            pc+=3;
+            break;
+        }
+        if (cmd < sizeof(cmd_size)) pc += cmd_size[cmd];
+    }
+}
+
+void Engine::fillSaidOptions(int amount, uint8_t* data)
+{
     //See if we need to append an option to the current list of word options.
-    if (amount <= said_list_size) return false;
+    if (amount <= said_list_size) return;
     //First, check if the part entered so far matches this said command.
     for(int n=0; n<amount && n<said_list_size; n++) {
         int id = data[n*2] | (data[n*2+1] << 8);
         if (id != 1 && id != said_list[n])
-            return false;
+            return;
     }
-
-    if (said_options_size >= 64) return false;
+    //Add it to the list if possible.
+    if (said_options_size >= 64) return;
     int new_id = data[said_list_size*2] | (data[said_list_size*2+1] << 8);
     for(int n=0; n<said_options_size; n++)
         if (said_options[n] == new_id)
-            return false;
+            return;
     said_options[said_options_size++] = new_id;
-    return false;
 }
 
 }

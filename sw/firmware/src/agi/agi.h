@@ -22,6 +22,9 @@ public:
     int step();
     int runLogic(LogicResource* logic);
     bool checkSaid(int amount, uint8_t* data);
+    void fillSaidOptions();
+    void fillSaidOptions(LogicResource* logic);
+    void fillSaidOptions(int amount, uint8_t* data);
 
     Words words;
     Items items;
