@@ -20,16 +20,14 @@ static int directionOf(int dx, int dy) {
 
 void Object::update()
 {
-    int current_step_size_x = step_size ? step_size : 1;
-    int current_step_size_y = step_size ? step_size : 1;
     switch(motion)
     {
     case Motion::MoveTo:
         {
             auto dx = target_x - x;
             auto dy = target_y - y;
-            if (dx && abs(dx) < current_step_size_x) current_step_size_x = abs(dx);
-            if (dy && abs(dy) < current_step_size_y) current_step_size_y = abs(dy);
+            if (abs(dx) <= step_size) dx = 0;
+            if (abs(dy) <= step_size) dy = 0;
             direction = directionOf(dx, dy);
             if (direction == 0) {
                 Engine::instance->flag[move_finished_flag] = true;
@@ -50,8 +48,8 @@ void Object::update()
     case Motion::FollowPlayer:
         auto dx = Engine::instance->object[0].x - x;
         auto dy = Engine::instance->object[0].y - y;
-        if (dx && abs(dx) < current_step_size_x) current_step_size_x = abs(dx);
-        if (dy && abs(dy) < current_step_size_y) current_step_size_y = abs(dy);
+        if (abs(dx) <= step_size) dx = 0;
+        if (abs(dy) <= step_size) dy = 0;
         direction = directionOf(dx, dy);
         //TODO: This needs more logic to handle the "getting stuck" case
         if (direction == 0) {
@@ -72,20 +70,20 @@ void Object::update()
         auto oldx = x;
         auto oldy = y;
         switch(direction) {
-        case 1: y -= current_step_size_y; break;
-        case 2: x += current_step_size_x; y -= current_step_size_y; break;
-        case 3: x += current_step_size_x; break;
-        case 4: x += current_step_size_x; y += current_step_size_y; break;
-        case 5: y += current_step_size_y; break;
-        case 6: x -= current_step_size_x; y += current_step_size_y; break;
-        case 7: x -= current_step_size_x; break;
-        case 8: x -= current_step_size_x; y -= current_step_size_y; break;
+        case 1: y -= step_size; break;
+        case 2: x += step_size; y -= step_size; break;
+        case 3: x += step_size; break;
+        case 4: x += step_size; y += step_size; break;
+        case 5: y += step_size; break;
+        case 6: x -= step_size; y += step_size; break;
+        case 7: x -= step_size; break;
+        case 8: x -= step_size; y -= step_size; break;
         }
         //Ensure object is within screen bounds
         int border = 0;
         if (x < 0) { x = 0; border = 4; }
         if (y < view_info.height - 1) { y = view_info.height - 1; border = 1; }
-        if (x > 159 - view_info.width) { x = 159 - view_info.width; border = 2; }
+        if (x > 160 - view_info.width) { x = 160 - view_info.width; border = 2; }
         if (y > 167) { y = 167; border = 3; }
         if (!(flags & flag_ignore_horizon)) {
             if (y <= Engine::instance->horizon) { y = Engine::instance->horizon + 1; border = 1; }
@@ -177,7 +175,7 @@ bool Object::checkBoundsCollision()
     auto view_info = view_data->info(loop, cel);
     if (x < 0) return true;
     if (y < view_info.height - 1) return true;
-    if (x > 159 - view_info.width) return true;
+    if (x > 160 - view_info.width) return true;
     if (y > 167) return true;
     if (!(flags & flag_ignore_horizon)) {
         if (y <= Engine::instance->horizon) return true;
@@ -276,7 +274,7 @@ void Object::fixPosition()
     //Ensure object is within screen bounds
     if (x < 0) x = 0;
     if (y < view_info.height - 1) y = view_info.height - 1;
-    if (x > 159 - view_info.width) x = 159 - view_info.width;
+    if (x > 160 - view_info.width) x = 160 - view_info.width;
     if (y > 167) y = 167;
     if (!(flags & flag_ignore_horizon)) {
         if (y <= Engine::instance->horizon) y = Engine::instance->horizon + 1;
@@ -308,7 +306,8 @@ void Object::move_to(uint8_t target_x, uint8_t target_y, uint8_t step_size, uint
 {
     this->target_x = target_x;
     this->target_y = target_y;
-    this->step_size = step_size;
+    if (step_size)
+        this->step_size = step_size;
     this->move_finished_flag = finished_flag;
     flags |= Object::flag_update; 
     motion = Motion::MoveTo;
