@@ -26,14 +26,11 @@ void Object::update()
         {
             auto dx = target_x - x;
             auto dy = target_y - y;
-            if (abs(dx) <= step_size) dx = 0;
-            if (abs(dy) <= step_size) dy = 0;
+            if (abs(dx) < step_size) dx = 0;
+            if (abs(dy) < step_size) dy = 0;
             direction = directionOf(dx, dy);
             if (direction == 0) {
-                Engine::instance->flag[move_finished_flag] = true;
-                motion = Motion::Normal;
-                if (isPlayer())
-                    Engine::instance->player_control = true;
+                destinationReached();
             }
         }
         break;
@@ -48,15 +45,12 @@ void Object::update()
     case Motion::FollowPlayer:
         auto dx = Engine::instance->object[0].x - x;
         auto dy = Engine::instance->object[0].y - y;
-        if (abs(dx) <= step_size) dx = 0;
-        if (abs(dy) <= step_size) dy = 0;
+        if (abs(dx) < step_size) dx = 0;
+        if (abs(dy) < step_size) dy = 0;
         direction = directionOf(dx, dy);
         //TODO: This needs more logic to handle the "getting stuck" case
         if (direction == 0) {
-            Engine::instance->flag[move_finished_flag] = true;
-            motion = Motion::Normal;
-            if (isPlayer())
-                Engine::instance->player_control = true;
+            destinationReached();
         }
         break;
     }
@@ -98,6 +92,9 @@ void Object::update()
         } else if (border) {
             Engine::instance->var[Engine::VAR_OTHER_BORDER_TOUCH_OBJ] = objIndex();
             Engine::instance->var[Engine::VAR_OTHER_BORDER_TOUCH] = border;
+        }
+        if (border && motion == Motion::MoveTo) {
+            destinationReached();
         }
         fixPosition();
     }
@@ -166,6 +163,14 @@ void Object::update()
             }
         }
     }
+}
+
+void Object::destinationReached()
+{
+    Engine::instance->flag[move_finished_flag] = true;
+    motion = Motion::Normal;
+    if (isPlayer())
+        Engine::instance->player_control = true;
 }
 
 bool Object::checkBoundsCollision()
