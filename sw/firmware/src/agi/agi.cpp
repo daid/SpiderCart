@@ -80,6 +80,15 @@ int Engine::step()
         var[9] = 0;
         flag[2] = false;
         flag[5] = true;
+
+        //Unload all resources except for logic 0
+        for(int n=0; n<256; n++) {
+            if (n > 0) res_logic.unload(n);
+            res_view.unload(n);
+            res_picture.unload(n);
+        }
+        res_logic.load(var[VAR_CURRENT_ROOM]);
+
         return step();
     }
     return res;
@@ -224,8 +233,8 @@ int Engine::runLogic(LogicResource* logic)
         case 0x64: /* TODO: sound */ LOGIC_TRACE("stop.sound"); break;
         case 0x65: if (message_list_size < message_list.size()) message_list[message_list_size++] = {logic, N(0)}; LOGIC_TRACE("print", MSG_ARG(0)); break;
         case 0x66: if (message_list_size < message_list.size()) message_list[message_list_size++] = {logic, V(0)}; LOGIC_TRACE("print.v", VAR_ARG(0)); break;
-        case 0x67: screen.drawText(N(1) * 4, N(0) * 8, logic->str(N(0))); LOGIC_TRACE("display", NUM_ARG(0), NUM_ARG(1), MSG_ARG(2)); break;
-        case 0x68: screen.drawText(V(1) * 4, V(0) * 8, logic->str(V(0))); LOGIC_TRACE("display.v", VAR_ARG(0), VAR_ARG(1), VAR_ARG(2)); break;
+        case 0x67: screen.drawText(N(1) * 4, N(0) * 8, logic->str(N(2))); LOGIC_TRACE("display", NUM_ARG(0), NUM_ARG(1), MSG_ARG(2)); break;
+        case 0x68: screen.drawText(V(1) * 4, V(0) * 8, logic->str(V(2))); LOGIC_TRACE("display.v", VAR_ARG(0), VAR_ARG(1), VAR_ARG(2)); break;
         case 0x69: /*TODO: Text mode */ LOGIC_TRACE("clear.lines", NUM_ARG(0), NUM_ARG(1), NUM_ARG(2)); break;
         case 0x6A: /*TODO: Text mode */ LOGIC_TRACE("text.screen"); break;
         case 0x6B: /*TODO: Text mode */ LOGIC_TRACE("graphics"); break;
