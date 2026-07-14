@@ -337,6 +337,7 @@ int Engine::runLogic(LogicResource* logic)
                     case 0x07: value = flag[N(0)]; CONDITION_TRACE(" FLAG", FLAG_ARG(0)); pc += 1; break;
                     case 0x08: value = flag[V(0)]; CONDITION_TRACE(" FLAG", VAR_ARG(0)); pc += 1; break;
                     case 0x09: value = item_room[N(0)] == 255; CONDITION_TRACE(" ITEM", ITEM_ARG(0)); pc += 1; break;
+                    case 0x0A: value = item_room[N(0)] == N(1); CONDITION_TRACE(" ITEM.IN.ROOM", ITEM_ARG(0), VAR_ARG(1)); pc += 2; break;
                     case 0x0B: value = object[N(0)].inArea(N(1), N(3), N(2), N(4), Object::AreaCheckType::Left); CONDITION_TRACE(" POSN", OBJ_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3), NUM_ARG(4)); pc += 5; break;
                     case 0x0C: value = false; /* TODO: Key pressed/menu item selection */ CONDITION_TRACE(" CONTROLLER", CTR_ARG(0)); pc += 1; break;
                     case 0x0D: value = any_key_pressed; CONDITION_TRACE(" HAVE.KEY"); break;
@@ -430,6 +431,7 @@ void Engine::fillSaidOptions(LogicResource* logic)
                 case 0x07: pc += 1; break;
                 case 0x08: pc += 1; break;
                 case 0x09: pc += 1; break;
+                case 0x0A: pc += 2; break;
                 case 0x0B: pc += 5; break;
                 case 0x0C: pc += 1; break;
                 case 0x0D: break;
