@@ -27,6 +27,9 @@ public:
     void fillSaidOptions(int amount, uint8_t* data);
     void addIgnoreWord(const char* word);
 
+    void saveGame(const char* filename);
+    bool loadGame(const char* filename);
+
     Words words;
     Items items;
     ResourceManager<LogicResource> res_logic{"LOGDIR"};

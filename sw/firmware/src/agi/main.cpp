@@ -132,6 +132,8 @@ int main(int argc, char** argv)
                     if (e.key.keysym.sym == SDLK_UP) engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] = engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] == 1 ? 0 : 1;
                     if (e.key.keysym.sym == SDLK_DOWN) engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] = engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] == 5 ? 0 : 5;
                 }
+                if (e.key.keysym.sym == SDLK_F5) engine.saveGame("quick.sav");
+                if (e.key.keysym.sym == SDLK_F9) engine.loadGame("quick.sav");
                 if (e.key.keysym.sym == 'r') stepping = true;
                 if (e.key.keysym.sym == SDLK_TAB) single_step = !single_step;
                 if (engine.message_list_size > 0) {

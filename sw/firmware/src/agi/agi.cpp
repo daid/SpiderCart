@@ -490,4 +490,56 @@ void Engine::addIgnoreWord(const char* word)
     said_ignores[said_ignores_size++] = id;
 }
 
+class BufferedFile
+{
+public:
+    BufferedFile(const char* filename)
+    : file(filename, true) {}
+    ~BufferedFile() { if (buffer_size) file.write(buffer, buffer_size); }
+
+    void write(const void* ptr, size_t size) {
+        const uint8_t* p = (const uint8_t*)ptr;
+        auto copy_to_buffer = std::min(sizeof(buffer) - buffer_size, size);
+        memcpy(buffer + buffer_size, p, copy_to_buffer);
+        buffer_size += copy_to_buffer;
+        size -= copy_to_buffer;
+        p += copy_to_buffer;
+        if (buffer_size == sizeof(buffer)) {
+            file.write(buffer, sizeof(buffer));
+            buffer_size = 0;
+        }
+        while(size >= 512) {
+            file.write(p, size &~511);
+            p += size &~511;
+            size -= size &~511;
+        }
+        copy_to_buffer = std::min(sizeof(buffer) - buffer_size, size);
+        if (copy_to_buffer) {
+            memcpy(buffer + buffer_size, p, copy_to_buffer);
+            buffer_size += copy_to_buffer;
+        }
+    }
+private:
+    File file;
+    uint8_t buffer[512];
+    uint8_t buffer_size = 0;
+};
+
+void Engine::saveGame(const char* filename)
+{
+    BufferedFile file(filename);
+    {
+        uint32_t save_version = 1;
+        file.write(&save_version, sizeof(save_version));
+    }
+
+}
+
+bool Engine::loadGame(const char* filename)
+{
+    File file(filename);
+    if (!file.isOpen()) return false;
+    return false;
+}
+
 }
