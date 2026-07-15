@@ -45,7 +45,7 @@ FRESULT f_open (FIL* fp, const char* path, uint8_t mode)
 {
     auto file_ptr = reinterpret_cast<FILE**>(fp);
     std::string local_path = "./" + std::string(path);
-    *file_ptr = fopen(local_path.c_str(), "rb"); //TODO: Mode
+    *file_ptr = fopen(local_path.c_str(), (mode & FA_WRITE) ? "wb" : "rb");
     printf("fopen: %s %p\n", local_path.c_str(), *file_ptr);
     if (!*file_ptr) return FR_NO_FILE;
     fp->fptr = 0;

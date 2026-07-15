@@ -6,7 +6,7 @@
 
 static constexpr int WIDTH = 160*2;
 static constexpr int HEIGHT = 168;
-static constexpr int SCALE = 1;
+static constexpr int SCALE = 4;
 
 
 #define RGB32(b, g, r) (0xFF000000 | (r << 2) | (g << 10) | (b << 18))
@@ -108,7 +108,7 @@ int main(int argc, char** argv)
     bool stepping = true;
     bool single_step = false;
     while(running) {
-        if (engine.message_list_size == 0 && !text_input_active && stepping) {
+        if (engine.message_list_size == 0 && !engine.show_item_view && !text_input_active && stepping) {
             auto res = engine.step();
             //printf("################## STEP: %d ##################\n", res);
             if (res < 0) stepping = false;
@@ -140,6 +140,8 @@ int main(int argc, char** argv)
                     engine.message_list_size -= 1;
                     for(int n=0; n<engine.message_list_size; n++)
                         engine.message_list[n] = engine.message_list[n+1];
+                } else if (engine.show_item_view) {
+                    engine.show_item_view = nullptr;
                 } else {
                     engine.any_key_pressed = true;
                 }
@@ -158,7 +160,8 @@ int main(int argc, char** argv)
                 }
                 if (e.key.keysym.sym == SDLK_RETURN && engine.message_list_size == 0) {
                     if (text_input_active) {
-                        engine.flag[AGI::Engine::FLAG_TEXT_INPUT_DONE] = true;
+                        if (engine.said_list_size > 0)
+                            engine.flag[AGI::Engine::FLAG_TEXT_INPUT_DONE] = true;
                         text_input_active = false;
                     } else if (engine.input_enabled) {
                         text_input_active = true;
@@ -235,10 +238,15 @@ int main(int argc, char** argv)
                 drawString(pixels + 160, obj->x, obj->y - info.height + 9, buf, strlen(buf), COLORS[15]);
             }
         }
+        char buf[8];
+        sprintf(buf, "%d", engine.var[34]);
+        drawString(pixels + 160, 0, 0, buf, strlen(buf), COLORS[0]);
 
         if (engine.message_list_size > 0) {
             auto str = engine.message_list[0].logic->str(engine.message_list[0].index);
             drawMessage(pixels, str);
+        } else if (engine.show_item_view) {
+            drawMessage(pixels, engine.show_item_view->description());
         }
         if (text_input_active) {
             int x=0;

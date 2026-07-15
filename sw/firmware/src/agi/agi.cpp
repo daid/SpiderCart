@@ -100,7 +100,7 @@ int Engine::step()
     return res;
 }
 
-#define TRACE_ENABLED 1
+#define TRACE_ENABLED 0
 #define VAR_ARG(n) trace_stream << " v" << int(logic->data[pc+n]) << "=" << int(var[logic->data[pc+n]])
 #define NUM_ARG(n) trace_stream << " " << int(logic->data[pc+n])
 #define FLAG_ARG(n) trace_stream << " f" << int(logic->data[pc+n]) << "=" << int(flag[logic->data[pc+n]])
@@ -265,7 +265,7 @@ int Engine::runLogic(LogicResource* logic)
         case 0x7E: LOGIC_TRACE("restore.game"); UNIMPLEMENTED(); break;
         case 0x7F: LOGIC_TRACE("init.disk"); UNIMPLEMENTED(); break;
         case 0x80: LOGIC_TRACE("restart.game"); UNIMPLEMENTED(); break;
-        case 0x81: LOGIC_TRACE("show.obj", NUM_ARG(0)); UNIMPLEMENTED(); break;
+        case 0x81: show_item_view = res_view[N(0)]; /* Used for showing an inventory item*/ LOGIC_TRACE("show.obj", NUM_ARG(0)); break;
         case 0x82: V(2) = random(N(0), N(1)); LOGIC_TRACE("random", NUM_ARG(0), NUM_ARG(1), VAR_ARG(2)); break;
         case 0x83: player_control = false; LOGIC_TRACE("program.control"); break;
         case 0x84: player_control = true; object[0].motion = Object::Motion::Normal; LOGIC_TRACE("player.control"); break;
@@ -298,7 +298,7 @@ int Engine::runLogic(LogicResource* logic)
         case 0x9F: LOGIC_TRACE("enable.item", CTR_ARG(0)); break;
         case 0xA0: LOGIC_TRACE("disable.item", CTR_ARG(0)); break;
         case 0xA1: LOGIC_TRACE("menu.input"); UNIMPLEMENTED(); break;
-        case 0xA2: /* Used for showing an inventory item*/ LOGIC_TRACE("show.obj.v", VAR_ARG(0)); UNIMPLEMENTED(); break;
+        case 0xA2: show_item_view = res_view[V(0)]; /* Used for showing an inventory item*/ LOGIC_TRACE("show.obj.v", VAR_ARG(0)); break;
         case 0xA3: /*TODO: Text input mode */ LOGIC_TRACE("open.dialogue"); break;
         case 0xA4: /*TODO: Text input mode */ LOGIC_TRACE("close.dialogue"); break;
         case 0xA5: V(0) *= N(1); LOGIC_TRACE("mul.n", VAR_ARG(0), NUM_ARG(1)); break;
@@ -522,7 +522,7 @@ public:
 private:
     File file;
     uint8_t buffer[512];
-    uint8_t buffer_size = 0;
+    size_t buffer_size = 0;
 };
 
 void Engine::saveGame(const char* filename)
@@ -532,13 +532,84 @@ void Engine::saveGame(const char* filename)
         uint32_t save_version = 1;
         file.write(&save_version, sizeof(save_version));
     }
+    file.write(var.data(), sizeof(var));
+    file.write(&flag, sizeof(flag));
+    for(auto& s : str) {
+        uint32_t size = s.size();
+        file.write(&size, sizeof(size));
+        file.write(s.data(), size);
+    }
+    for(auto& obj : object) {
+        file.write(&obj, sizeof(Object));
+    }
+    file.write(item_room.data(), sizeof(item_room));
 
+    file.write(&player_control, sizeof(player_control));
+    file.write(&input_enabled, sizeof(input_enabled));
+    file.write(&show_status, sizeof(show_status));
+    file.write(&horizon, sizeof(horizon));
+    file.write(&block_active, sizeof(block_active));
+    file.write(&block_x0, sizeof(block_x0));
+    file.write(&block_y0, sizeof(block_y0));
+    file.write(&block_x1, sizeof(block_x1));
+    file.write(&block_y1, sizeof(block_y1));
+
+    file.write(screen.display.buffer, sizeof(screen.display.buffer));
+    file.write(screen.priority.buffer, sizeof(screen.priority.buffer));
+
+    std::bitset<256> loaded_res;
+    for(int n=0; n<256; n++) loaded_res[n] = res_logic[n] != nullptr;
+    file.write(&loaded_res, sizeof(loaded_res));
+    for(int n=0; n<256; n++) loaded_res[n] = res_view[n] != nullptr;
+    file.write(&loaded_res, sizeof(loaded_res));
+    for(int n=0; n<256; n++) loaded_res[n] = res_picture[n] != nullptr;
+    file.write(&loaded_res, sizeof(loaded_res));
 }
 
 bool Engine::loadGame(const char* filename)
 {
     File file(filename);
     if (!file.isOpen()) return false;
+
+    {
+        uint32_t save_version = 0;
+        file.read(&save_version, sizeof(save_version));
+        if (save_version != 1) return false;
+    }
+    file.read(var.data(), sizeof(var));
+    file.read(&flag, sizeof(flag));
+    for(auto& s : str) {
+        uint32_t size = s.size();
+        file.read(&size, sizeof(size));
+        s.resize(size);
+        file.read(s.data(), size);
+    }
+    for(auto& obj : object) {
+        file.read(&obj, sizeof(Object));
+    }
+    file.read(item_room.data(), sizeof(item_room));
+
+    file.read(&player_control, sizeof(player_control));
+    file.read(&input_enabled, sizeof(input_enabled));
+    file.read(&show_status, sizeof(show_status));
+    file.read(&horizon, sizeof(horizon));
+    file.read(&block_active, sizeof(block_active));
+    file.read(&block_x0, sizeof(block_x0));
+    file.read(&block_y0, sizeof(block_y0));
+    file.read(&block_x1, sizeof(block_x1));
+    file.read(&block_y1, sizeof(block_y1));
+
+    file.read(screen.display.buffer, sizeof(screen.display.buffer));
+    file.read(screen.priority.buffer, sizeof(screen.priority.buffer));
+
+    std::bitset<256> loaded_res;
+    file.read(&loaded_res, sizeof(loaded_res));
+    for(int n=0; n<256; n++) if (loaded_res[n]) res_logic.load(n); else res_logic.unload(n);
+    file.read(&loaded_res, sizeof(loaded_res));
+    for(int n=0; n<256; n++) if (loaded_res[n]) res_view.load(n); else res_view.unload(n);
+    file.read(&loaded_res, sizeof(loaded_res));
+    for(int n=0; n<256; n++) if (loaded_res[n]) res_picture.load(n); else res_picture.unload(n);
+
     return false;
 }
 

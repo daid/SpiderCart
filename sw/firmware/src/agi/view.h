@@ -11,6 +11,7 @@ public:
     ViewResource(uint8_t* data, size_t size) : Resource(data, size) {}
 
     int loopCount();
+    const char* description();
     int celCount(int loop);
     struct Info {
         int width, height;

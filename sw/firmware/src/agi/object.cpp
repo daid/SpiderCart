@@ -63,6 +63,7 @@ void Object::updatePhysics()
         step_counter = step_time;
         auto oldx = x;
         auto oldy = y;
+        auto pre_in_block = checkBlockCollision();
         switch(direction) {
         case 1: y -= step_size; break;
         case 2: x += step_size; y -= step_size; break;
@@ -82,7 +83,7 @@ void Object::updatePhysics()
         if (!(flags & flag_ignore_horizon)) {
             if (y <= Engine::instance->horizon) { y = Engine::instance->horizon + 1; border = 1; }
         }
-        if (checkBlockCollision() || checkObjCollision() || checkPrioCollision()) {
+        if (pre_in_block != checkBlockCollision() || checkObjCollision() || checkPrioCollision()) {
             x = oldx; y = oldy;
             border = 0;
             wander_delay = 0;
@@ -198,11 +199,11 @@ bool Object::checkBlockCollision()
 {
     if (flags & flag_ignore_blocks) return false;
     if (!Engine::instance->block_active) return false;
-    if (x > Engine::instance->block_x1) return true;
-    if (x < Engine::instance->block_x0) return true;
-    if (y > Engine::instance->block_y1) return true;
-    if (y < Engine::instance->block_y0) return true;
-    return false;
+    if (x > Engine::instance->block_x1) return false;
+    if (x < Engine::instance->block_x0) return false;
+    if (y > Engine::instance->block_y1) return false;
+    if (y < Engine::instance->block_y0) return false;
+    return true;
 }
 
 bool Object::checkObjCollision()
@@ -357,7 +358,7 @@ bool Object::isPlayer()
 
 int Object::objIndex()
 {
-    return this - Engine::instance->object;
+    return this - Engine::instance->object.data();
 }
 
 }

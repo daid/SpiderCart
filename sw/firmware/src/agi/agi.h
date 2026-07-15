@@ -38,11 +38,11 @@ public:
 
     Screen screen;
 
-    uint8_t var[256] = {0};
+    std::array<uint8_t, 256> var = {0};
     std::bitset<256> flag;
-    std::string str[12];
-    Object object[256];
-    uint8_t item_room[256] = {0};
+    std::array<std::string, 12> str;
+    std::array<Object, 256> object;
+    std::array<uint8_t, 256> item_room = {0};
     int new_room_nr = -1;
 
     bool player_control = true;
@@ -59,6 +59,7 @@ public:
     };
     std::array<Message, 16> message_list;
     int message_list_size = 0;
+    ViewResource* show_item_view = nullptr;
 
     /* input */
     bool any_key_pressed = false;

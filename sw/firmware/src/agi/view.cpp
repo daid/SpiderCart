@@ -9,6 +9,15 @@ int ViewResource::loopCount()
     return data[2];
 }
 
+const char* ViewResource::description()
+{
+    auto offset = data[3] | (data[4] << 8);
+    if (offset > 0) {
+        return (const char*)data + offset;
+    }
+    return "";
+}
+
 int ViewResource::celCount(int loop)
 {
     assert(loop < loopCount());
