@@ -1,5 +1,6 @@
 #include "agi.h"
 #include <sstream>
+#include <string.h>
 
 
 namespace AGI {

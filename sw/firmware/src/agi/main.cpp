@@ -81,13 +81,13 @@ int text_input_cursor = 0;
 
 int main(int argc, char** argv)
 {
+    AGI::Engine engine;
     if (SDL_Init(SDL_INIT_EVERYTHING) < 0) { printf("SDL_Init failure: %s\n", SDL_GetError()); return 1; }
     auto window = SDL_CreateWindow("AGI", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH*4, HEIGHT*4, SDL_WINDOW_SHOWN);
     if (!window) { printf("SDL_CreateWindow failure: %s\n", SDL_GetError()); return 1; }
     auto winSurface = SDL_GetWindowSurface(window);
     auto surface = SDL_CreateRGBSurface(0, WIDTH, HEIGHT, 32, 0,0,0,0);
 
-    AGI::Engine engine;
     auto logic0 = engine.res_logic.load(0);
     bool running = true;
     bool stepping = true;
