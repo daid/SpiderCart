@@ -54,7 +54,8 @@ public:
     static constexpr uint16_t flag_on_water = 0x0400;
     static constexpr uint16_t flag_dont_update = 0x0800;
 
-    void update();
+    void updatePhysics();
+    void updateAnimation();
     void destinationReached();
     bool checkBoundsCollision();
     bool checkBlockCollision();

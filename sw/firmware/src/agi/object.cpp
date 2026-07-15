@@ -18,7 +18,7 @@ static int directionOf(int dx, int dy) {
     }
 }
 
-void Object::update()
+void Object::updatePhysics()
 {
     switch(motion)
     {
@@ -98,10 +98,16 @@ void Object::update()
         }
         fixPosition();
     }
+}
 
-    if (!(flags & Object::flag_fix_loop) && view_data) {
+void Object::updateAnimation()
+{
+    auto view_data = Engine::instance->res_view[view];
+    if (!view_data) return;
+    auto view_info = view_data->info(loop, cel);
+    if (!(flags & Object::flag_fix_loop)) {
         auto loop_count = view_data->loopCount();
-        if (loop_count >= 8) {
+        if (loop_count > 8) {
             loop = direction;
         } else if (loop_count >= 4) {
             switch(direction) {
@@ -211,18 +217,7 @@ bool Object::checkPrioCollision()
 {
     /* Before we check we need to update our priority. But, sometimes drawing depends on we having done this here as well */
     if (!(flags & Object::flag_fixed_priority)) {
-        if (y < 48) priority = 4;
-        else if (y < 60) priority = 5;
-        else if (y < 72) priority = 6;
-        else if (y < 84) priority = 7;
-        else if (y < 96) priority = 8;
-        else if (y < 108) priority = 9;
-        else if (y < 120) priority = 10;
-        else if (y < 132) priority = 11;
-        else if (y < 144) priority = 12;
-        else if (y < 156) priority = 13;
-        else if (y < 168) priority = 14;
-        else priority = 15;
+        priority = std::max(4, (y / 12) + 1);
     }
 
     auto view_data = Engine::instance->res_view[view];

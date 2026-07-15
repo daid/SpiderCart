@@ -34,7 +34,7 @@ int Engine::step()
 
     for(auto& obj : object) {
         if ((obj.flags & Object::flag_anim) && (obj.flags & Object::flag_update))
-            obj.update();
+            obj.updatePhysics();
     }
     int res = runLogic(res_logic[0]);
     var[VAR_OTHER_BORDER_TOUCH_OBJ] = 0;
@@ -47,6 +47,11 @@ int Engine::step()
     flag[FLAG_SAID_ACCEPTED_INPUT] = false;
     flag[12] = false;
     any_key_pressed = false;
+
+    for(auto& obj : object) {
+        if ((obj.flags & Object::flag_anim) && (obj.flags & Object::flag_update))
+            obj.updateAnimation();
+    }
 
     //TODO? Update objects on screen
     if (new_room_nr >= 0) {
@@ -461,13 +466,28 @@ void Engine::fillSaidOptions(int amount, uint8_t* data)
         if (id != 1 && id != said_list[n])
             return;
     }
-    //Add it to the list if possible.
+
     if (said_options_size >= 64) return;
     int new_id = data[said_list_size*2] | (data[said_list_size*2+1] << 8);
+
+    //Check if we ignore this word for the first words
+    for(int n=0; n<said_ignores_size; n++)
+        if (said_ignores[n] == new_id)
+            return;
+
+    //Add it to the list if possible.
     for(int n=0; n<said_options_size; n++)
         if (said_options[n] == new_id)
             return;
     said_options[said_options_size++] = new_id;
+}
+
+void Engine::addIgnoreWord(const char* word)
+{
+    auto id = words.getWordID(word);
+    if (id < 1) return;
+    if (said_ignores_size >= 64) return;
+    said_ignores[said_ignores_size++] = id;
 }
 
 }

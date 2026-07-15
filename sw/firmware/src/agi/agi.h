@@ -25,6 +25,7 @@ public:
     void fillSaidOptions();
     void fillSaidOptions(LogicResource* logic);
     void fillSaidOptions(int amount, uint8_t* data);
+    void addIgnoreWord(const char* word);
 
     Words words;
     Items items;
@@ -62,6 +63,8 @@ public:
     size_t said_list_size = 0;
     uint16_t said_options[64] = {0};
     size_t said_options_size = 0;
+    uint16_t said_ignores[64] = {0};
+    size_t said_ignores_size = 0;
 
     static constexpr int VAR_CURRENT_ROOM = 0;
     static constexpr int VAR_PREV_ROOM = 1;

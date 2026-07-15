@@ -6,6 +6,8 @@
 
 static constexpr int WIDTH = 160*2;
 static constexpr int HEIGHT = 168;
+static constexpr int SCALE = 1;
+
 
 #define RGB32(b, g, r) (0xFF000000 | (r << 2) | (g << 10) | (b << 18))
 static const uint32_t COLORS[] = {
@@ -79,11 +81,24 @@ void drawMessage(uint32_t* pixels, const char* str)
 bool text_input_active = false;
 int text_input_cursor = 0;
 
+
 int main(int argc, char** argv)
 {
     AGI::Engine engine;
+    engine.addIgnoreWord("shit");
+    engine.addIgnoreWord("slow");
+    engine.addIgnoreWord("normal");
+    engine.addIgnoreWord("fast");
+    engine.addIgnoreWord("fastest");
+    engine.addIgnoreWord("quit");
+    engine.addIgnoreWord("save");
+    engine.addIgnoreWord("restore");
+    engine.addIgnoreWord("restart");
+    engine.addIgnoreWord("inventory");
+    engine.addIgnoreWord("help");
+
     if (SDL_Init(SDL_INIT_EVERYTHING) < 0) { printf("SDL_Init failure: %s\n", SDL_GetError()); return 1; }
-    auto window = SDL_CreateWindow("AGI", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH*4, HEIGHT*4, SDL_WINDOW_SHOWN);
+    auto window = SDL_CreateWindow("AGI", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH*SCALE, HEIGHT*SCALE, SDL_WINDOW_SHOWN);
     if (!window) { printf("SDL_CreateWindow failure: %s\n", SDL_GetError()); return 1; }
     auto winSurface = SDL_GetWindowSurface(window);
     auto surface = SDL_CreateRGBSurface(0, WIDTH, HEIGHT, 32, 0,0,0,0);
@@ -184,7 +199,9 @@ int main(int argc, char** argv)
             draw_list.push_back(&obj);
         }
         std::sort(draw_list.begin(), draw_list.end(), [](const auto a, const auto b) -> bool {
-            return a->y < b->y;
+            auto ay = (a->flags & AGI::Object::flag_fixed_priority) ? a->priority * 12 : a->y;
+            auto by = (b->flags & AGI::Object::flag_fixed_priority) ? b->priority * 12 : b->y;
+            return ay < by;
         });
         for(auto obj : draw_list) {
             if (!(obj->flags & AGI::Object::flag_anim)) continue;
