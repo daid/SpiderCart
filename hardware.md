@@ -1,6 +1,7 @@
 # Hardware
 
 TODO
+[RaspberryPi RP2350 hardware design documentation](https://pip-assets.raspberrypi.com/categories/1214-rp2350/documents/RP-008280-DS-1-hardware-design-with-rp2350.pdf)
 
 
 ## V1 mistakes
