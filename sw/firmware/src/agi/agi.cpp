@@ -252,15 +252,15 @@ int Engine::runLogic(LogicResource* logic)
         case 0x71: show_status = false; LOGIC_TRACE("status.line.off"); break;
         case 0x72: if (N(0) < 12) str[N(0)] = logic->str(N(1)); LOGIC_TRACE("set.string", STR_ARG(0), MSG_ARG(1)); break;
         case 0x73: /*TODO: Text input mode */ str[N(0)] = "get.string result"; LOGIC_TRACE("get.string", STR_ARG(0), MSG_ARG(1), NUM_ARG(2), NUM_ARG(3), NUM_ARG(4)); break;
-        case 0x74: LOGIC_TRACE("word.to.string", WORD_ARG(0), STR_ARG(1)); UNIMPLEMENTED(); break;
+        case 0x74: { char buffer[32]; words.getWord(said_list[N(0)], buffer, sizeof(buffer)); str[N(1)] = buffer; } LOGIC_TRACE("word.to.string", WORD_ARG(0), STR_ARG(1)); break;
         case 0x75: /*TODO: Text input mode */ LOGIC_TRACE("parse", STR_ARG(0)); break;
-        case 0x76: LOGIC_TRACE("get.num", STR_ARG(0), VAR_ARG(1)); UNIMPLEMENTED(); break;
+        case 0x76: /*TODO: This requires us to block until the user entered a number... */ LOGIC_TRACE("get.num", MSG_ARG(0), VAR_ARG(1)); UNIMPLEMENTED(); break;
         case 0x77: input_enabled = false; LOGIC_TRACE("prevent.input"); break;
         case 0x78: input_enabled = true; LOGIC_TRACE("accept.input"); break;
         case 0x79: /* TODO? */ LOGIC_TRACE("set.key", NUM_ARG(0), NUM_ARG(1), NUM_ARG(2)); break;
         case 0x7A: screen.drawView(Engine::instance->res_view[N(0)]->info(N(1), N(2)), N(3), N(4), N(5), N(6)); LOGIC_TRACE("add.to.pic", NUM_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3), NUM_ARG(4), NUM_ARG(5), NUM_ARG(6)); break;
         case 0x7B: screen.drawView(Engine::instance->res_view[V(0)]->info(V(1), V(2)), V(3), V(4), V(5), V(6)); LOGIC_TRACE("add.to.pic.v", VAR_ARG(0), VAR_ARG(1), VAR_ARG(2), VAR_ARG(3), VAR_ARG(4), VAR_ARG(5), VAR_ARG(6)); break;
-        case 0x7C: LOGIC_TRACE("status"); UNIMPLEMENTED(); break;
+        case 0x7C: /* TODO: show inventory, should this block? */ LOGIC_TRACE("status"); UNIMPLEMENTED(); break;
         case 0x7D: LOGIC_TRACE("save.game"); UNIMPLEMENTED(); break;
         case 0x7E: LOGIC_TRACE("restore.game"); UNIMPLEMENTED(); break;
         case 0x7F: LOGIC_TRACE("init.disk"); UNIMPLEMENTED(); break;
