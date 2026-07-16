@@ -348,6 +348,7 @@ int Engine::runLogic(LogicResource* logic)
                     case 0x0C: value = false; /* TODO: Key pressed/menu item selection */ CONDITION_TRACE(" CONTROLLER", CTR_ARG(0)); pc += 1; break;
                     case 0x0D: value = any_key_pressed; CONDITION_TRACE(" HAVE.KEY"); break;
                     case 0x0E: value = checkSaid(N(0), &logic->data[pc+1]); CONDITION_TRACE(" SAID", SAID_ARG()); pc += N(0) * 2 + 1; break;
+                    case 0x0F: value = str[N(0)%str.size()] == str[N(1)%str.size()]; CONDITION_TRACE(" COMPARE.STRINGS", STR_ARG(0), STR_ARG(1)); pc += 2; break;
                     case 0x10: value = object[N(0)].inBox(N(1), N(3), N(2), N(4)); CONDITION_TRACE(" OBJ.IN.BOX", OBJ_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3), NUM_ARG(4)); pc += 5; break;
                     case 0x11: value = object[N(0)].inArea(N(1), N(3), N(2), N(4), Object::AreaCheckType::Middle); CONDITION_TRACE(" POSN", OBJ_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3), NUM_ARG(4)); pc += 5; break;
                     case 0x12: value = object[N(0)].inArea(N(1), N(3), N(2), N(4), Object::AreaCheckType::Right); CONDITION_TRACE(" POSN", OBJ_ARG(0), NUM_ARG(1), NUM_ARG(2), NUM_ARG(3), NUM_ARG(4)); pc += 5; break;
@@ -442,6 +443,7 @@ void Engine::fillSaidOptions(LogicResource* logic)
                 case 0x0C: pc += 1; break;
                 case 0x0D: break;
                 case 0x0E: fillSaidOptions(N(0), &logic->data[pc+1]); pc += N(0) * 2 + 1; break;
+                case 0x0F: pc += 2; break;
                 case 0x10: pc += 5; break;
                 case 0x11: pc += 5; break;
                 case 0x12: pc += 5; break;
