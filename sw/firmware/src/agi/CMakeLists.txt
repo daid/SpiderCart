@@ -19,3 +19,4 @@ add_executable(AGI
 )
 target_include_directories(AGI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../inc)
 target_link_libraries(AGI SDL2::SDL2main SDL2::SDL2)
+target_compile_options(AGI PUBLIC -Wall)

@@ -21,10 +21,10 @@ public:
     
     int step();
     int runLogic(LogicResource* logic);
-    bool checkSaid(int amount, uint8_t* data);
+    bool checkSaid(unsigned int amount, uint8_t* data);
     void fillSaidOptions();
     void fillSaidOptions(LogicResource* logic);
-    void fillSaidOptions(int amount, uint8_t* data);
+    void fillSaidOptions(unsigned int amount, uint8_t* data);
     void addIgnoreWord(const char* word);
 
     void saveGame(const char* filename);
@@ -58,7 +58,7 @@ public:
         int index;
     };
     std::array<Message, 16> message_list;
-    int message_list_size = 0;
+    size_t message_list_size = 0;
     ViewResource* show_item_view = nullptr;
 
     /* input */

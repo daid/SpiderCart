@@ -20,6 +20,9 @@ Engine::Engine()
         else
             item_room[n] = 254;
     }
+
+    //Logic0 is always loaded
+    res_logic.load(0);
 }
 
 int Engine::step()
@@ -384,13 +387,13 @@ int Engine::runLogic(LogicResource* logic)
     }
 }
 
-bool Engine::checkSaid(int amount, uint8_t* data)
+bool Engine::checkSaid(unsigned int amount, uint8_t* data)
 {
     if (!flag[FLAG_TEXT_INPUT_DONE]) return false;
     if (flag[FLAG_SAID_ACCEPTED_INPUT]) return false;
 
     // Check if the entered text matches the said command
-    for(int n=0; n<amount && n<said_list_size; n++) {
+    for(unsigned int n=0; n<amount && n<said_list_size; n++) {
         int id = data[n*2] | (data[n*2+1] << 8);
         if (id != 1 && id != said_list[n]) {
             if (id == 9999)
@@ -418,7 +421,7 @@ void Engine::fillSaidOptions()
 
 void Engine::fillSaidOptions(LogicResource* logic)
 {
-    int pc = 2;
+    unsigned int pc = 2;
     while(pc < logic->logicSize()) {
         auto cmd = logic->data[pc++];
         switch(cmd) {
@@ -458,12 +461,12 @@ void Engine::fillSaidOptions(LogicResource* logic)
     }
 }
 
-void Engine::fillSaidOptions(int amount, uint8_t* data)
+void Engine::fillSaidOptions(unsigned int amount, uint8_t* data)
 {
     //See if we need to append an option to the current list of word options.
     if (amount <= said_list_size) return;
     //First, check if the part entered so far matches this said command.
-    for(int n=0; n<amount && n<said_list_size; n++) {
+    for(unsigned int n=0; n<amount && n<said_list_size; n++) {
         int id = data[n*2] | (data[n*2+1] << 8);
         if (id != 1 && id != said_list[n])
             return;
@@ -473,12 +476,12 @@ void Engine::fillSaidOptions(int amount, uint8_t* data)
     int new_id = data[said_list_size*2] | (data[said_list_size*2+1] << 8);
 
     //Check if we ignore this word for the first words
-    for(int n=0; n<said_ignores_size; n++)
+    for(unsigned int n=0; n<said_ignores_size; n++)
         if (said_ignores[n] == new_id)
             return;
 
     //Add it to the list if possible.
-    for(int n=0; n<said_options_size; n++)
+    for(unsigned int n=0; n<said_options_size; n++)
         if (said_options[n] == new_id)
             return;
     said_options[said_options_size++] = new_id;

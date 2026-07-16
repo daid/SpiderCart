@@ -7,7 +7,7 @@ static int directionOf(int dx, int dy) {
     if (dx == 0 && dy == 0) {
         return 0;
     } else if (dx == 0) {
-        if (dy < 0) return 1; return 5;
+        if (dy < 0) return 1; else return 5;
     } else if (dy == 0) {
         if (dx < 0) return 7; else return 3;
     } else {
@@ -23,6 +23,8 @@ void Object::updatePhysics()
     auto current_step_size = step_size;
     switch(motion)
     {
+    case Motion::Normal:
+        break;
     case Motion::MoveTo:
         {
             auto dx = target_x - x;
@@ -107,7 +109,6 @@ void Object::updateAnimation()
 {
     auto view_data = Engine::instance->res_view[view];
     if (!view_data) return;
-    auto view_info = view_data->info(loop, cel);
     if (!(flags & Object::flag_fix_loop)) {
         auto loop_count = view_data->loopCount();
         if (loop_count > 8) {
@@ -337,6 +338,7 @@ bool Object::inArea(uint8_t x0, uint8_t x1, uint8_t y0, uint8_t y1, AreaCheckTyp
 {
     int tx = x;
     switch(type) {
+    case AreaCheckType::Left: break;    
     case AreaCheckType::Middle: tx += Engine::instance->res_view[view]->info(loop, cel).width / 2; break;
     case AreaCheckType::Right: tx += Engine::instance->res_view[view]->info(loop, cel).width - 1; break;
     }

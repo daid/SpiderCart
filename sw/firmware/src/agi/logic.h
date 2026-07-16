@@ -10,7 +10,7 @@ class LogicResource : public Resource {
 public:
     LogicResource(uint8_t* data, size_t size);
 
-    const char* str(int index);
+    const char* str(unsigned int index);
     size_t logicSize() { return logic_size; }
 private:
     size_t logic_size;

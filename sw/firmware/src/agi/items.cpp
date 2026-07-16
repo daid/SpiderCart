@@ -14,7 +14,7 @@ Items::Items()
     object_file.read(data, data_size);
 
     if ((data[0] | (data[1] << 8)) >= data_size) {
-        for(int n=0; n<data_size; n++)
+        for(unsigned int n=0; n<data_size; n++)
             data[n] ^= "Avis Durgan"[n % 11];
     }
 }
@@ -31,7 +31,7 @@ int Items::startRoom(int index)
 
 const char* Items::name(int index)
 {
-    int so = data[3+index*3] | (data[4+index*3] << 8);
+    unsigned int so = data[3+index*3] | (data[4+index*3] << 8);
     return reinterpret_cast<const char*>(data + 3 + so);
 }
 

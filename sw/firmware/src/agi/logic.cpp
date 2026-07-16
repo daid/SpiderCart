@@ -23,7 +23,7 @@ LogicResource::LogicResource(uint8_t* data, size_t size)
     }
 }
 
-const char* LogicResource::str(int index)
+const char* LogicResource::str(unsigned int index)
 {
     if (index > string_count) return "ERR";
     size_t offset = u16(string_table_idx + index * 2);

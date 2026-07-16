@@ -33,6 +33,30 @@ namespace AGI {
 extern const uint8_t fontData[];
 }
 
+class StringProcessor
+{
+public:
+    StringProcessor(const char* str)
+    {
+        main_str = str;
+    }
+
+    bool finished()
+    {
+
+    }
+
+    const char* word(size_t& size) {
+
+    }
+
+    void next() {
+
+    }
+private:
+    const char* main_str;
+};
+
 void drawBox(uint32_t* pixels, int x, int y, int w, int h, uint32_t c)
 {
     for(int y0=0; y0<h; y0++)
@@ -79,7 +103,7 @@ void drawMessage(uint32_t* pixels, const char* str)
 }
 
 bool text_input_active = false;
-int text_input_cursor = 0;
+unsigned int text_input_cursor = 0;
 
 
 int main(int argc, char** argv)
@@ -103,7 +127,6 @@ int main(int argc, char** argv)
     auto winSurface = SDL_GetWindowSurface(window);
     auto surface = SDL_CreateRGBSurface(0, WIDTH, HEIGHT, 32, 0,0,0,0);
 
-    auto logic0 = engine.res_logic.load(0);
     bool running = true;
     bool stepping = true;
     bool single_step = false;
@@ -124,7 +147,7 @@ int main(int argc, char** argv)
             case SDL_KEYDOWN:
                 if (e.key.keysym.sym == SDLK_ESCAPE) running = false;
                 if (text_input_active) {
-                    if (e.key.keysym.sym == SDLK_LEFT) { text_input_cursor -= 1; if (text_input_cursor < 0) text_input_cursor = engine.said_options_size - 1; }
+                    if (e.key.keysym.sym == SDLK_LEFT) { if (text_input_cursor == 0) text_input_cursor = engine.said_options_size; text_input_cursor -= 1; }
                     if (e.key.keysym.sym == SDLK_RIGHT) { text_input_cursor += 1; if (text_input_cursor >= engine.said_options_size) text_input_cursor = 0; }
                 } else {
                     if (e.key.keysym.sym == SDLK_LEFT) engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] = engine.var[AGI::Engine::VAR_PLAYER_DIRECTION] == 7 ? 0 : 7;
@@ -138,7 +161,7 @@ int main(int argc, char** argv)
                 if (e.key.keysym.sym == SDLK_TAB) single_step = !single_step;
                 if (engine.message_list_size > 0) {
                     engine.message_list_size -= 1;
-                    for(int n=0; n<engine.message_list_size; n++)
+                    for(size_t n=0; n<engine.message_list_size; n++)
                         engine.message_list[n] = engine.message_list[n+1];
                 } else if (engine.show_item_view) {
                     engine.show_item_view = nullptr;
@@ -151,7 +174,7 @@ int main(int argc, char** argv)
                         engine.fillSaidOptions();
                         text_input_cursor = 0;
                         printf("SAY: ");
-                        for(int n=0; n<engine.said_list_size; n++) {
+                        for(size_t n=0; n<engine.said_list_size; n++) {
                             char buffer[32];
                             engine.words.getWord(engine.said_list[n], buffer, sizeof(buffer));
                             printf("%s ", buffer);
@@ -170,13 +193,13 @@ int main(int argc, char** argv)
 
                         engine.fillSaidOptions();
                         printf("SAY: ");
-                        for(int n=0; n<engine.said_list_size; n++) {
+                        for(size_t n=0; n<engine.said_list_size; n++) {
                             char buffer[32];
                             engine.words.getWord(engine.said_list[n], buffer, sizeof(buffer));
                             printf("%s ", buffer);
                         }
                         printf("\n");
-                        for(int n=0; n<engine.said_options_size; n++) {
+                        for(unsigned int n=0; n<engine.said_options_size; n++) {
                             char buffer[32];
                             engine.words.getWord(engine.said_options[n], buffer, sizeof(buffer));
                             printf(" %c:%s\n", 'a' + n, buffer);
@@ -251,7 +274,7 @@ int main(int argc, char** argv)
         if (text_input_active) {
             int x=0;
             int y=0;
-            for(int n=0; n<engine.said_options_size; n++) {
+            for(size_t n=0; n<engine.said_options_size; n++) {
                 char buffer[32];
                 engine.words.getWord(engine.said_options[n], buffer, sizeof(buffer));
                 while(auto c=strchr(buffer, ' ')) *c = '_';
