@@ -52,7 +52,7 @@ int Engine::step()
     any_key_pressed = false;
 
     for(auto& obj : object) {
-        if ((obj.flags & Object::flag_anim) && (obj.flags & Object::flag_update))
+        if ((obj.flags & Object::flag_anim) && (obj.flags & Object::flag_update) && (obj.flags & Object::flag_draw))
             obj.updateAnimation();
     }
 
