@@ -20,14 +20,16 @@ static int directionOf(int dx, int dy) {
 
 void Object::updatePhysics()
 {
+    auto current_step_size = step_size;
     switch(motion)
     {
     case Motion::MoveTo:
         {
             auto dx = target_x - x;
             auto dy = target_y - y;
-            if (abs(dx) < step_size) dx = 0;
-            if (abs(dy) < step_size) dy = 0;
+            current_step_size = step_size_move_to;
+            if (abs(dx) < current_step_size) dx = 0;
+            if (abs(dy) < current_step_size) dy = 0;
             direction = directionOf(dx, dy);
             if (direction == 0) {
                 destinationReached();
@@ -45,8 +47,8 @@ void Object::updatePhysics()
     case Motion::FollowPlayer:
         auto dx = Engine::instance->object[0].x - x;
         auto dy = Engine::instance->object[0].y - y;
-        if (abs(dx) < step_size) dx = 0;
-        if (abs(dy) < step_size) dy = 0;
+        if (abs(dx) < current_step_size) dx = 0;
+        if (abs(dy) < current_step_size) dy = 0;
         direction = directionOf(dx, dy);
         //TODO: This needs more logic to handle the "getting stuck" case
         if (direction == 0) {
@@ -65,14 +67,14 @@ void Object::updatePhysics()
         auto oldy = y;
         auto pre_in_block = checkBlockCollision();
         switch(direction) {
-        case 1: y -= step_size; break;
-        case 2: x += step_size; y -= step_size; break;
-        case 3: x += step_size; break;
-        case 4: x += step_size; y += step_size; break;
-        case 5: y += step_size; break;
-        case 6: x -= step_size; y += step_size; break;
-        case 7: x -= step_size; break;
-        case 8: x -= step_size; y -= step_size; break;
+        case 1: y -= current_step_size; break;
+        case 2: x += current_step_size; y -= current_step_size; break;
+        case 3: x += current_step_size; break;
+        case 4: x += current_step_size; y += current_step_size; break;
+        case 5: y += current_step_size; break;
+        case 6: x -= current_step_size; y += current_step_size; break;
+        case 7: x -= current_step_size; break;
+        case 8: x -= current_step_size; y -= current_step_size; break;
         }
         //Ensure object is within screen bounds
         int border = 0;
@@ -307,8 +309,7 @@ void Object::move_to(uint8_t target_x, uint8_t target_y, uint8_t step_size, uint
 {
     this->target_x = target_x;
     this->target_y = target_y;
-    if (step_size)
-        this->step_size = step_size;
+    this->step_size_move_to = step_size ? step_size : this->step_size;
     this->move_finished_flag = finished_flag;
     flags |= Object::flag_update; 
     motion = Motion::MoveTo;
