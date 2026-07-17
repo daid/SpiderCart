@@ -141,6 +141,7 @@ const uint8_t fontData[] = {
 
 void Screen::drawText(int x, int y, const char* str)
 {
+    if (y < 0) return;
     while(*str) {
         if (y > 160) return;
         const uint8_t* ptr = fontData;

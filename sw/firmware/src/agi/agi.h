@@ -20,16 +20,19 @@ public:
     static Engine* instance;
     
     int step();
-    int runLogic(LogicResource* logic);
-    bool checkSaid(unsigned int amount, uint8_t* data);
     void fillSaidOptions();
-    void fillSaidOptions(LogicResource* logic);
-    void fillSaidOptions(unsigned int amount, uint8_t* data);
     void addIgnoreWord(const char* word);
 
     void saveGame(const char* filename);
     bool loadGame(const char* filename);
+private:
+    int runLogic(LogicResource* logic);
+    void loadNewRoom();
+    bool checkSaid(unsigned int amount, uint8_t* data);
+    void fillSaidOptions(LogicResource* logic);
+    void fillSaidOptions(unsigned int amount, uint8_t* data);
 
+public:
     Words words;
     Items items;
     ResourceManager<LogicResource> res_logic{"LOGDIR"};
@@ -37,6 +40,7 @@ public:
     ResourceManager<PictureResource> res_picture{"PICDIR"};
 
     Screen screen;
+    bool text_mode = false;
 
     std::array<uint8_t, 256> var = {0};
     std::bitset<256> flag;

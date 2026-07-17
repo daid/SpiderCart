@@ -27,6 +27,14 @@ Engine::Engine()
 
 int Engine::step()
 {
+    if (message_list_size > 0 || show_item_view != nullptr) {
+        return 0;
+    }
+    if (new_room_nr >= 0) {
+        loadNewRoom();
+        return step();
+    }
+
     if (player_control)
         object[0].direction = var[VAR_PLAYER_DIRECTION];
     else
@@ -56,51 +64,53 @@ int Engine::step()
             obj.updateAnimation();
     }
 
-    //TODO? Update objects on screen
-    if (new_room_nr >= 0) {
-        //TODO: More stuff needs to be done here.
-        for(auto& obj : object) {
-            obj.flags &=~(Object::flag_anim | Object::flag_draw);
-            obj.flags |= Object::flag_update;
-            obj.motion = Object::Motion::Normal;
-            obj.step_time = 1;
-            obj.step_counter = 1;
-            obj.cycle_time = 1;
-            obj.cycle_counter = 1;
-            obj.step_size = 1;
-        }
-        switch(var[VAR_PLAYER_BORDER_TOUCH]) {
-        case 1: object[0].y = 167; break;
-        case 2: object[0].x = 0; break;
-        case 3: object[0].y = horizon + 1; break;
-        case 4: object[0].x = 159 - res_view[object[0].view]->info(object[0].loop, object[0].cel).width; break;
-        }
-        
-        player_control = true;
-        block_active = false;
-        horizon = 36;
-        var[VAR_PREV_ROOM] = var[VAR_CURRENT_ROOM];
-        var[VAR_CURRENT_ROOM] = new_room_nr;
-        new_room_nr = -1;
-        var[VAR_PLAYER_BORDER_TOUCH] = 0;
-        var[VAR_OTHER_BORDER_TOUCH_OBJ] = 0;
-        var[VAR_OTHER_BORDER_TOUCH] = 0;
-        var[VAR_PLAYER_VIEW] = object[0].view;
-        var[9] = 0;
-        flag[2] = false;
-        flag[5] = true;
-
-        //Unload all resources except for logic 0
-        for(int n=0; n<256; n++) {
-            if (n > 0) res_logic.unload(n);
-            res_view.unload(n);
-            res_picture.unload(n);
-        }
-        res_logic.load(var[VAR_CURRENT_ROOM]);
-
+    if (new_room_nr >= 0 && message_list_size == 0 && show_item_view == nullptr) {
+        loadNewRoom();
         return step();
     }
     return res;
+}
+
+void Engine::loadNewRoom()
+{
+    for(auto& obj : object) {
+        obj.flags &=~(Object::flag_anim | Object::flag_draw);
+        obj.flags |= Object::flag_update;
+        obj.motion = Object::Motion::Normal;
+        obj.step_time = 1;
+        obj.step_counter = 1;
+        obj.cycle_time = 1;
+        obj.cycle_counter = 1;
+        obj.step_size = 1;
+    }
+    switch(var[VAR_PLAYER_BORDER_TOUCH]) {
+    case 1: object[0].y = 167; break;
+    case 2: object[0].x = 0; break;
+    case 3: object[0].y = horizon + 1; break;
+    case 4: object[0].x = 159 - res_view[object[0].view]->info(object[0].loop, object[0].cel).width; break;
+    }
+    
+    player_control = true;
+    block_active = false;
+    horizon = 36;
+    var[VAR_PREV_ROOM] = var[VAR_CURRENT_ROOM];
+    var[VAR_CURRENT_ROOM] = new_room_nr;
+    new_room_nr = -1;
+    var[VAR_PLAYER_BORDER_TOUCH] = 0;
+    var[VAR_OTHER_BORDER_TOUCH_OBJ] = 0;
+    var[VAR_OTHER_BORDER_TOUCH] = 0;
+    var[VAR_PLAYER_VIEW] = object[0].view;
+    var[9] = 0;
+    flag[2] = false;
+    flag[5] = true;
+
+    //Unload all resources except for logic 0
+    for(int n=0; n<256; n++) {
+        if (n > 0) res_logic.unload(n);
+        res_view.unload(n);
+        res_picture.unload(n);
+    }
+    res_logic.load(var[VAR_CURRENT_ROOM]);
 }
 
 #define TRACE_ENABLED 0
@@ -242,11 +252,11 @@ int Engine::runLogic(LogicResource* logic)
         case 0x64: /* TODO: sound */ LOGIC_TRACE("stop.sound"); break;
         case 0x65: if (message_list_size < message_list.size()) message_list[message_list_size++] = {logic, N(0)}; LOGIC_TRACE("print", MSG_ARG(0)); break;
         case 0x66: if (message_list_size < message_list.size()) message_list[message_list_size++] = {logic, V(0)}; LOGIC_TRACE("print.v", VAR_ARG(0)); break;
-        case 0x67: screen.drawText(N(1) * 4, N(0) * 8, logic->str(N(2))); LOGIC_TRACE("display", NUM_ARG(0), NUM_ARG(1), MSG_ARG(2)); break;
-        case 0x68: screen.drawText(V(1) * 4, V(0) * 8, logic->str(V(2))); LOGIC_TRACE("display.v", VAR_ARG(0), VAR_ARG(1), VAR_ARG(2)); break;
+        case 0x67: if (!text_mode) screen.drawText(N(1) * 4, N(0) * 8 - 8, logic->str(N(2))); LOGIC_TRACE("display", NUM_ARG(0), NUM_ARG(1), MSG_ARG(2)); break;
+        case 0x68: if (!text_mode) screen.drawText(V(1) * 4, V(0) * 8 - 8, logic->str(V(2))); LOGIC_TRACE("display.v", VAR_ARG(0), VAR_ARG(1), VAR_ARG(2)); break;
         case 0x69: /*TODO: Text mode */ LOGIC_TRACE("clear.lines", NUM_ARG(0), NUM_ARG(1), NUM_ARG(2)); break;
-        case 0x6A: /*TODO: Text mode */ LOGIC_TRACE("text.screen"); break;
-        case 0x6B: /*TODO: Text mode */ LOGIC_TRACE("graphics"); break;
+        case 0x6A: text_mode = true; LOGIC_TRACE("text.screen"); break;
+        case 0x6B: text_mode = false; LOGIC_TRACE("graphics"); break;
         case 0x6C: /*TODO: Text mode */ LOGIC_TRACE("set.cursor.char", MSG_ARG(0)); break;
         case 0x6D: /*TODO: Text mode */ LOGIC_TRACE("set.text.attribute", NUM_ARG(0), NUM_ARG(1)); break;
         case 0x6E: /*TODO: screen shake */ LOGIC_TRACE("shake.screen", NUM_ARG(0)); break;
@@ -549,6 +559,7 @@ void Engine::saveGame(const char* filename)
     }
     file.write(item_room.data(), sizeof(item_room));
 
+    file.write(&new_room_nr, sizeof(new_room_nr));
     file.write(&player_control, sizeof(player_control));
     file.write(&input_enabled, sizeof(input_enabled));
     file.write(&show_status, sizeof(show_status));
@@ -561,6 +572,7 @@ void Engine::saveGame(const char* filename)
 
     file.write(screen.display.buffer, sizeof(screen.display.buffer));
     file.write(screen.priority.buffer, sizeof(screen.priority.buffer));
+    file.write(&text_mode, sizeof(text_mode));
 
     std::bitset<256> loaded_res;
     for(int n=0; n<256; n++) loaded_res[n] = res_logic[n] != nullptr;
@@ -594,6 +606,7 @@ bool Engine::loadGame(const char* filename)
     }
     file.read(item_room.data(), sizeof(item_room));
 
+    file.read(&new_room_nr, sizeof(new_room_nr));
     file.read(&player_control, sizeof(player_control));
     file.read(&input_enabled, sizeof(input_enabled));
     file.read(&show_status, sizeof(show_status));
@@ -606,6 +619,7 @@ bool Engine::loadGame(const char* filename)
 
     file.read(screen.display.buffer, sizeof(screen.display.buffer));
     file.read(screen.priority.buffer, sizeof(screen.priority.buffer));
+    file.read(&text_mode, sizeof(text_mode));
 
     std::bitset<256> loaded_res;
     file.read(&loaded_res, sizeof(loaded_res));
