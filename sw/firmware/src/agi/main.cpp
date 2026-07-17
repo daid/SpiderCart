@@ -33,28 +33,44 @@ namespace AGI {
 extern const uint8_t fontData[];
 }
 
-class StringProcessor
+class MessageProcessor
 {
 public:
-    StringProcessor(const char* str)
+    MessageProcessor(const char* str)
     {
         main_str = str;
+        next();
     }
 
     bool finished()
     {
-
+        return *main_str == '\0';
     }
 
     const char* word(size_t& size) {
-
+        size = word_size;
+        return main_str;
     }
 
     void next() {
-
+        main_str += word_size;
+        skipWhitespace();
+        word_size = 0;
+        while(main_str[word_size] && main_str[word_size] != ' ') {
+            word_size++;
+        }
     }
+
+    size_t whitespace = 0;
 private:
+    void skipWhitespace()
+    {
+        whitespace = 0;
+        while(*main_str == ' ') { main_str++; whitespace++; }
+    }
+
     const char* main_str;
+    size_t word_size = 0;
 };
 
 void drawBox(uint32_t* pixels, int x, int y, int w, int h, uint32_t c)
@@ -97,9 +113,34 @@ int wordLength(const char* str)
 
 void drawMessage(uint32_t* pixels, const char* str)
 {
-    int line_count = (strlen(str) + 39) / 40;
+    
+    int line_count = 1;
+    int x = 0;
+    for(MessageProcessor processor(str); !processor.finished(); processor.next()) {
+        size_t word_size;
+        processor.word(word_size);
+        x += processor.whitespace * 4;
+        if (x + word_size * 4 > 160) {
+            x = 0;
+            line_count++;
+        }
+        x += word_size * 4;
+    }
+
     drawBox(pixels, 0, 84 - line_count * 4 - 2, 160, line_count * 8 + 4, COLORS[15]);
-    drawString(pixels, 0, 84 - line_count * 4, str, strlen(str), COLORS[0]);
+    x = 0;
+    int y = 84 - line_count * 4;
+    for(MessageProcessor processor(str); !processor.finished(); processor.next()) {
+        size_t word_size;
+        auto word = processor.word(word_size);
+        x += processor.whitespace * 4;
+        if (x + word_size * 4 > 160) {
+            x = 0;
+            y += 8;
+        }
+        drawString(pixels, x, y, word, word_size, COLORS[0]);
+        x += word_size * 4;
+    }
 }
 
 bool text_input_active = false;
