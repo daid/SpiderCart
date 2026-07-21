@@ -38,27 +38,55 @@ class MessageProcessor
 public:
     MessageProcessor(const char* str)
     {
-        main_str = str;
+        active_str = str;
         next();
     }
 
     bool finished()
     {
-        return *main_str == '\0';
+        return active_str == nullptr;
     }
 
     const char* word(size_t& size) {
         size = word_size;
-        return main_str;
+        return active_str;
     }
 
     void next() {
-        main_str += word_size;
+        active_str += word_size;
         skipWhitespace();
         word_size = 0;
-        while(main_str[word_size] && main_str[word_size] != ' ') {
+        if (!active_str[word_size]) {
+            active_str = return_str;
+            return_str = nullptr;
+            return;
+        }
+        word_size = 0;
+        while(active_str[word_size] && active_str[word_size] != ' ' && active_str[word_size] != '\n') {
+            if (active_str[word_size] == '%') {
+                auto format_type = active_str[word_size+1];
+                if (format_type) {
+                    word_size += 2;
+                    int number = 0;
+                    while(active_str[word_size] >= '0' && active_str[word_size] <= '9') {
+                        number = number * 10 + (active_str[word_size] - '0');
+                        word_size++;
+                    }
+                    switch(format_type) {
+                    case 'm':
+                        active_str += word_size;
+                        word_size = 0;
+                        return_str = active_str;
+                        active_str = AGI::Engine::instance->res_logic[0]->str(number);
+                        next();
+                        return;
+                    }
+                }
+            }
             word_size++;
         }
+        if (word_size == 0 && active_str[word_size] == '\n')
+            word_size++;
     }
 
     size_t whitespace = 0;
@@ -66,10 +94,11 @@ private:
     void skipWhitespace()
     {
         whitespace = 0;
-        while(*main_str == ' ') { main_str++; whitespace++; }
+        while(*active_str == ' ') { active_str++; whitespace++; }
     }
 
-    const char* main_str;
+    const char* active_str;
+    const char* return_str = nullptr;
     size_t word_size = 0;
 };
 
@@ -214,12 +243,6 @@ int main(int argc, char** argv)
                         engine.said_list[engine.said_list_size++] = engine.said_options[text_input_cursor];
                         engine.fillSaidOptions();
                         text_input_cursor = 0;
-                        printf("SAY: ");
-                        for(size_t n=0; n<engine.said_list_size; n++) {
-                            char buffer[32];
-                            engine.words.getWord(engine.said_list[n], buffer, sizeof(buffer));
-                            printf("%s ", buffer);
-                        }
                     }
                 }
                 if (e.key.keysym.sym == SDLK_RETURN && engine.message_list_size == 0) {
@@ -233,18 +256,6 @@ int main(int argc, char** argv)
                         engine.said_list_size = 0;
 
                         engine.fillSaidOptions();
-                        printf("SAY: ");
-                        for(size_t n=0; n<engine.said_list_size; n++) {
-                            char buffer[32];
-                            engine.words.getWord(engine.said_list[n], buffer, sizeof(buffer));
-                            printf("%s ", buffer);
-                        }
-                        printf("\n");
-                        for(unsigned int n=0; n<engine.said_options_size; n++) {
-                            char buffer[32];
-                            engine.words.getWord(engine.said_options[n], buffer, sizeof(buffer));
-                            printf(" %c:%s\n", 'a' + n, buffer);
-                        }
                     }
                 }
                 break;
