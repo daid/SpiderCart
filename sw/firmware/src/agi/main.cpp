@@ -53,17 +53,25 @@ public:
     }
 
     void next() {
+        whitespace = 0;
+        _next();
+    }
+
+    void _next() {
+        if (!active_str) return;
         active_str += word_size;
         skipWhitespace();
         word_size = 0;
         if (!active_str[word_size]) {
             active_str = return_str;
             return_str = nullptr;
+            _next();
             return;
         }
         word_size = 0;
         while(active_str[word_size] && active_str[word_size] != ' ' && active_str[word_size] != '\n') {
             if (active_str[word_size] == '%') {
+                if (word_size) return;
                 auto format_type = active_str[word_size+1];
                 if (format_type) {
                     word_size += 2;
@@ -73,12 +81,21 @@ public:
                         word_size++;
                     }
                     switch(format_type) {
+                    case 'g':
                     case 'm':
                         active_str += word_size;
                         word_size = 0;
                         return_str = active_str;
-                        active_str = AGI::Engine::instance->res_logic[0]->str(number);
-                        next();
+                        if (format_type == 'g')
+                            active_str = AGI::Engine::instance->res_logic[0]->str(number);
+                        else
+                            active_str = AGI::Engine::instance->message_list[0].logic->str(number);
+                        _next();
+                        return;
+                    case 'v':
+                        return_str = active_str + word_size;
+                        word_size = snprintf(format_buffer, sizeof(format_buffer), "%d", AGI::Engine::instance->var[number]);
+                        active_str = format_buffer;
                         return;
                     }
                 }
@@ -93,10 +110,10 @@ public:
 private:
     void skipWhitespace()
     {
-        whitespace = 0;
         while(*active_str == ' ') { active_str++; whitespace++; }
     }
 
+    char format_buffer[32];
     const char* active_str;
     const char* return_str = nullptr;
     size_t word_size = 0;
