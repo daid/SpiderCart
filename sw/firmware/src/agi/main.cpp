@@ -97,6 +97,25 @@ public:
                         word_size = snprintf(format_buffer, sizeof(format_buffer), "%d", AGI::Engine::instance->var[number]);
                         active_str = format_buffer;
                         return;
+                    case '0':
+                        return_str = active_str + word_size;
+                        active_str = AGI::Engine::instance->items.name(number);
+                        word_size = 0;
+                        _next();
+                        return;
+                    case 'w':
+                        return_str = active_str + word_size;
+                        AGI::Engine::instance->words.getWord(number, format_buffer, sizeof(format_buffer));
+                        active_str = format_buffer;
+                        word_size = 0;
+                        _next();
+                        return;
+                    case 's':
+                        return_str = active_str + word_size;
+                        word_size = 0;
+                        active_str = AGI::Engine::instance->str[number].c_str();
+                        _next();
+                        return;
                     }
                 }
             }
@@ -331,7 +350,7 @@ int main(int argc, char** argv)
             }
         }
         char buf[8];
-        sprintf(buf, "%d", engine.var[34]);
+        sprintf(buf, "%d %d", engine.var[20], engine.var[26]);
         drawString(pixels + 160, 0, 0, buf, strlen(buf), COLORS[0]);
 
         if (engine.message_list_size > 0) {
