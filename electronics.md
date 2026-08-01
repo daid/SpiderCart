@@ -64,9 +64,9 @@ The reference schematic has the following layout for the USB pins.
 I copied this, but the KiCad symbol has the USB pins on the other side. So I mirrored it and be done.
 ![USB connection on SpiderCart V1](./img/electronics/usb-sc.png)
 
-See what I missed? It's easy to miss. The DM and DP pins are swapped. This was fixed by removing the R7 and R8 resistors and adding two small wire bridges to swap the lines.
+See what I missed? It's easy to miss. The DM and DP pins are swapped. This was fixed by removing the R7 and R8 resistors and adding two small wire bridges to swap the lines. While these resistors are required by the standard, in practice they are not really needed.
 
-> TODO: Insert photo of the patch.
+![USB wire cross patch](./img/electronics/usb-patch.png)
 
 ### Oops 2: Pull...downs?
 
@@ -78,7 +78,7 @@ A simple test with removing the pulldowns and using the internal pullups in the 
 
 Where the trace to the via is cut (green line) and a wire patch is made following the side of the accelerometer chip to the decouping capacitors of that chip.
 
-> TODO: Insert photo of the patch.
+![Pull up patch photo](./img/electronics/pull-up-patch-photo.png)
 
 ### Oops 3: Get ready to rumble!
 
