@@ -90,3 +90,5 @@ So, little quiz, which of the bottom symbols behaves like the top one?
 I wrongfully assumed, the left one. On closer inspection, that can never be right due to the internal diode shown there. And the right symbol is the right one.
 
 Luck be hold, this is just a drop-in replacement from an AO3401 to an AO3400. A bigger issue was getting a tiny supply of these for cheap without breaking the bank on shipping. As these FETs cost a few cents if you place them on a board, but if you order them at single pieces and have them shipped, you quickly look at 2-3 euro a piece. In the end I managed to find a local dealer and got replacements for 3 euro including shipping.
+
+* Back to [overview](./index.html)
