@@ -294,8 +294,8 @@ int Engine::runLogic(LogicResource* logic)
         case 0x8E: LOGIC_TRACE("script.size", NUM_ARG(0)); break;
         case 0x8F: LOGIC_TRACE("set.game.id", MSG_ARG(0)); break;
         case 0x90: LOGIC_TRACE("log", MSG_ARG(0)); UNIMPLEMENTED(); break;
-        case 0x91: LOGIC_TRACE("set.scan.start"); UNIMPLEMENTED(); break;
-        case 0x92: LOGIC_TRACE("reset.scan.start"); UNIMPLEMENTED(); break;
+        case 0x91: LOGIC_TRACE("set.scan.start"); logic->start_point = pc; break;
+        case 0x92: LOGIC_TRACE("reset.scan.start"); logic->start_point = 2; break;
         case 0x93: object[N(0)].x = N(1); object[N(0)].y = N(2); object[N(0)].fixPosition(); LOGIC_TRACE("reposition.to", OBJ_ARG(0), NUM_ARG(1), NUM_ARG(2)); break;
         case 0x94: object[N(0)].x = V(1); object[N(0)].y = V(2); object[N(0)].fixPosition(); LOGIC_TRACE("reposition.to.v", OBJ_ARG(0), VAR_ARG(1), VAR_ARG(2)); break;
         case 0x95: LOGIC_TRACE("trace.on"); UNIMPLEMENTED(); break;
@@ -431,7 +431,7 @@ void Engine::fillSaidOptions()
 
 void Engine::fillSaidOptions(LogicResource* logic)
 {
-    unsigned int pc = 2;
+    unsigned int pc = logic->start_point;
     while(pc < logic->logicSize()) {
         auto cmd = logic->data[pc++];
         switch(cmd) {

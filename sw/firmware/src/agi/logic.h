@@ -12,6 +12,8 @@ public:
 
     const char* str(unsigned int index);
     size_t logicSize() { return logic_size; }
+
+    size_t start_point = 2;
 private:
     size_t logic_size;
     size_t string_count;
