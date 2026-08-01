@@ -46,7 +46,7 @@ static void mbc_write_rom(Emulator* e, MaskedAddress addr, u8 value)
         return;
     }
 
-    switch(addr & 0xE000) {
+    switch(addr & 0xF000) {
     case 0x0000:
         ram_enabled = (value & 0x0F) == 0x0A;
         break;
@@ -61,7 +61,7 @@ static void mbc_write_rom(Emulator* e, MaskedAddress addr, u8 value)
         sio_hw->fifo_valid = true;
         break;
     }
-    //printf("MBC Write: %04x: %02x\n", addr, value);
+    // printf("MBC Write: %04x: %02x\n", addr, value);
 }
 
 extern "C" void emulator_set_PC(Emulator* e, u16 pc);

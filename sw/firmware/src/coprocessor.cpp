@@ -4,6 +4,7 @@
 #include "mbc_prepare.h"
 #include "command.h"
 #include "p8.h"
+#include "accelerometer.h"
 
 #include "usb_msc.h"
 #include "filesystem.h"
@@ -88,6 +89,31 @@ void processCoProcessor()
             *ptr++ = 0; //flags/state
             for(int n=0; n<16-5; n++)
                 *ptr++ = 0;
+        } else if (cmd == 3) { //MBC7 update
+            if (ram_data[0x0000] == 0x55) {
+                ram_data[0x0000] = 0;
+                ram_data[0x0020] = 0x00;
+                ram_data[0x0030] = 0x80;
+                ram_data[0x0040] = 0x00;
+                ram_data[0x0050] = 0x80;
+                ram_data[0x0060] = 0x00;
+                ram_data[0x0070] = 0xFF;
+            }
+            if (ram_data[0x0010] == 0xAA) {
+                ram_data[0x0010] = 0;
+                //Accelerometer update, enable and read out the LIS3DH
+                uint16_t data[3];
+                accelerometer_read(data);
+                data[0] = (data[0] >> 8) + 0x0700;
+                data[1] = (data[1] >> 8) + 0x0700;
+                ram_data[0x0020] = data[0];
+                ram_data[0x0030] = data[0] >> 8;
+                ram_data[0x0040] = data[1];
+                ram_data[0x0050] = data[1] >> 8;
+            }
+            //Indicate EEPROM access done
+            // (we need to emulate the EEPROM better then this, can we keep up with this from here? at least this allows booting the game)
+            ram_data[0x0080] |= 0x01;
         } else if (cmd & 0x100) {
             switch(cmd & 0xFF) {
             case COMMAND_LIST_DIR:

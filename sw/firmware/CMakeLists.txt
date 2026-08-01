@@ -24,6 +24,7 @@ add_executable(SpiderCart
     src/sddiskio.cpp
     src/romload.cpp
     src/coprocessor.cpp
+    src/accelerometer.cpp
     src/filesystem.cpp
     src/p8/p8.cpp
     src/p8/p8lua.cpp

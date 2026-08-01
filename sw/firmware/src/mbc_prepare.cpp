@@ -93,7 +93,7 @@ void prepare_mbc()
     case 0x1D: mbc_type = MBC_Type::MBC5; mbc_flags = MBC_FLAG_RUMBLE | MBC_FLAG_RAM; break; //MBC5+RUMBLE+RAM
     case 0x1E: mbc_type = MBC_Type::MBC5; mbc_flags = MBC_FLAG_RUMBLE | MBC_FLAG_RAM | MBC_FLAG_BATTERY; break; //MBC5+RUMBLE+RAM+BATTERY
     case 0x20: mbc_type = MBC_Type::Unknown; break; //MBC6
-    case 0x22: mbc_type = MBC_Type::Unknown; break; //MBC7+SENSOR+RUMBLE+RAM+BATTERY
+    case 0x22: mbc_type = MBC_Type::MBC7; mbc_flags = MBC_FLAG_RAM; mbc_ram_bank_mask = 0x00; break; //MBC7
     case 0xFC: mbc_type = MBC_Type::Unknown; break; //POCKET CAMERA
     case 0xFD: mbc_type = MBC_Type::Unknown; break; //BANDAI TAMA5
     case 0xFE: mbc_type = MBC_Type::Unknown; break; //HuC3

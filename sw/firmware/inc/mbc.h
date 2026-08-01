@@ -9,6 +9,7 @@ enum class MBC_Type
     MBC2,
     MBC3,
     MBC5,
+    MBC7,
     Unknown
 };
 
