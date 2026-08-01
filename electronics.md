@@ -82,6 +82,11 @@ Where the trace to the via is cut (green line) and a wire patch is made followin
 
 ### Oops 3: Get ready to rumble!
 
-Rumble all the time that is. I put the wrong type of FET in the schematic, and that causes the rumble motor to be always on. Swapping the P-Channel FET out for an N-Channel fixes this. This pretty much comes down to my unfamiliarity with the FET schematic symbols.
+Rumble all the time that is. I put the wrong type of FET in the schematic, and that causes the rumble motor to be always on. Swapping the P-Channel FET out for an N-Channel fixes this. This pretty much comes down to my unfamiliarity with the FET schematic symbols. I am familiar with the normal transistor symbols.
 
-Luck be hold, this is just a drop-in replacement.
+So, little quiz, which of the bottom symbols behaves like the top one?
+![NPN transistor vs FET symbols](./img/electronics/FET.png)
+
+I wrongfully assumed, the left one. On closer inspection, that can never be right due to the internal diode shown there. And the right symbol is the right one.
+
+Luck be hold, this is just a drop-in replacement from an AO3401 to an AO3400. A bigger issue was getting a tiny supply of these for cheap without breaking the bank on shipping. As these FETs cost a few cents if you place them on a board, but if you order them at single pieces and have them shipped, you quickly look at 2-3 euro a piece. In the end I managed to find a local dealer and got replacements for 3 euro including shipping.
