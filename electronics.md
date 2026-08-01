@@ -67,6 +67,7 @@ I copied this, but the KiCad symbol has the USB pins on the other side. So I mir
 See what I missed? It's easy to miss. The DM and DP pins are swapped. This was fixed by removing the R7 and R8 resistors and adding two small wire bridges to swap the lines. While these resistors are required by the standard, in practice they are not really needed.
 
 ![USB wire cross patch](./img/electronics/usb-patch.png)
+I had a colleague do this patch, and he did an amazing job.
 
 ### Oops 2: Pull...downs?
 
@@ -79,6 +80,7 @@ A simple test with removing the pulldowns and using the internal pullups in the 
 Where the trace to the via is cut (green line) and a wire patch is made following the side of the accelerometer chip to the decouping capacitors of that chip.
 
 ![Pull up patch photo](./img/electronics/pull-up-patch-photo.png)
+I was kinda afraid to damage the accelerometer chip. But this patch came out fine.
 
 ### Oops 3: Get ready to rumble!
 
