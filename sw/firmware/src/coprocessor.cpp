@@ -94,7 +94,7 @@ void processCoProcessor()
                 {
                     auto* ptr = ram_data;
                     ReadDir dir("/");
-                    for(auto entry = dir.read(); entry.name; entry = dir.read()) {
+                    for(auto entry = dir.read(); entry.name[0]; entry = dir.read()) {
                         if (entry.directory) {
                             *ptr++ = 0x02;
                             strcpy((char*)ptr, entry.name);

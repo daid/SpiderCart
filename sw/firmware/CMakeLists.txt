@@ -25,8 +25,8 @@ add_executable(SpiderCart
     src/romload.cpp
     src/coprocessor.cpp
     src/filesystem.cpp
-    src/p8.cpp
-    src/p8lua.cpp
+    src/p8/p8.cpp
+    src/p8/p8lua.cpp
     inc/memchip.h
     inc/pins.h
 
