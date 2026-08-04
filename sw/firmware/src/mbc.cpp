@@ -78,6 +78,7 @@ template<uint32_t FLAGS> static inline void __attribute__((always_inline)) mbc_h
                             }
                             if constexpr (FLAGS & MBC_FLAG_MBC7) {
                                 if ((input_values & ram_addr_mask) == 0x0080) {
+                                    auto value = ram_ptr[0x0080];
                                     // Need to process EEPROM access, this is very timing sensitive
                                     static int bit_mask = 1;
                                     static int bits = 0;
@@ -242,7 +243,7 @@ void MBC_FUNC(mbc5_handler_battery_rumble)(uint32_t rom_mask, uint32_t ram_mask)
 
 void MBC_FUNC(mbc7_handler)(uint32_t rom_mask, uint32_t ram_mask)
 {
-    mbc_handler_impl<MBC_FLAG_RAM | MBC_FLAG_MBC7>(rom_mask, ram_mask);
+    // mbc_handler_impl<MBC_FLAG_RAM | MBC_FLAG_MBC7>(rom_mask, ram_mask);
 }
 
 void core1_start_mbc(MBC_Type base_type, uint32_t flags, uint32_t rom_bank_mask, uint32_t ram_bank_mask)
