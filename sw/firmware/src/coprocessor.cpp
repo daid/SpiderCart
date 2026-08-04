@@ -104,8 +104,8 @@ void processCoProcessor()
                 //Accelerometer update, enable and read out the LIS3DH
                 uint16_t data[3];
                 accelerometer_read(data);
-                data[0] = (data[0] >> 8) + 0x0700;
-                data[1] = (data[1] >> 8) + 0x0700;
+                data[0] = (data[0] >> 7) + 0x0700;
+                data[1] = (data[1] >> 7) + 0x0700;
                 ram_data[0x0020] = data[0];
                 ram_data[0x0030] = data[0] >> 8;
                 ram_data[0x0040] = data[1];
@@ -116,18 +116,25 @@ void processCoProcessor()
             case COMMAND_LIST_DIR:
                 {
                     auto* ptr = ram_data;
+                    size_t data_index = 0x2000;
                     ReadDir dir("/");
                     for(auto entry = dir.read(); entry.name[0]; entry = dir.read()) {
                         if (entry.directory) {
                             *ptr++ = 0x02;
-                            strcpy((char*)ptr, entry.name);
-                            ptr += 31;
+                            *ptr++ = data_index >> 13;
+                            *ptr++ = data_index & 0xFF;
+                            *ptr++ = ((data_index >> 8) & 0x1F) | 0xA0;
+                            strcpy((char*)ram_data + data_index, entry.name);
+                            data_index += strlen(entry.name) + 1;
                         } else {
                             auto ext = strrchr(entry.name, '.');
                             if (ext && valid_rom_ext(ext)) {
                                 *ptr++ = 0x01;
-                                strcpy((char*)ptr, entry.name);
-                                ptr += 31;
+                                *ptr++ = data_index >> 13;
+                                *ptr++ = data_index & 0xFF;
+                                *ptr++ = ((data_index >> 8) & 0x1F) | 0xA0;
+                                strcpy((char*)ram_data + data_index, entry.name);
+                                data_index += strlen(entry.name) + 1;
                             }
                         }
                     }

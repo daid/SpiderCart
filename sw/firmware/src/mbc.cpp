@@ -78,7 +78,27 @@ template<uint32_t FLAGS> static inline void __attribute__((always_inline)) mbc_h
                             }
                             if constexpr (FLAGS & MBC_FLAG_MBC7) {
                                 if ((input_values & ram_addr_mask) == 0x0080) {
-                                    // TODO: Need to process EEPROM access, this is very timing sensitive
+                                    // Need to process EEPROM access, this is very timing sensitive
+                                    static int bit_mask = 1;
+                                    static int bits = 0;
+                                    static int read_bits = 0;
+                                    static uint16_t mbc7_ram[128];
+                                    if (value == 0) { bit_mask = 1; read_bits = 1; bits = 0; }
+                                    if ((value & 0xC0) == 0xC0) {
+                                        if (value & 2) bits |= bit_mask;
+                                        if (bits) bit_mask <<= 1;
+                                        if (bit_mask == 0x00000800) {
+                                            read_bits = mbc7_ram[(bits >> 4) & 0x7F] << 12;
+                                        }
+                                        if (bit_mask == 0x08000000) {
+                                            if ((bits & 0x07) == 0x05) {
+                                                mbc7_ram[(bits >> 4) & 0x7F] = bits >> 11;
+                                            }
+                                        }
+                                    }
+                                    if (read_bits & bit_mask) {
+                                        ram_data[0x0080] |= 0x01;
+                                    }
                                 } else {
                                     sio_hw->fifo_wr = 3; // Signal MBC7 write has been done
                                     __sev();

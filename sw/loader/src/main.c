@@ -34,11 +34,15 @@ void main(void)
     *((uint8_t*)0x4000) = 0x00; // Switch to bank 0
     printStr(0, "                    ");
 
-    char* ptr = (char*)0xA000;
+    uint8_t* ptr = (uint8_t*)0xA000;
     uint16_t pos = 1;
     while(*ptr) {
-        printStr(pos, ptr + 1);
-        ptr += 32;
+        uint8_t bank = ptr[1];
+        char* str_addr = *(char**)&ptr[2];
+        *((volatile uint8_t*)0x4000) = bank; // Switch to bank containing filename
+        printStr(pos, str_addr);
+        *((volatile uint8_t*)0x4000) = 0x00; // Switch to bank 0
+        ptr += 4;
         pos += 0x100;
     }
     pos = 0;
@@ -47,7 +51,7 @@ void main(void)
         waitVBlank();
         updateJoypadState();
         if (JoypadPressed & PADF_DOWN) {
-            if (((char*)0xA000)[(pos + 1) * 32]) {
+            if (((char*)0xA000)[(pos + 1) * 4]) {
                 printStr(pos << 8, " ");
                 pos += 1;
                 printStr(pos << 8, ">");
@@ -61,7 +65,10 @@ void main(void)
             }
         }
         if (JoypadPressed & PADF_A) {
-            strcpy(tempBuffer, (char*)0xA001 + pos * 0x20);
+            uint8_t bank = *(char*)(0xA001 + pos * 4);
+            char* str_addr = *(char**)(0xA002 + pos * 4);
+            *((uint8_t*)0x4000) = bank; // Switch to bank with filename
+            strcpy(tempBuffer, str_addr);
             *((uint8_t*)0x4000) = 0x0F; // Switch to bank 15
             strcpy((char*)0xA000, tempBuffer);
             printStr(0, "Loading ROM...");
@@ -78,7 +85,10 @@ void main(void)
             *((uint8_t*)0x4000) = 0x00; // Switch to bank 0
        }
         if (JoypadPressed & PADF_START) {
-            strcpy(tempBuffer, (char*)0xA001 + pos * 0x20);
+            uint8_t bank = *(char*)(0xA001 + pos * 4);
+            char* str_addr = *(char**)(0xA002 + pos * 4);
+            *((uint8_t*)0x4000) = bank; // Switch to bank with filename
+            strcpy(tempBuffer, str_addr);
             *((uint8_t*)0x4000) = 0x0F; // Switch to bank 15
             strcpy((char*)0xA000, tempBuffer);
             execQuickboot(0x11); // Load quickboot
