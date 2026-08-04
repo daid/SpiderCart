@@ -22,6 +22,7 @@ template<uint32_t FLAGS> static inline void __attribute__((always_inline)) mbc_h
 {
     uint8_t data;
     uint32_t high_bank_pins = PIN_MASK_MEM_WE | PIN_MASK_MBC_A0;
+    uint8_t* ram_ptr = ram_data;
     uint32_t ram_addr_mask = 0x1FFF;
     if constexpr (FLAGS & MBC_FLAG_MBC2) ram_addr_mask = 0x01FF;
     if constexpr (FLAGS & MBC_FLAG_MBC7) ram_addr_mask = 0x10F0;
@@ -76,8 +77,12 @@ template<uint32_t FLAGS> static inline void __attribute__((always_inline)) mbc_h
                                 __sev();
                             }
                             if constexpr (FLAGS & MBC_FLAG_MBC7) {
-                                sio_hw->fifo_wr = 3; // Signal MBC7 write has been done
-                                __sev();
+                                if ((input_values & ram_addr_mask) == 0x0080) {
+                                    // TODO: Need to process EEPROM access, this is very timing sensitive
+                                } else {
+                                    sio_hw->fifo_wr = 3; // Signal MBC7 write has been done
+                                    __sev();
+                                }
                             }
                         }
                     }

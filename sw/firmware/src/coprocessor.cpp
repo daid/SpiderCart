@@ -111,9 +111,6 @@ void processCoProcessor()
                 ram_data[0x0040] = data[1];
                 ram_data[0x0050] = data[1] >> 8;
             }
-            //Indicate EEPROM access done
-            // (we need to emulate the EEPROM better then this, can we keep up with this from here? at least this allows booting the game)
-            ram_data[0x0080] |= 0x01;
         } else if (cmd & 0x100) {
             switch(cmd & 0xFF) {
             case COMMAND_LIST_DIR:
