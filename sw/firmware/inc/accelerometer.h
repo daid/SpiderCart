@@ -2,4 +2,4 @@
 
 #include <stdint.h>
 
-void accelerometer_read(uint16_t data[3]);
+void accelerometer_read(int16_t data[3]);

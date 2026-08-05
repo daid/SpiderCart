@@ -50,6 +50,43 @@ int co_error(int error_nr, const char* fmt, ...)
     return error_nr;
 }
 
+static uint16_t mbc7_ram[128];
+void processMBC7_eeprom(volatile uint8_t* mem)
+{
+    disable_interrupts();
+    int bit_mask = 1;
+    int bits = 0;
+    int read_bits = 1;
+    while(true) {
+        auto value = *mem;
+        if (!(value & 0x80)) break; //CS gone
+
+        if ((value & 0x40) == 0x40) { //CLK low->high
+            //Clock in a bit
+            if (value & 2) bits |= bit_mask;
+            if (bits) bit_mask <<= 1;
+
+            if (bit_mask == 0x00000800) {
+                read_bits = mbc7_ram[(bits >> 4) & 0x7F] << 12;
+            }
+            if (bit_mask == 0x08000000) {
+                if ((bits & 0x07) == 0x05) {
+                    mbc7_ram[(bits >> 4) & 0x7F] = bits >> 11;
+                }
+            }
+            if (read_bits & bit_mask) {
+//                *mem |= 0x01;
+            }
+            // while((*mem) & 0x40) {} //Wait till CLK high->low 
+            if (read_bits & bit_mask) {
+//                *mem |= 0x01;
+            }
+        }
+    }
+    *mem |= 0x01;
+    enable_interrupts();
+}
+
 void processCoProcessor()
 {
     switch(sav_state) {
@@ -90,6 +127,10 @@ void processCoProcessor()
             for(int n=0; n<16-5; n++)
                 *ptr++ = 0;
         } else if (cmd == 3) { //MBC7 update
+            if (ram_data[0x0080] & 0x80) {
+                //processMBC7_eeprom((volatile uint8_t*)&ram_data[0x0080]);
+            }
+            //ram_data[0x0080] |= 0x01;
             if (ram_data[0x0000] == 0x55) {
                 ram_data[0x0000] = 0;
                 ram_data[0x0020] = 0x00;
@@ -102,10 +143,11 @@ void processCoProcessor()
             if (ram_data[0x0010] == 0xAA) {
                 ram_data[0x0010] = 0;
                 //Accelerometer update, enable and read out the LIS3DH
-                uint16_t data[3];
+                int16_t data[3];
                 accelerometer_read(data);
-                data[0] = (data[0] >> 7) + 0x0700;
-                data[1] = (data[1] >> 7) + 0x0700;
+                printf("%04x %04x %04x\n", data[0], data[1], data[2]);
+                data[0] = 0x0700 - (data[0] >> 7);
+                data[1] = 0x0700 - (data[1] >> 7);
                 ram_data[0x0020] = data[0];
                 ram_data[0x0030] = data[0] >> 8;
                 ram_data[0x0040] = data[1];

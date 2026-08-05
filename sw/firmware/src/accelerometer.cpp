@@ -1,7 +1,7 @@
 #include "hardware/i2c.h"
 
 
-void accelerometer_read(uint16_t data[3])
+void accelerometer_read(int16_t data[3])
 {
     //Read out 16bit values, at +-2G full scale, LSB first
     uint8_t buffer[6];

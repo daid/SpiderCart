@@ -24,10 +24,10 @@ absolute_time_t get_absolute_time(void)
     return now.time_since_epoch().count() / 1000;
 }
 
-void accelerometer_read(uint16_t data[3])
+void accelerometer_read(int16_t data[3])
 {
-    data[0] = 0x8000;
-    data[1] = 0x8000;
+    data[0] = 0;
+    data[1] = 0;
     data[2] = 0x4000;
 }
 
